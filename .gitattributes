@@ -1,0 +1,2 @@
+# On Windows it is important to keep unix-style line endings in all egs/ files.
+egs/**             eol=lf
