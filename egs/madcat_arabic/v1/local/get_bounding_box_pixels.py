@@ -5,13 +5,14 @@
 # minimum bounding box part in this script is originally from
 #https://github.com/BebeSparkelSparkel/MinimumBoundingBox
 
-""" This module will be used for extracting line images from page image.
+""" This module will be used for creating text localization mask on page image.
  Given the word segmentation (bounding box around a word) for every word, it will
  extract line segmentation. To extract line segmentation, it will take word bounding
  boxes of a line as input, will create a minimum area bounding box that will contain
  all corner points of word bounding boxes. The obtained bounding box (will not necessarily
- be vertically or horizontally aligned). Hence to extract line image from line bounding box,
- page image is rotated and line image is cropped and saved.
+ be vertically or horizontally aligned). To obtain the pixel mask, page image is
+ rotated to make the bounding box horizontal. In the horizontal bounding box
+ pixel locations in the box are reversed mapped to unrotated image
 """
 
 import sys
