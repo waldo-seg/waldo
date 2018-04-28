@@ -1,25 +1,54 @@
+#!/usr/bin/env python3
+
+# Copyright   2018 Ashish Arora
+# Apache 2.0
+# minimum bounding box part in this script is originally from
+#https://github.com/BebeSparkelSparkel/MinimumBoundingBox
+
+""" This module will be used for extracting line images from page image.
+ Given the word segmentation (bounding box around a word) for every word, it will
+ extract line segmentation. To extract line segmentation, it will take word bounding
+ boxes of a line as input, will create a minimum area bounding box that will contain
+ all corner points of word bounding boxes. The obtained bounding box (will not necessarily
+ be vertically or horizontally aligned). Hence to extract line image from line bounding box,
+ page image is rotated and line image is cropped and saved.
+"""
+
+import sys
 import argparse
 import os
 import xml.dom.minidom as minidom
 import numpy as np
-
-import matplotlib
-matplotlib.use('TkAgg')
-
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from matplotlib.patches import Arrow, Circle
-
-from scipy.spatial import ConvexHull
 from math import atan2, cos, sin, pi, degrees, sqrt
 from collections import namedtuple
-from skimage.io import imshow, show, imread, imsave
-from skimage.transform import rotate
-from skimage import img_as_uint, img_as_float
-from skimage import io
+
+from scipy.spatial import ConvexHull
 from PIL import Image
 from scipy.misc import toimage
+import logging
 
+sys.path.insert(0, 'steps')
+logger = logging.getLogger('libs')
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s [%(pathname)s:%(lineno)s - "
+                              "%(funcName)s - %(levelname)s ] %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+"""
+bounding_box is a named tuple which contains:
+             area (float): area of the rectangle
+             length_parallel (float): length of the side that is parallel to unit_vector
+             length_orthogonal (float): length of the side that is orthogonal to unit_vector
+             rectangle_center(int, int): coordinates of the rectangle center
+             (use rectangle_corners to get the corner points of the rectangle)
+             unit_vector (float, float): direction of the length_parallel side.
+             (it's orthogonal vector can be found with the orthogonal_vector function
+             unit_vector_angle (float): angle of the unit vector to be in radians.
+             corner_points [(float, float)]: set that contains the corners of the rectangle
+"""
 bounding_box_tuple = namedtuple('bounding_box_tuple', 'area '
                                         'length_parallel '
                                         'length_orthogonal '
