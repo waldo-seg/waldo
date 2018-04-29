@@ -38,6 +38,24 @@ formatter = logging.Formatter("%(asctime)s [%(pathname)s:%(lineno)s - "
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+parser = argparse.ArgumentParser(description="Creates line images from page image",
+                                 epilog="E.g.  " + sys.argv[0] + "  data/LDC2012T15"
+                                             " data/LDC2013T09 data/LDC2013T15 data/madcat.train.raw.lineid "
+                                             " data/local/lines ",
+                                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--database_path1', type=str,
+                    help='Path to the downloaded madcat data directory 1')
+parser.add_argument('--database_path2', type=str,
+                    help='Path to the downloaded madcat data directory 2')
+parser.add_argument('--database_path3', type=str,
+                    help='Path to the downloaded madcat data directory 3')
+parser.add_argument('--data_splits', type=str,
+                    help='Path to file that contains the train/test/dev split information')
+parser.add_argument('--out_dir', type=str,
+                    help='directory location to write output files')
+parser.add_argument('--padding', type=int, default=400,
+                    help='padding across horizontal/verticle direction')
+args = parser.parse_args()
 """
 bounding_box is a named tuple which contains:
              area (float): area of the rectangle
@@ -325,9 +343,65 @@ def get_line_images_from_page_image(image_file_name, madcat_file_path):
         p4_new = (x4 - min_x, y4 - min_y)
 
 
+def check_file_location():
+    """ Returns the complete path of the page image and corresponding
+        xml file.
+    Returns
+    -------
+    image_file_name (string): complete path and name of the page image.
+    madcat_file_path (string): complete path and name of the madcat xml file
+                               corresponding to the page image.
+    """
+    madcat_file_path1 = os.path.join(data_path1, 'madcat', base_name + '.madcat.xml')
+    madcat_file_path2 = os.path.join(data_path2, 'madcat', base_name + '.madcat.xml')
+    madcat_file_path3 = os.path.join(data_path3, 'madcat', base_name + '.madcat.xml')
+
+    image_file_path1 = os.path.join(data_path1, 'images', base_name + '.tif')
+    image_file_path2 = os.path.join(data_path2, 'images', base_name + '.tif')
+    image_file_path3 = os.path.join(data_path3, 'images', base_name + '.tif')
+
+    if os.path.exists(madcat_file_path1):
+        return madcat_file_path1, image_file_path1, wc_dict1
+
+    if os.path.exists(madcat_file_path2):
+        return madcat_file_path2, image_file_path2, wc_dict2
+
+    if os.path.exists(madcat_file_path3):
+        return madcat_file_path3, image_file_path3, wc_dict3
+
+    return None, None, None
+
+def parse_writing_conditions(writing_conditions):
+    """ Given writing condition file path, returns a dictionary which have writing condition
+        of each page image.
+    Returns
+    ------
+    (dict): dictionary with key as page image name and value as writing condition.
+    """
+    with open(writing_conditions) as f:
+        file_writing_cond = dict()
+        for line in f:
+            line_list = line.strip().split("\t")
+            file_writing_cond[line_list[0]] = line_list[3]
+    return file_writing_cond
+
+def check_writing_condition(wc_dict):
+    """ Given writing condition dictionary, checks if a page image is writing
+        in a specifed writing condition.
+        It is used to create subset of dataset based on writing condition.
+    Returns
+    (bool): True if writing condition matches.
+    """
+    return True
+    writing_condition = wc_dict[base_name].strip()
+    if writing_condition != 'IUC':
+        return False
+
+    return True
 
 
 ### main ###
+
 line_images_path = '/Users/ashisharora/madcat_ar'
 data_path = '/Users/ashisharora/madcat_ar'
 for file in os.listdir(os.path.join(data_path, 'images')):
@@ -336,3 +410,48 @@ for file in os.listdir(os.path.join(data_path, 'images')):
         gedi_file_path = os.path.join(data_path, 'madcat', file)
         gedi_file_path = gedi_file_path.replace(".tif", ".madcat.xml")
         get_line_images_from_page_image(image_path, gedi_file_path)
+
+sys.exit()
+
+data_path1 = args.database_path1
+data_path2 = args.database_path2
+data_path3 = args.database_path3
+
+writing_condition_folder_list = args.database_path1.split('/')
+writing_condition_folder1 = ('/').join(writing_condition_folder_list[:5])
+
+writing_condition_folder_list = args.database_path2.split('/')
+writing_condition_folder2 = ('/').join(writing_condition_folder_list[:5])
+
+writing_condition_folder_list = args.database_path3.split('/')
+writing_condition_folder3 = ('/').join(writing_condition_folder_list[:5])
+
+splits_handle = open(args.data_splits, 'r')
+splits_data = splits_handle.read().strip().split('\n')
+
+padding = int(args.padding)
+offset = int(padding // 2)
+
+output_directory = args.out_dir
+image_file = os.path.join(output_directory, 'images.scp')
+image_fh = open(image_file, 'w', encoding='utf-8')
+
+writing_conditions1 = os.path.join(writing_condition_folder1, 'docs', 'writing_conditions.tab')
+writing_conditions2 = os.path.join(writing_condition_folder2, 'docs', 'writing_conditions.tab')
+writing_conditions3 = os.path.join(writing_condition_folder3, 'docs', 'writing_conditions.tab')
+
+wc_dict1 = parse_writing_conditions(writing_conditions1)
+wc_dict2 = parse_writing_conditions(writing_conditions2)
+wc_dict3 = parse_writing_conditions(writing_conditions3)
+
+
+prev_base_name = ''
+for line in splits_data:
+    base_name = os.path.splitext(os.path.splitext(line.split(' ')[0])[0])[0]
+    if prev_base_name != base_name:
+        prev_base_name = base_name
+        madcat_file_path, image_file_path, wc_dict = check_file_location()
+        if wc_dict == None or not check_writing_condition(wc_dict):
+            continue
+        if madcat_file_path != None:
+            get_line_images_from_page_image(image_file_path, madcat_file_path)
