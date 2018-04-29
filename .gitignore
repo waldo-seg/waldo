@@ -57,3 +57,6 @@ GSYMS
 /egs/*/v*/plp
 /egs/*/v*/exp
 /egs/*/v*/data
+
+# .idea
+.idea/
