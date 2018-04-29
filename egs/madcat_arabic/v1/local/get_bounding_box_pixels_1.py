@@ -6,6 +6,12 @@ import numpy as np
 from math import atan2, cos, sin, pi, degrees, sqrt
 from collections import namedtuple
 
+import matplotlib
+matplotlib.use('TkAgg')
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.patches import Arrow, Circle
 from scipy.spatial import ConvexHull
 from PIL import Image
 from scipy.misc import toimage
@@ -156,7 +162,7 @@ def get_smaller_angle(bounding_box):
     else:
         return ortho_vector_angle_updated
 
-def rotated_points(bounding_box, center, if_opposite_direction=False):
+def rotate_rectangle_corners(bounding_box, center, if_opposite_direction=False):
     p1, p2, p3, p4 = bounding_box.corner_points
     x1, y1 = p1
     x2, y2 = p2
@@ -179,9 +185,25 @@ def rotated_points(bounding_box, center, if_opposite_direction=False):
     y_dash_3 = (y3 - center_y) * cos(rotation_angle_in_rad) + (x3 - center_x) * sin(rotation_angle_in_rad) + center_y
     y_dash_4 = (y4 - center_y) * cos(rotation_angle_in_rad) + (x4 - center_x) * sin(rotation_angle_in_rad) + center_y
 
-    return x_dash_1, y_dash_1, x_dash_2, y_dash_2, x_dash_3, y_dash_3, x_dash_4, y_dash_4
+    return (x_dash_1, y_dash_1), (x_dash_2, y_dash_2), (x_dash_3, y_dash_3), (x_dash_4, y_dash_4)
+
+
+def rotate_single_point(point, bounding_box, center, if_opposite_direction=False):
+    x1, y1 = point
+    center_x, center_y = center
+
+    if if_opposite_direction:
+        rotation_angle_in_rad = get_smaller_angle(bounding_box)
+    else:
+        rotation_angle_in_rad = -get_smaller_angle(bounding_box)
+
+    x_dash_1 = (x1 - center_x) * cos(rotation_angle_in_rad) - (y1 - center_y) * sin(rotation_angle_in_rad) + center_x
+    y_dash_1 = (y1 - center_y) * cos(rotation_angle_in_rad) + (x1 - center_x) * sin(rotation_angle_in_rad) + center_y
+    return x_dash_1, y_dash_1
 
 def get_line_images_from_page_image(image_file_name, madcat_file_path):
+    im_wo_pad = Image.open(image_file_name)
+    im = pad_image(im_wo_pad)
     doc = minidom.parse(madcat_file_path)
     zone = doc.getElementsByTagName('zone')
     for node in zone:
@@ -230,41 +252,45 @@ def get_line_images_from_page_image(image_file_name, madcat_file_path):
                                                   bounding_box.unit_vector_angle,
                                                   set(rel_points)
                                                   )
-        rot_x1, rot_y1, rot_x2, rot_y2, rot_x3, rot_y3, rot_x4, rot_y4 = rotated_points(
+        (rot_x1, rot_y1), (rot_x2, rot_y2), (rot_x3, rot_y3), (rot_x4, rot_y4) = rotate_rectangle_corners(
             cropped_bounding_box, (BBwidth_half_x, BBheight_half_y))
-
+        patches = []
         rot_BBCmin_x = int(min(rot_x1, rot_x2, rot_x3, rot_x4))
         rot_BBCmin_y = int(min(rot_y1, rot_y2, rot_y3, rot_y4))
         rot_BBCmax_x = int(max(rot_x1, rot_x2, rot_x3, rot_x4))
         rot_BBCmax_y = int(max(rot_y1, rot_y2, rot_y3, rot_y4))
-        box = (rot_BBCmin_x, rot_BBCmin_y, rot_BBCmax_x, rot_BBCmax_y)
 
-
+        # width = rot_BBCmax_x - rot_BBCmin_x
+        # height = rot_BBCmax_y - rot_BBCmin_y
         # rot_points = []
         # rot_points.append((rot_x1, rot_y1))
         # rot_points.append((rot_x2, rot_y2))
         # rot_points.append((rot_x3, rot_y3))
         # rot_points.append((rot_x4, rot_y4))
-        # cropped_bounding_box = bounding_box_tuple(bounding_box.area,
-        #                                           bounding_box.length_parallel,
-        #                                           bounding_box.length_orthogonal,
-        #                                           bounding_box.length_orthogonal,
-        #                                           bounding_box.unit_vector,
-        #                                           bounding_box.unit_vector_angle,
-        #                                           set(rot_points)
-        #                                           )
+        # rot_points_old = []
         #
-        # x1_old_rel, y1_old_rel, x2_old_rel, y2_old_rel, x3_old_rel, y3_old_rel,\
-        # x4_old_rel, y4_old_rel = rotated_points(cropped_bounding_box, (BBwidth_half_x, BBheight_half_y), True)
-        #
-        # gBBC1_old = (x1_old_rel + gBBCmin_x, y1_old_rel + gBBCmin_y)
-        # gBBC2_old = (x2_old_rel + gBBCmin_x, y2_old_rel + gBBCmin_y)
-        # gBBC3_old = (x3_old_rel + gBBCmin_x, y3_old_rel + gBBCmin_y)
-        # gBBC4_old = (x4_old_rel + gBBCmin_x, y4_old_rel + gBBCmin_y)
-        # print(gBBC1_old, gBBC2_old, gBBC3_old, gBBC4_old)
+        # for x,y in rot_points:
+        #     point = x, y
+        #     x1, y1 = rotate_single_point(point, cropped_bounding_box, (BBwidth_half_x, BBheight_half_y), True)
+        #     gBBC1_old = (x1 + gBBCmin_x, y1 + gBBCmin_y)
+        #     rot_points_old.append(gBBC1_old)
+        #     patches.append(Circle((list(gBBC1_old)), radius=5, color='red'))
 
+        for x in range(rot_BBCmin_x,rot_BBCmax_x):
+            for y in range(rot_BBCmin_y, rot_BBCmax_y):
+                point = x, y
+                x1, y1 = rotate_single_point(point, cropped_bounding_box, (BBwidth_half_x, BBheight_half_y), True)
+                gBBC1_old = (x1 + gBBCmin_x, y1 + gBBCmin_y)
+                print(gBBC1_old)
+                patches.append(Circle((list(gBBC1_old)), radius=1, color='red'))
+
+        ax.imshow(im)
+        for p in patches:
+            ax.add_patch(p)
+        plt.show(fig)
 
 ### main ###
+fig,ax = plt.subplots(1)
 line_images_path = '/Users/ashisharora/madcat_ar'
 data_path = '/Users/ashisharora/madcat_ar'
 for file in os.listdir(os.path.join(data_path, 'images')):
