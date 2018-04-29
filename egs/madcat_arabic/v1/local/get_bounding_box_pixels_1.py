@@ -205,12 +205,18 @@ def get_line_images_from_page_image(image_file_name, madcat_file_path):
     im_wo_pad = Image.open(image_file_name)
     im = pad_image(im_wo_pad)
     im.show()
+    img = Image.new('RGB', (im.size[0], im.size[1]), "white")
+    pixels = img.load()
+    val = (0, 0, 0)
     doc = minidom.parse(madcat_file_path)
     zone = doc.getElementsByTagName('zone')
     for node in zone:
-        id = node.getAttribute('id')
-        if id != 'z1':
-            continue
+        lst = list(val)
+        lst[0] += 5
+        lst[1] += 5
+        lst[2] += 5
+        val = tuple(lst)
+
         token_image = node.getElementsByTagName('token-image')
         minimum_bounding_box_input = []
         for token_node in token_image:
@@ -223,7 +229,6 @@ def get_line_images_from_page_image(image_file_name, madcat_file_path):
         bounding_box = minimum_bounding_box(updated_mbb_input)
 
         gBBC1, gBBC2, gBBC3, gBBC4 = bounding_box.corner_points
-
         x1, y1 = gBBC1
         x2, y2 = gBBC2
         x3, y3 = gBBC3
@@ -255,27 +260,20 @@ def get_line_images_from_page_image(image_file_name, madcat_file_path):
                                                   )
         (rot_x1, rot_y1), (rot_x2, rot_y2), (rot_x3, rot_y3), (rot_x4, rot_y4) = rotate_rectangle_corners(
             cropped_bounding_box, (BBwidth_half_x, BBheight_half_y))
-        patches = []
         rot_BBCmin_x = int(min(rot_x1, rot_x2, rot_x3, rot_x4))
         rot_BBCmin_y = int(min(rot_y1, rot_y2, rot_y3, rot_y4))
         rot_BBCmax_x = int(max(rot_x1, rot_x2, rot_x3, rot_x4))
         rot_BBCmax_y = int(max(rot_y1, rot_y2, rot_y3, rot_y4))
 
-        count = 0
         for x in range(rot_BBCmin_x,rot_BBCmax_x):
             for y in range(rot_BBCmin_y, rot_BBCmax_y):
-                count +=1
                 point = x, y
                 x1, y1 = rotate_single_point(point, cropped_bounding_box, (BBwidth_half_x, BBheight_half_y), True)
                 gBBC1_old = (x1 + gBBCmin_x, y1 + gBBCmin_y)
-                print(gBBC1_old)
-                if count%800 ==0:
-                    patches.append(Circle((list(gBBC1_old)), radius=2, color='red'))
+                pixels[int(gBBC1_old[0]), int(gBBC1_old[1])] = val
+    img.show()
 
-        ax.imshow(im)
-        for p in patches:
-            ax.add_patch(p)
-        plt.show(fig)
+
 
 ### main ###
 fig,ax = plt.subplots(1)
