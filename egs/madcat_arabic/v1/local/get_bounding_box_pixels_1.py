@@ -204,6 +204,7 @@ def rotate_single_point(point, bounding_box, center, if_opposite_direction=False
 def get_line_images_from_page_image(image_file_name, madcat_file_path):
     im_wo_pad = Image.open(image_file_name)
     im = pad_image(im_wo_pad)
+    im.show()
     doc = minidom.parse(madcat_file_path)
     zone = doc.getElementsByTagName('zone')
     for node in zone:
@@ -260,29 +261,16 @@ def get_line_images_from_page_image(image_file_name, madcat_file_path):
         rot_BBCmax_x = int(max(rot_x1, rot_x2, rot_x3, rot_x4))
         rot_BBCmax_y = int(max(rot_y1, rot_y2, rot_y3, rot_y4))
 
-        # width = rot_BBCmax_x - rot_BBCmin_x
-        # height = rot_BBCmax_y - rot_BBCmin_y
-        # rot_points = []
-        # rot_points.append((rot_x1, rot_y1))
-        # rot_points.append((rot_x2, rot_y2))
-        # rot_points.append((rot_x3, rot_y3))
-        # rot_points.append((rot_x4, rot_y4))
-        # rot_points_old = []
-        #
-        # for x,y in rot_points:
-        #     point = x, y
-        #     x1, y1 = rotate_single_point(point, cropped_bounding_box, (BBwidth_half_x, BBheight_half_y), True)
-        #     gBBC1_old = (x1 + gBBCmin_x, y1 + gBBCmin_y)
-        #     rot_points_old.append(gBBC1_old)
-        #     patches.append(Circle((list(gBBC1_old)), radius=5, color='red'))
-
+        count = 0
         for x in range(rot_BBCmin_x,rot_BBCmax_x):
             for y in range(rot_BBCmin_y, rot_BBCmax_y):
+                count +=1
                 point = x, y
                 x1, y1 = rotate_single_point(point, cropped_bounding_box, (BBwidth_half_x, BBheight_half_y), True)
                 gBBC1_old = (x1 + gBBCmin_x, y1 + gBBCmin_y)
                 print(gBBC1_old)
-                patches.append(Circle((list(gBBC1_old)), radius=1, color='red'))
+                if count%800 ==0:
+                    patches.append(Circle((list(gBBC1_old)), radius=2, color='red'))
 
         ax.imshow(im)
         for p in patches:
