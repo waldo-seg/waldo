@@ -275,6 +275,7 @@ def get_line_images_from_page_image(image_file_name, madcat_file_path):
         bounding_box = minimum_bounding_box(updated_mbb_input)
 
         p1, p2, p3, p4 = bounding_box.corner_points
+        # global bounding box coordinates
         print(p1, p2, p3, p4)
         x1, y1 = p1
         x2, y2 = p2
@@ -292,6 +293,7 @@ def get_line_images_from_page_image(image_file_name, madcat_file_path):
         p2_new = (x2 - min_x, y2 - min_y)
         p3_new = (x3 - min_x, y3 - min_y)
         p4_new = (x4 - min_x, y4 - min_y)
+        # relative BB coordinates
         print(p1_new, p2_new, p3_new, p4_new)
 
         rot_points.append(p1_new)
@@ -308,6 +310,7 @@ def get_line_images_from_page_image(image_file_name, madcat_file_path):
                                                   )
         x_dash_1, y_dash_1, x_dash_2, y_dash_2, x_dash_3, y_dash_3, x_dash_4, y_dash_4 = rotated_points(
             cropped_bounding_box, (center_x , center_y))
+        # rotated BB coordinates relative
         print(x_dash_1, y_dash_1, x_dash_2, y_dash_2, x_dash_3, y_dash_3, x_dash_4, y_dash_4)
 
         min_x = int(min(x_dash_1, x_dash_2, x_dash_3, x_dash_4))
@@ -336,6 +339,7 @@ def get_line_images_from_page_image(image_file_name, madcat_file_path):
                                                   )
         x_dash_1_old, y_dash_1_old, x_dash_2_old, y_dash_2_old, x_dash_3_old, y_dash_3_old, x_dash_4_old, y_dash_4_old = rotated_points(
             cropped_bounding_box, (center_x, center_y), True)
+        # anti- rotated BB coordinates relative
         print(x_dash_1_old, y_dash_1_old, x_dash_2_old, y_dash_2_old, x_dash_3_old, y_dash_3_old, x_dash_4_old, y_dash_4_old)
 
         p1_new = (x1 - min_x, y1 - min_y)
