@@ -556,3 +556,4 @@ for line in splits_data:
             continue
         if madcat_file_path != None:
             get_mask_from_page_image(image_file_path, madcat_file_path)
+

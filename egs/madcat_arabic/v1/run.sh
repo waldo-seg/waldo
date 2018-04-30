@@ -31,10 +31,10 @@ fi
 
 mkdir -p data/{train,test,dev}/masks
 if [ $stage -le 1 ]; then
-  echo "$0: Extracting mask from page image for dataset:  $dataset. "
-  echo "Date: $(date)."
   for dataset in test dev train; do
-  dataset_file=/home/kduh/proj/scale2018/data/madcat_datasplit/ar-en/madcat.$dataset.raw.lineid
-  local/extract_masks.py $download_dir1 $download_dir2 $download_dir3 $dataset_file data/$dataset/masks
+    echo "$0: Extracting mask from page image for dataset:  $dataset. "
+    echo "Date: $(date)."
+    dataset_file=/home/kduh/proj/scale2018/data/madcat_datasplit/ar-en/madcat.$dataset.raw.lineid
+    local/extract_masks.py $download_dir1 $download_dir2 $download_dir3 $dataset_file data/$dataset/masks
   done
 fi

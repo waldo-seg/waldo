@@ -223,3 +223,4 @@ if ($utt2spk_file ne "") {  # We have the --utt2spk option...
 }
 
 exit ($error ? 1 : 0);
+
