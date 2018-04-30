@@ -38,5 +38,3 @@ if [ $stage -le 1 ]; then
   local/extract_masks.py $download_dir1 $download_dir2 $download_dir3 $dataset_file data/$dataset/masks
   done
 fi
-
-
