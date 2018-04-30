@@ -11,7 +11,7 @@ echo "$0 $@"
 
 . ./cmd.sh
 . ./path.sh
-. ./utils/parse_options.sh || exit 1;
+. ./scripts/parse_options.sh || exit 1;
 
 data=$1
 log_dir=$data/log
@@ -23,7 +23,7 @@ for n in $(seq $nj); do
     split_scps="$split_scps $log_dir/lines.$n.scp"
 done
 
-utils/split_scp.pl $dataset_file $split_scps || exit 1;
+scripts/split_scp.pl $dataset_file $split_scps || exit 1;
 
 for n in $(seq $nj); do
   mkdir -p $data/$n

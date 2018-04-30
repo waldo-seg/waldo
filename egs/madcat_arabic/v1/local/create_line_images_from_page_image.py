@@ -338,7 +338,6 @@ def set_line_image_data(image, line_id, image_file_name):
     """
 
     base_name = os.path.splitext(os.path.basename(image_file_name))[0]
-    image_file_name_wo_tif, b = image_file_name.split('.tif')
     line_id = '_' + line_id.zfill(4)
     line_image_file_name = base_name + line_id + '.tif'
     image_path = os.path.join(output_directory, line_image_file_name)
@@ -348,9 +347,10 @@ def set_line_image_data(image, line_id, image_file_name):
     imgray_rev.save(image_path)
     image_fh.write(image_path + '\n')
 
+
 def get_line_images_from_page_image(image_file_name, madcat_file_path):
     """ Given a page image, extracts the line images from it.
-    Inout
+    Input
     -----
     image_file_name (string): complete path and name of the page image.
     madcat_file_path (string): complete path and name of the madcat xml file
@@ -445,6 +445,7 @@ def check_file_location():
 
     return None, None, None
 
+
 def parse_writing_conditions(writing_conditions):
     """ Given writing condition file path, returns a dictionary which have writing condition
         of each page image.
@@ -458,6 +459,7 @@ def parse_writing_conditions(writing_conditions):
             line_list = line.strip().split("\t")
             file_writing_cond[line_list[0]] = line_list[3]
     return file_writing_cond
+
 
 def check_writing_condition(wc_dict):
     """ Given writing condition dictionary, checks if a page image is writing
