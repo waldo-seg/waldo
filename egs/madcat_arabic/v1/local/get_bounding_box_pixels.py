@@ -269,14 +269,13 @@ def update_minimum_bounding_box_input(bounding_box_input):
     return updated_minimum_bounding_box_input
 
 
-def set_line_image_data(image, line_id, image_file_name):
+def set_line_image_data(image, image_file_name):
     """ Given an image, saves a flipped line image. Line image file name
             is formed by appending the line id at the end page image name.
         """
 
     base_name = os.path.splitext(os.path.basename(image_file_name))[0]
-    line_id = '_' + line_id.zfill(4)
-    line_image_file_name = base_name + line_id + '.tif'
+    line_image_file_name = base_name + '.tif'
     image_path = os.path.join(output_directory, line_image_file_name)
     imgray = image.convert('L')
     imgray.save(image_path)
@@ -375,7 +374,7 @@ def rotate_single_point(point, bounding_box, center, if_opposite_direction=False
     return x_dash_1, y_dash_1
 
 
-def get_page_image_mask(image_file_name, madcat_file_path):
+def get_mask_from_page_image(image_file_name, madcat_file_path):
     """ Given a page image, extracts the page image mask from it.
         Input
         -----
@@ -396,7 +395,6 @@ def get_page_image_mask(image_file_name, madcat_file_path):
         lst[1] += 5
         lst[2] += 5
         val = tuple(lst)
-        id = node.getAttribute('id')
         token_image = node.getElementsByTagName('token-image')
         minimum_bounding_box_input = []
         for token_node in token_image:
@@ -452,7 +450,7 @@ def get_page_image_mask(image_file_name, madcat_file_path):
                 g_b_b_c1_old = (x1 + g_b_b_cmin_x, y1 + g_b_b_cmin_y)
                 pixels[int(g_b_b_c1_old[0]), int(g_b_b_c1_old[1])] = val
 
-        set_line_image_data(pixels, id, image_file_name)
+    set_line_image_data(img, image_file_name)
 
 
 def check_file_location():
@@ -557,4 +555,4 @@ for line in splits_data:
         if wc_dict == None or not check_writing_condition(wc_dict):
             continue
         if madcat_file_path != None:
-            get_page_image_mask(image_file_path, madcat_file_path)
+            get_mask_from_page_image(image_file_path, madcat_file_path)
