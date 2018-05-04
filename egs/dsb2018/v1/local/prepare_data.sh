@@ -56,7 +56,7 @@ fi
 ### Process data and save it to pytorch path file
 train_prop=0.9
 seed=0
-. ./utils/parse_options.sh
+. parse_options.sh
 
 mkdir -p data/train_val/split${train_prop}_seed${seed}
 mkdir -p data/test

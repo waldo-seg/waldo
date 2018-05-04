@@ -14,8 +14,10 @@ height=128
 width=128
 batch=16
 
+. ./cmd.sh ## You'll want to change cmd.sh to something that will work on your system.
+           ## This relates to the queue.
 
-. ../../../scripts/parse_options.sh  # e.g. this parses the --stage option if supplied.
+. parse_options.sh  # e.g. this parses the --stage option if supplied.
 
 pip install -r local/requirements.txt
 
@@ -24,16 +26,16 @@ if [ $stage -le 0 ]; then
   local/prepare_data.sh --train_prop $train_prop --seed $seed
 fi
 
-name=Unet_${depth}_${epochs}_sgd
+name=unet_${depth}_${epochs}_sgd
 if [ $stage -le 1 ]; then
   # training the network
-  CUDA_VISIBLE_DEVICES=$gpu_id ./local/training.py \
-		      --name $name \
-		      --depth $depth \
-		      --batch-size $batch \
-		      --img-height $height \
-		      --img-width $width \
-		      --epochs $epochs
+  $cuda_cmd limit_num_gpus.sh ./local/training.py \
+	    --name $name \
+	    --depth $depth \
+	    --batch-size $batch \
+	    --img-height $height \
+	    --img-width $width \
+	    --epochs $epochs
 fi
   
     
