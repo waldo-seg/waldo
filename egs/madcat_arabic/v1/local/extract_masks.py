@@ -249,10 +249,9 @@ def pad_image(image):
     image: page image
     """
     offset = int(args.padding // 2)
-    padded_image = Image.new('RGB', (image.size[0] + int(args.padding), image.size[1] + int(args.padding)), "white")
+    padded_image = Image.new('L', (image.size[0] + int(args.padding), image.size[1] + int(args.padding)), "white")
     padded_image.paste(im=image, box=(offset, offset))
     return padded_image
-
 
 def update_minimum_bounding_box_input(bounding_box_input):
     """ Given list of 2D points, returns list of 2D points shifted by an offset.
@@ -271,18 +270,16 @@ def update_minimum_bounding_box_input(bounding_box_input):
 
     return updated_minimum_bounding_box_input
 
-
 def set_line_image_data(image, image_file_name, image_fh):
     """ Given an image, saves a flipped line image. Line image file name
             is formed by appending the line id at the end page image name.
         """
     base_name = os.path.splitext(os.path.basename(image_file_name))[0]
-    line_image_file_name = base_name + '.tif'
+    line_image_file_name = base_name + '.png'
     image_path = os.path.join(args.out_dir, line_image_file_name)
     imgray = image.convert('L')
     imgray.save(image_path)
     image_fh.write(image_path + '\n')
-
 
 def get_horizontal_angle(unit_vector_angle):
     """ Given an angle in radians, returns angle of the unit vector in
@@ -298,7 +295,6 @@ def get_horizontal_angle(unit_vector_angle):
         unit_vector_angle = unit_vector_angle + pi
 
     return unit_vector_angle
-
 
 def get_smaller_angle(bounding_box):
     """ Given a rectangle, returns its smallest absolute angle from horizontal axis.
@@ -318,7 +314,6 @@ def get_smaller_angle(bounding_box):
         return unit_vector_angle_updated
     else:
         return ortho_vector_angle_updated
-
 
 def rotate_rectangle_corners(bounding_box, center, if_opposite_direction=False):
     """ Given the rectangle, returns corner points of rotated rectangle.
@@ -353,7 +348,6 @@ def rotate_rectangle_corners(bounding_box, center, if_opposite_direction=False):
 
     return (x_dash_1, y_dash_1), (x_dash_2, y_dash_2), (x_dash_3, y_dash_3), (x_dash_4, y_dash_4)
 
-
 def rotate_single_point(point, bounding_box, center, if_opposite_direction=False):
     """ Given the point, returns the rotated point.
             It rotates the point around the center by its smallest angle of angles obtained
@@ -375,7 +369,6 @@ def rotate_single_point(point, bounding_box, center, if_opposite_direction=False
     y_dash_1 = (y1 - center_y) * cos(rotation_angle_in_rad) + (x1 - center_x) * sin(rotation_angle_in_rad) + center_y
     return x_dash_1, y_dash_1
 
-
 def if_previous_b_b_smaller_than_curr_b_b(b_b_p, b_b_c):
     if b_b_c.length_parallel < b_b_c.length_orthogonal:
         curr_smaller_length = b_b_c.length_parallel
@@ -395,7 +388,6 @@ def if_previous_b_b_smaller_than_curr_b_b(b_b_p, b_b_c):
     else:
         return False
 
-
 def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_data):
     """ Given a page image, extracts the page image mask from it.
         Input
@@ -406,9 +398,9 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
         """
     im_wo_pad = Image.open(image_file_name)
     im = pad_image(im_wo_pad)
-    img = Image.new('RGB', (im.size[0], im.size[1]), "white")
+    img = Image.new('L', (im.size[0], im.size[1]), "white")
     pixels = img.load()
-    val = (0, 0, 0)
+    val = 0
     base_name = os.path.splitext(os.path.basename(image_file_name))[0]
     doc = minidom.parse(madcat_file_path)
     zone = doc.getElementsByTagName('zone')
@@ -431,11 +423,7 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
             if_previous_b_b_smaller_than_curr_b_b(previous_bounding_box, bounding_box)
 
         val_old = val
-        lst = list(val)
-        lst[0] += 5
-        lst[1] += 5
-        lst[2] += 5
-        val = tuple(lst)
+        val += 10
 
         g_b_b1, g_b_b2, g_b_b3, g_b_b4 = bounding_box.corner_points
         x1, y1 = g_b_b1
@@ -486,8 +474,13 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
                     continue
                 pixels[int(g_x_y_old[0]), int(g_x_y_old[1])] = val
 
-    set_line_image_data(img, image_file_name, image_fh)
-
+    min_x = int(args.padding // 2)
+    min_y = int(args.padding // 2)
+    width_x = int(im_wo_pad.size[0])
+    height_y = int(im_wo_pad.size[1])
+    box = (min_x, min_y, width_x + min_x, height_y + min_y)
+    img_crop = img.crop(box)
+    set_line_image_data(img_crop, image_file_name, image_fh)
 
 def get_bounding_box(image_file_name, madcat_file_path):
     """ Given a page image, extracts the line images from it.
@@ -518,7 +511,6 @@ def get_bounding_box(image_file_name, madcat_file_path):
         mydata[line_image_file_name] = bounding_box
     return mydata
 
-
 def check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3):
     """ Returns the complete path of the page image and corresponding
         xml file.
@@ -547,7 +539,6 @@ def check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3):
 
     return None, None, None
 
-
 def parse_writing_conditions(writing_conditions):
     """ Given writing condition file path, returns a dictionary which have writing condition
         of each page image.
@@ -561,7 +552,6 @@ def parse_writing_conditions(writing_conditions):
             line_list = line.strip().split("\t")
             file_writing_cond[line_list[0]] = line_list[3]
     return file_writing_cond
-
 
 def check_writing_condition(wc_dict):
     """ Given writing condition dictionary, checks if a page image is writing
