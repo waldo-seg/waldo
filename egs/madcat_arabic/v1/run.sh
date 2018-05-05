@@ -2,7 +2,7 @@
 
 set -e
 stage=0
-nj=70
+nj=3
 download_dir1=/export/corpora/LDC/LDC2012T15/data
 download_dir2=/export/corpora/LDC/LDC2013T09/data
 download_dir3=/export/corpora/LDC/LDC2013T15/data
@@ -31,7 +31,7 @@ if [ $stage -le 0 ]; then
     echo "$0: Extracting mask from page image for dataset:  $dataset. "
     echo "Date: $(date)."
     dataset_file=$data_splits_dir/madcat.$dataset.raw.lineid
-    local/extract_lines.sh --nj $nj --cmd $cmd --dataset_file $dataset_file \
+    local/extract_masks.sh --nj $nj --cmd $cmd --dataset_file $dataset_file \
                            --download_dir1 $download_dir1 --download_dir2 $download_dir2 \
                            --download_dir3 $download_dir3 data/local/$dataset
   done
