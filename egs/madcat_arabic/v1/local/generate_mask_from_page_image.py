@@ -414,10 +414,10 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
 
     for index in range(0, len(bounding_box_list)):
         bounding_box = bounding_box_list[index]
-        if index == len(bounding_box_list)-1:
-            previous_bounding_box = bounding_box_list[len(bounding_box_list)-2]
+        if index == len(bounding_box_list) - 1:
+            previous_bounding_box = bounding_box_list[len(bounding_box_list) - 2]
         else:
-            previous_bounding_box = bounding_box_list[index-1]
+            previous_bounding_box = bounding_box_list[index - 1]
 
         if_previous_smaller_than_curr = \
             if_previous_b_b_smaller_than_curr_b_b(previous_bounding_box, bounding_box)
@@ -426,27 +426,18 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
         val += 10
 
         g_b_b1, g_b_b2, g_b_b3, g_b_b4 = bounding_box.corner_points
-        x1, y1 = g_b_b1
-        x2, y2 = g_b_b2
-        x3, y3 = g_b_b3
-        x4, y4 = g_b_b4
-        g_b_bmin_x = int(min(x1, x2, x3, x4))
-        g_b_bmin_y = int(min(y1, y2, y3, y4))
-        g_b_bmax_x = int(max(x1, x2, x3, x4))
-        g_b_bmax_y = int(max(y1, y2, y3, y4))
+        g_b_bmin_x = int(min(g_b_b1[0], g_b_b2[0], g_b_b3[0], g_b_b4[0]))
+        g_b_bmin_y = int(min(g_b_b1[1], g_b_b2[1], g_b_b3[1], g_b_b4[1]))
+        g_b_bmax_x = int(max(g_b_b1[0], g_b_b2[0], g_b_b3[0], g_b_b4[0]))
+        g_b_bmax_y = int(max(g_b_b1[1], g_b_b2[1], g_b_b3[1], g_b_b4[1]))
         b_bwidth_half_x = (g_b_bmax_x - g_b_bmin_x) / 2
         b_bheight_half_y = (g_b_bmax_y - g_b_bmin_y) / 2
 
-        rel_b_b1 = (x1 - g_b_bmin_x, y1 - g_b_bmin_y)
-        rel_b_b2 = (x2 - g_b_bmin_x, y2 - g_b_bmin_y)
-        rel_b_b3 = (x3 - g_b_bmin_x, y3 - g_b_bmin_y)
-        rel_b_b4 = (x4 - g_b_bmin_x, y4 - g_b_bmin_y)
-
-        rel_points = []
-        rel_points.append(rel_b_b1)
-        rel_points.append(rel_b_b2)
-        rel_points.append(rel_b_b3)
-        rel_points.append(rel_b_b4)
+        rel_b_b1 = (g_b_b1[0] - g_b_bmin_x, g_b_b1[1] - g_b_bmin_y)
+        rel_b_b2 = (g_b_b2[0] - g_b_bmin_x, g_b_b2[1] - g_b_bmin_y)
+        rel_b_b3 = (g_b_b3[0] - g_b_bmin_x, g_b_b3[1] - g_b_bmin_y)
+        rel_b_b4 = (g_b_b4[0] - g_b_bmin_x, g_b_b4[1] - g_b_bmin_y)
+        rel_points = [rel_b_b1, rel_b_b2, rel_b_b3, rel_b_b4]
         cropped_bounding_box = bounding_box_tuple(bounding_box.area,
                                                   bounding_box.length_parallel,
                                                   bounding_box.length_orthogonal,
@@ -456,19 +447,19 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
                                                   set(rel_points),
                                                   bounding_box.rotated_corner_points
                                                   )
-        (rel_rot_x1, rel_rot_y1), (rel_rot_x2, rel_rot_y2), (rel_rot_x3, rel_rot_y3),\
+        (rel_rot_x1, rel_rot_y1), (rel_rot_x2, rel_rot_y2), (rel_rot_x3, rel_rot_y3), \
         (rel_rot_x4, rel_rot_y4) = \
-        rotate_rectangle_corners(cropped_bounding_box, (b_bwidth_half_x, b_bheight_half_y))
+            rotate_rectangle_corners(cropped_bounding_box, (b_bwidth_half_x, b_bheight_half_y))
+
         rel_rot_b_bmin_x = int(min(rel_rot_x1, rel_rot_x2, rel_rot_x3, rel_rot_x4))
         rel_rot_b_bmin_y = int(min(rel_rot_y1, rel_rot_y2, rel_rot_y3, rel_rot_y4))
         rel_rot_b_bmax_x = int(max(rel_rot_x1, rel_rot_x2, rel_rot_x3, rel_rot_x4))
         rel_rot_b_bmax_y = int(max(rel_rot_y1, rel_rot_y2, rel_rot_y3, rel_rot_y4))
-
-        for rel_rot_x in range(rel_rot_b_bmin_x,rel_rot_b_bmax_x):
+        for rel_rot_x in range(rel_rot_b_bmin_x, rel_rot_b_bmax_x):
             for rel_rot_y in range(rel_rot_b_bmin_y, rel_rot_b_bmax_y):
                 point = rel_rot_x, rel_rot_y
                 rel_x_old, rel_y_old = \
-                rotate_single_point(point, cropped_bounding_box, (b_bwidth_half_x, b_bheight_half_y), True)
+                    rotate_single_point(point, cropped_bounding_box, (b_bwidth_half_x, b_bheight_half_y), True)
                 g_x_y_old = (rel_x_old + g_b_bmin_x, rel_y_old + g_b_bmin_y)
                 if pixels[int(g_x_y_old[0]), int(g_x_y_old[1])] == val_old and if_previous_smaller_than_curr:
                     continue
@@ -553,7 +544,7 @@ def parse_writing_conditions(writing_conditions):
             file_writing_cond[line_list[0]] = line_list[3]
     return file_writing_cond
 
-def check_writing_condition(wc_dict):
+def check_writing_condition(wc_dict, base_name):
     """ Given writing condition dictionary, checks if a page image is writing
         in a specifed writing condition.
         It is used to create subset of dataset based on writing condition.
@@ -600,7 +591,7 @@ def main():
         if prev_base_name != base_name:
             prev_base_name = base_name
             madcat_file_path, image_file_path, wc_dict = check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3)
-            if wc_dict is None or not check_writing_condition(wc_dict):
+            if wc_dict is None or not check_writing_condition(wc_dict, base_name):
                 continue
             if madcat_file_path is not None:
                 my_data = get_bounding_box(image_file_path, madcat_file_path)
