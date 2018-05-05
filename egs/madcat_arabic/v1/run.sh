@@ -2,7 +2,7 @@
 
 set -e
 stage=0
-nj=3
+nj=70
 download_dir1=/export/corpora/LDC/LDC2012T15/data
 download_dir2=/export/corpora/LDC/LDC2013T09/data
 download_dir3=/export/corpora/LDC/LDC2013T15/data
