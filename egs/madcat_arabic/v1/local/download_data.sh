@@ -4,7 +4,6 @@
 # Apache 2.0
 
 # This script downloads data splits for MADCAT Arabic dataset.
-# It also check if madcat arabic data is present or not.
 
 train_split_url=http://www.openslr.org/resources/48/madcat.train.raw.lineid
 test_split_url=http://www.openslr.org/resources/48/madcat.test.raw.lineid
