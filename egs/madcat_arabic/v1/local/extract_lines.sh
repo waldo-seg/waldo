@@ -22,7 +22,7 @@ for n in $(seq $nj); do
     split_scps="$split_scps $log_dir/lines.$n.scp"
 done
 
-scripts/split_scp.pl $dataset_file $split_scps || exit 1;
+split_scp.pl $dataset_file $split_scps || exit 1;
 
 for n in $(seq $nj); do
   mkdir -p $data/$n
