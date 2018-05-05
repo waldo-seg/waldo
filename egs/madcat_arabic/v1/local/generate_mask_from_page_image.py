@@ -22,6 +22,7 @@ import xml.dom.minidom as minidom
 import numpy as np
 from math import atan2, cos, sin, pi, degrees, sqrt
 from collections import namedtuple
+import itertools
 
 from scipy.spatial import ConvexHull
 from PIL import Image
@@ -388,6 +389,27 @@ def if_previous_b_b_smaller_than_curr_b_b(b_b_p, b_b_c):
     else:
         return False
 
+
+def rotate_list_points(points, bounding_box, center, if_opposite_direction=False):
+    center_x, center_y = center
+
+    if if_opposite_direction:
+        rotation_angle_in_rad = get_smaller_angle(bounding_box)
+    else:
+        rotation_angle_in_rad = -get_smaller_angle(bounding_box)
+
+    val_cos_angle = cos(rotation_angle_in_rad)
+    val_sin_angle = sin(rotation_angle_in_rad)
+
+    rot_points = []
+    for pt in points:
+        x = (pt[0] - center_x) * val_cos_angle - (pt[1] - center_y) * val_sin_angle + center_x
+        y = (pt[1] - center_y) * val_cos_angle + (pt[0] - center_x) * val_sin_angle + center_y
+        rot_points.append((x, y))
+
+    return rot_points
+
+
 def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_data):
     """ Given a page image, extracts the page image mask from it.
         Input
@@ -455,15 +477,19 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
         rel_rot_b_bmin_y = int(min(rel_rot_y1, rel_rot_y2, rel_rot_y3, rel_rot_y4))
         rel_rot_b_bmax_x = int(max(rel_rot_x1, rel_rot_x2, rel_rot_x3, rel_rot_x4))
         rel_rot_b_bmax_y = int(max(rel_rot_y1, rel_rot_y2, rel_rot_y3, rel_rot_y4))
-        for rel_rot_x in range(rel_rot_b_bmin_x, rel_rot_b_bmax_x):
-            for rel_rot_y in range(rel_rot_b_bmin_y, rel_rot_b_bmax_y):
-                point = rel_rot_x, rel_rot_y
-                rel_x_old, rel_y_old = \
-                    rotate_single_point(point, cropped_bounding_box, (b_bwidth_half_x, b_bheight_half_y), True)
-                g_x_y_old = (rel_x_old + g_b_bmin_x, rel_y_old + g_b_bmin_y)
-                if pixels[int(g_x_y_old[0]), int(g_x_y_old[1])] == val_old and if_previous_smaller_than_curr:
-                    continue
-                pixels[int(g_x_y_old[0]), int(g_x_y_old[1])] = val
+
+        list1 = range(rel_rot_b_bmin_x, rel_rot_b_bmax_x)
+        list2 = range(rel_rot_b_bmin_y, rel_rot_b_bmax_y)
+        points = list(itertools.product(list1, list2))
+
+        rel_points_old = rotate_list_points(points, cropped_bounding_box,
+                                            (b_bwidth_half_x, b_bheight_half_y), True)
+
+        for pt in rel_points_old:
+            x, y = pt[0] + g_b_bmin_x, pt[1] + g_b_bmin_y
+            if if_previous_smaller_than_curr and pixels[int(x), int(y)] == val_old:
+                continue
+            pixels[int(x), int(y)] = val
 
     min_x = int(args.padding // 2)
     min_y = int(args.padding // 2)
@@ -558,9 +584,7 @@ def check_writing_condition(wc_dict, base_name):
 
     return True
 
-
 ### main ###
-
 def main():
     writing_condition_folder_list = args.database_path1.split('/')
     writing_condition_folder1 = ('/').join(writing_condition_folder_list[:5])
@@ -596,7 +620,6 @@ def main():
             if madcat_file_path is not None:
                 my_data = get_bounding_box(image_file_path, madcat_file_path)
                 get_mask_from_page_image(image_file_path, madcat_file_path, image_fh, my_data)
-
 
 if __name__ == '__main__':
       main()
