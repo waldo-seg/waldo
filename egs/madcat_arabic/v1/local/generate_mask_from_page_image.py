@@ -78,6 +78,51 @@ bounding_box_tuple = namedtuple('bounding_box_tuple', 'area '
                          )
 
 
+def get_orientation(origin, p1, p2):
+    difference = (
+        ((p2[0] - origin[0]) * (p1[1] - origin[1]))
+        - ((p1[0] - origin[0]) * (p2[1] - origin[1]))
+    )
+    return difference
+
+
+def compute_hull(points):
+    hull_points = []
+    start = points[0]
+    min_x = start[0]
+    for p in points[1:]:
+        if p[0] < min_x:
+            min_x = p[0]
+            start = p
+
+    point = start
+    hull_points.append(start)
+
+    far_point = None
+    while far_point is not start:
+        p1 = None
+        for p in points:
+            if p is point:
+                continue
+            else:
+                p1 = p
+                break
+
+        far_point = p1
+
+        for p2 in points:
+            if p2 is point or p2 is p1:
+                continue
+            else:
+                direction = get_orientation(point, far_point, p2)
+                if direction > 0:
+                    far_point = p2
+
+        hull_points.append(far_point)
+        point = far_point
+    return hull_points
+
+
 def unit_vector(pt0, pt1):
     """ Given two points pt0 and pt1, return a unit vector that
         points in the direction of pt0 to pt1.
@@ -204,10 +249,8 @@ def minimum_bounding_box(points):
     """
     if len(points) <= 2: raise ValueError('More than two points required.')
 
-    hull_ordered = [points[index] for index in ConvexHull(points).vertices]
-    hull_ordered.append(hull_ordered[0])
+    hull_ordered = compute_hull(points)
     hull_ordered = tuple(hull_ordered)
-
     min_rectangle = bounding_area(0, hull_ordered)
     for i in range(1, len(hull_ordered)-1):
         rectangle = bounding_area(i, hull_ordered)
