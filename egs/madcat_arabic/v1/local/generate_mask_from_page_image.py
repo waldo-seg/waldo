@@ -4,7 +4,7 @@
 # Apache 2.0
 # minimum bounding box part in this script is originally from
 #https://github.com/BebeSparkelSparkel/MinimumBoundingBox
-
+#https://startupnextdoor.com/computing-convex-hull-in-python/
 """ This module will be used for creating text localization mask on page image.
  Given the word segmentation (bounding box around a word) for every word, it will
  extract line segmentation. To extract line segmentation, it will take word bounding
@@ -433,7 +433,7 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
             if_previous_b_b_smaller_than_curr_b_b(previous_bounding_box, bounding_box)
 
         val_old = val
-        val += 10
+        val += 5
 
         g_b_b1, g_b_b2, g_b_b3, g_b_b4 = bounding_box.corner_points
         g_b_bmin_x = int(min(g_b_b1[0], g_b_b2[0], g_b_b3[0], g_b_b4[0]))
