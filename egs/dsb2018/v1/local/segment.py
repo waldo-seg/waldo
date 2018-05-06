@@ -73,44 +73,27 @@ def main():
     torchvision.utils.save_image(sameness[0, 1, :, :], 'sameness1.png')
     torchvision.utils.save_image(class_id[0, 0, :, :], 'class0.png')  # backgrnd
     torchvision.utils.save_image(class_id[0, 1, :, :], 'class1.png')  # cells
-    #sys.exit('stop')
 
-#    model = UNet(2, 2).cuda()
     model = UNet(2, 2)
 
-    # optionally resume from a checkpoint
-    if args.model:
-        if os.path.isfile(args.model):
-            print("=> loading checkpoint '{}'".format(args.model))
-            checkpoint = torch.load(args.model)
-            model.load_state_dict(checkpoint['state_dict'])
-            #model.cpu()
-            print("loaded.")
-            #model.
-            #torch.save({
-            #    'epoch': checkpoint['epoch'] + 1,
-            #    'state_dict': model.state_dict(),
-            #    'best_prec1': checkpoint['best_prec1'],
-            #}, "exp/final.tar")
-        else:
-            print("=> no checkpoint found at '{}'".format(args.model))
+    if os.path.isfile(args.model):
+        print("=> loading checkpoint '{}'".format(args.model))
+        checkpoint = torch.load(args.model)
+        model.load_state_dict(checkpoint['state_dict'])
+        print("loaded.")
+    else:
+        print("=> no checkpoint found at '{}'".format(args.model))
 
     img = torch.autograd.Variable(img)
     predictions = model(img)
     predictions = predictions.data
-    class_pred = predictions[0, :args.num_classes, :, :]  # [batch-idx, class-idx, x, y]
-    adj_pred = predictions[0, args.num_classes:, :, :]    # [batch-idx, offset-idx, x, y]
+    class_pred = predictions[0, :args.num_classes, :, :]  # [batch-idx, class-idx, row, col]
+    adj_pred = predictions[0, args.num_classes:, :, :]    # [batch-idx, offset-idx, row, col]
     seg = ObjectSegmenter(class_pred.numpy(), adj_pred.numpy(), args.num_classes, offset_list)
 #    seg = ObjectSegmenter(class_id[0, :, :, :].numpy(), sameness[0, :, :, :].numpy(), args.num_classes, offset_list)
     seg.run_segmentation()
 
 
-#    img = torch.autograd.Variable(img).cuda()
-#    img = torch.autograd.Variable(img)
-#    predictions = model(img)
-#    predictions = predictions.data
-#    class_pred = predictions[:, :args.num_classes, :, :]  # [batch-idx, class-idx, x, y]
-#    adj_pred = predictions[:, args.num_classes:, :, :]    # [batch-idx, offset-idx, x, y]
     for i in range(len(offset_list)):
         torchvision.utils.save_image(
             adj_pred[i, :, :], 'sameness_pred{}.png'.format(i))
