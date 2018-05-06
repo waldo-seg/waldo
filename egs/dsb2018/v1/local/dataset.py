@@ -30,11 +30,16 @@ class Dataset():
         mask = data['mask'].numpy()
         bound = torch.zeros(num_offsets, self.height, self.width)
 
+        # getting offset feature maps (i.e. bound)
         for k in range(num_offsets):
             i, j = self.offset_list[k]
+            # roll the mask in rows and columns according to the offset
             rolled_mask = np.roll(np.roll(mask, i, axis=1), j, axis=0)
+            # compare mask and the rolled mask to get whether pixel (x,y) is
+            # of the same object as pixel (x+i, y+j)
             bound_unscaled = (torch.FloatTensor(
                 (rolled_mask == mask).astype('float'))).unsqueeze(0)
+            # do same transformation on the bounds as on images
             bound[k:k + 1] = self.transformation(bound_unscaled)
 
         # class label
