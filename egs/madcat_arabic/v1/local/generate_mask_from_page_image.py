@@ -316,59 +316,6 @@ def get_smaller_angle(bounding_box):
     else:
         return ortho_vector_angle_updated
 
-def rotate_rectangle_corners(bounding_box, center, if_opposite_direction=False):
-    """ Given the rectangle, returns corner points of rotated rectangle.
-            It rotates the rectangle around the center by its smallest angle.
-            It will decide direction of rotation based on the bool
-            :parameter if_opposite_direction.
-        Returns
-        -------
-        [(int, int)]: 4 corner points of rectangle.
-        """
-    p1, p2, p3, p4 = bounding_box.corner_points
-    x1, y1 = p1
-    x2, y2 = p2
-    x3, y3 = p3
-    x4, y4 = p4
-    center_x, center_y = center
-
-    if if_opposite_direction:
-        rotation_angle_in_rad = get_smaller_angle(bounding_box)
-    else:
-        rotation_angle_in_rad = -get_smaller_angle(bounding_box)
-
-    x_dash_1 = (x1 - center_x) * cos(rotation_angle_in_rad) - (y1 - center_y) * sin(rotation_angle_in_rad) + center_x
-    x_dash_2 = (x2 - center_x) * cos(rotation_angle_in_rad) - (y2 - center_y) * sin(rotation_angle_in_rad) + center_x
-    x_dash_3 = (x3 - center_x) * cos(rotation_angle_in_rad) - (y3 - center_y) * sin(rotation_angle_in_rad) + center_x
-    x_dash_4 = (x4 - center_x) * cos(rotation_angle_in_rad) - (y4 - center_y) * sin(rotation_angle_in_rad) + center_x
-
-    y_dash_1 = (y1 - center_y) * cos(rotation_angle_in_rad) + (x1 - center_x) * sin(rotation_angle_in_rad) + center_y
-    y_dash_2 = (y2 - center_y) * cos(rotation_angle_in_rad) + (x2 - center_x) * sin(rotation_angle_in_rad) + center_y
-    y_dash_3 = (y3 - center_y) * cos(rotation_angle_in_rad) + (x3 - center_x) * sin(rotation_angle_in_rad) + center_y
-    y_dash_4 = (y4 - center_y) * cos(rotation_angle_in_rad) + (x4 - center_x) * sin(rotation_angle_in_rad) + center_y
-
-    return (x_dash_1, y_dash_1), (x_dash_2, y_dash_2), (x_dash_3, y_dash_3), (x_dash_4, y_dash_4)
-
-def rotate_single_point(point, bounding_box, center, if_opposite_direction=False):
-    """ Given the point, returns the rotated point.
-            It rotates the point around the center by its smallest angle of angles obtained
-            from the bounding box. It will decide direction of rotation based on the bool
-            :parameter if_opposite_direction.
-        Returns
-        -------
-        [(int, int)]: 4 corner points of rectangle.
-        """
-    x1, y1 = point
-    center_x, center_y = center
-
-    if if_opposite_direction:
-        rotation_angle_in_rad = get_smaller_angle(bounding_box)
-    else:
-        rotation_angle_in_rad = -get_smaller_angle(bounding_box)
-
-    x_dash_1 = (x1 - center_x) * cos(rotation_angle_in_rad) - (y1 - center_y) * sin(rotation_angle_in_rad) + center_x
-    y_dash_1 = (y1 - center_y) * cos(rotation_angle_in_rad) + (x1 - center_x) * sin(rotation_angle_in_rad) + center_y
-    return x_dash_1, y_dash_1
 
 def if_previous_b_b_smaller_than_curr_b_b(b_b_p, b_b_c):
     if b_b_c.length_parallel < b_b_c.length_orthogonal:
@@ -469,9 +416,12 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
                                                   set(rel_points),
                                                   bounding_box.rotated_corner_points
                                                   )
+
+        rel_rot_points = rotate_list_points(rel_points, cropped_bounding_box,
+                           (b_bwidth_half_x, b_bheight_half_y))
+
         (rel_rot_x1, rel_rot_y1), (rel_rot_x2, rel_rot_y2), (rel_rot_x3, rel_rot_y3), \
-        (rel_rot_x4, rel_rot_y4) = \
-            rotate_rectangle_corners(cropped_bounding_box, (b_bwidth_half_x, b_bheight_half_y))
+        (rel_rot_x4, rel_rot_y4) = rel_rot_points[0] , rel_rot_points[1], rel_rot_points[2], rel_rot_points[3]
 
         rel_rot_b_bmin_x = int(min(rel_rot_x1, rel_rot_x2, rel_rot_x3, rel_rot_x4))
         rel_rot_b_bmin_y = int(min(rel_rot_y1, rel_rot_y2, rel_rot_y3, rel_rot_y4))
