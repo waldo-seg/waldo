@@ -1,0 +1,5 @@
+numpy
+tensorboard_logger
+torch>=0.4.0
+Pillow
+torchvision>=0.2.1
