@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e # exit on error
 . ./path.sh
 
 stage=0
@@ -22,6 +23,8 @@ batch=16
 . parse_options.sh  # e.g. this parses the --stage option if supplied.
 
 
+local/check_dependencies.sh
+
 if [ $stage -le 0 ]; then
   # data preparation
   local/prepare_data.sh --train_prop $train_prop --seed $seed
@@ -38,6 +41,3 @@ if [ $stage -le 1 ]; then
 	    --img-width $width \
 	    --epochs $epochs
 fi
-  
-    
-    
