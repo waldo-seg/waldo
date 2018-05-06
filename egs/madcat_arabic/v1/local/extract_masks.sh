@@ -29,10 +29,10 @@ for n in $(seq $nj); do
 done
 
 $cmd JOB=1:$nj $log_dir/extract_lines.JOB.log \
-  local/extract_masks.py $download_dir1 $download_dir2 $download_dir3 $log_dir/lines.JOB.scp $data/JOB \
+  local/generate_mask_from_page_image.py $download_dir1 $download_dir2 $download_dir3 $log_dir/lines.JOB.scp $data/JOB \
   || exit 1;
 
 ## concatenate the .scp files together.
-#for n in $(seq $nj); do
-#  cat $data/$n/images.scp || exit 1;
-#done > $data/images.scp || exit 1
+for n in $(seq $nj); do
+  cat $data/$n/images.scp || exit 1;
+done > $data/images.scp || exit 1

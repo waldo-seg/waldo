@@ -1,5 +1,7 @@
 #!/bin/bash
 
+. ./path.sh
+
 stage=0
 
 # train/validate split
@@ -19,7 +21,6 @@ batch=16
 
 . parse_options.sh  # e.g. this parses the --stage option if supplied.
 
-pip install -r local/requirements.txt
 
 if [ $stage -le 0 ]; then
   # data preparation

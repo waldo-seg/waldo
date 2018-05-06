@@ -22,6 +22,7 @@ import xml.dom.minidom as minidom
 import numpy as np
 from math import atan2, cos, sin, pi, degrees, sqrt
 from collections import namedtuple
+import itertools
 
 from scipy.spatial import ConvexHull
 from PIL import Image
@@ -74,8 +75,52 @@ bounding_box_tuple = namedtuple('bounding_box_tuple', 'area '
                                         'unit_vector '
                                         'unit_vector_angle '
                                         'corner_points '
-                                        'rotated_corner_points'
                          )
+
+
+def get_orientation(origin, p1, p2):
+    difference = (
+        ((p2[0] - origin[0]) * (p1[1] - origin[1]))
+        - ((p1[0] - origin[0]) * (p2[1] - origin[1]))
+    )
+    return difference
+
+
+def compute_hull(points):
+    hull_points = []
+    start = points[0]
+    min_x = start[0]
+    for p in points[1:]:
+        if p[0] < min_x:
+            min_x = p[0]
+            start = p
+
+    point = start
+    hull_points.append(start)
+
+    far_point = None
+    while far_point is not start:
+        p1 = None
+        for p in points:
+            if p is point:
+                continue
+            else:
+                p1 = p
+                break
+
+        far_point = p1
+
+        for p2 in points:
+            if p2 is point or p2 is p1:
+                continue
+            else:
+                direction = get_orientation(point, far_point, p2)
+                if direction > 0:
+                    far_point = p2
+
+        hull_points.append(far_point)
+        point = far_point
+    return hull_points
 
 
 def unit_vector(pt0, pt1):
@@ -204,10 +249,8 @@ def minimum_bounding_box(points):
     """
     if len(points) <= 2: raise ValueError('More than two points required.')
 
-    hull_ordered = [points[index] for index in ConvexHull(points).vertices]
-    hull_ordered.append(hull_ordered[0])
+    hull_ordered = compute_hull(points)
     hull_ordered = tuple(hull_ordered)
-
     min_rectangle = bounding_area(0, hull_ordered)
     for i in range(1, len(hull_ordered)-1):
         rectangle = bounding_area(i, hull_ordered)
@@ -224,8 +267,7 @@ def minimum_bounding_box(points):
         rectangle_center=min_rectangle['rectangle_center'],
         unit_vector=min_rectangle['unit_vector'],
         unit_vector_angle=min_rectangle['unit_vector_angle'],
-        corner_points=set(rectangle_corners(min_rectangle)),
-        rotated_corner_points=set([1, 2, 3])
+        corner_points=set(rectangle_corners(min_rectangle))
     )
 
 
@@ -249,10 +291,9 @@ def pad_image(image):
     image: page image
     """
     offset = int(args.padding // 2)
-    padded_image = Image.new('RGB', (image.size[0] + int(args.padding), image.size[1] + int(args.padding)), "white")
+    padded_image = Image.new('L', (image.size[0] + int(args.padding), image.size[1] + int(args.padding)), "white")
     padded_image.paste(im=image, box=(offset, offset))
     return padded_image
-
 
 def update_minimum_bounding_box_input(bounding_box_input):
     """ Given list of 2D points, returns list of 2D points shifted by an offset.
@@ -271,18 +312,16 @@ def update_minimum_bounding_box_input(bounding_box_input):
 
     return updated_minimum_bounding_box_input
 
-
 def set_line_image_data(image, image_file_name, image_fh):
     """ Given an image, saves a flipped line image. Line image file name
             is formed by appending the line id at the end page image name.
         """
     base_name = os.path.splitext(os.path.basename(image_file_name))[0]
-    line_image_file_name = base_name + '.tif'
+    line_image_file_name = base_name + '.png'
     image_path = os.path.join(args.out_dir, line_image_file_name)
     imgray = image.convert('L')
     imgray.save(image_path)
     image_fh.write(image_path + '\n')
-
 
 def get_horizontal_angle(unit_vector_angle):
     """ Given an angle in radians, returns angle of the unit vector in
@@ -298,7 +337,6 @@ def get_horizontal_angle(unit_vector_angle):
         unit_vector_angle = unit_vector_angle + pi
 
     return unit_vector_angle
-
 
 def get_smaller_angle(bounding_box):
     """ Given a rectangle, returns its smallest absolute angle from horizontal axis.
@@ -318,62 +356,6 @@ def get_smaller_angle(bounding_box):
         return unit_vector_angle_updated
     else:
         return ortho_vector_angle_updated
-
-
-def rotate_rectangle_corners(bounding_box, center, if_opposite_direction=False):
-    """ Given the rectangle, returns corner points of rotated rectangle.
-            It rotates the rectangle around the center by its smallest angle.
-            It will decide direction of rotation based on the bool
-            :parameter if_opposite_direction.
-        Returns
-        -------
-        [(int, int)]: 4 corner points of rectangle.
-        """
-    p1, p2, p3, p4 = bounding_box.corner_points
-    x1, y1 = p1
-    x2, y2 = p2
-    x3, y3 = p3
-    x4, y4 = p4
-    center_x, center_y = center
-
-    if if_opposite_direction:
-        rotation_angle_in_rad = get_smaller_angle(bounding_box)
-    else:
-        rotation_angle_in_rad = -get_smaller_angle(bounding_box)
-
-    x_dash_1 = (x1 - center_x) * cos(rotation_angle_in_rad) - (y1 - center_y) * sin(rotation_angle_in_rad) + center_x
-    x_dash_2 = (x2 - center_x) * cos(rotation_angle_in_rad) - (y2 - center_y) * sin(rotation_angle_in_rad) + center_x
-    x_dash_3 = (x3 - center_x) * cos(rotation_angle_in_rad) - (y3 - center_y) * sin(rotation_angle_in_rad) + center_x
-    x_dash_4 = (x4 - center_x) * cos(rotation_angle_in_rad) - (y4 - center_y) * sin(rotation_angle_in_rad) + center_x
-
-    y_dash_1 = (y1 - center_y) * cos(rotation_angle_in_rad) + (x1 - center_x) * sin(rotation_angle_in_rad) + center_y
-    y_dash_2 = (y2 - center_y) * cos(rotation_angle_in_rad) + (x2 - center_x) * sin(rotation_angle_in_rad) + center_y
-    y_dash_3 = (y3 - center_y) * cos(rotation_angle_in_rad) + (x3 - center_x) * sin(rotation_angle_in_rad) + center_y
-    y_dash_4 = (y4 - center_y) * cos(rotation_angle_in_rad) + (x4 - center_x) * sin(rotation_angle_in_rad) + center_y
-
-    return (x_dash_1, y_dash_1), (x_dash_2, y_dash_2), (x_dash_3, y_dash_3), (x_dash_4, y_dash_4)
-
-
-def rotate_single_point(point, bounding_box, center, if_opposite_direction=False):
-    """ Given the point, returns the rotated point.
-            It rotates the point around the center by its smallest angle of angles obtained
-            from the bounding box. It will decide direction of rotation based on the bool
-            :parameter if_opposite_direction.
-        Returns
-        -------
-        [(int, int)]: 4 corner points of rectangle.
-        """
-    x1, y1 = point
-    center_x, center_y = center
-
-    if if_opposite_direction:
-        rotation_angle_in_rad = get_smaller_angle(bounding_box)
-    else:
-        rotation_angle_in_rad = -get_smaller_angle(bounding_box)
-
-    x_dash_1 = (x1 - center_x) * cos(rotation_angle_in_rad) - (y1 - center_y) * sin(rotation_angle_in_rad) + center_x
-    y_dash_1 = (y1 - center_y) * cos(rotation_angle_in_rad) + (x1 - center_x) * sin(rotation_angle_in_rad) + center_y
-    return x_dash_1, y_dash_1
 
 
 def if_previous_b_b_smaller_than_curr_b_b(b_b_p, b_b_c):
@@ -396,6 +378,26 @@ def if_previous_b_b_smaller_than_curr_b_b(b_b_p, b_b_c):
         return False
 
 
+def rotate_list_points(points, bounding_box, center, if_opposite_direction=False):
+    center_x, center_y = center
+
+    if if_opposite_direction:
+        rotation_angle_in_rad = get_smaller_angle(bounding_box)
+    else:
+        rotation_angle_in_rad = -get_smaller_angle(bounding_box)
+
+    val_cos_angle = cos(rotation_angle_in_rad)
+    val_sin_angle = sin(rotation_angle_in_rad)
+
+    rot_points = []
+    for pt in points:
+        x = (pt[0] - center_x) * val_cos_angle - (pt[1] - center_y) * val_sin_angle + center_x
+        y = (pt[1] - center_y) * val_cos_angle + (pt[0] - center_x) * val_sin_angle + center_y
+        rot_points.append((x, y))
+
+    return rot_points
+
+
 def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_data):
     """ Given a page image, extracts the page image mask from it.
         Input
@@ -406,9 +408,9 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
         """
     im_wo_pad = Image.open(image_file_name)
     im = pad_image(im_wo_pad)
-    img = Image.new('RGB', (im.size[0], im.size[1]), "white")
+    img = Image.new('L', (im.size[0], im.size[1]), "white")
     pixels = img.load()
-    val = (0, 0, 0)
+    val = 0
     base_name = os.path.splitext(os.path.basename(image_file_name))[0]
     doc = minidom.parse(madcat_file_path)
     zone = doc.getElementsByTagName('zone')
@@ -422,43 +424,30 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
 
     for index in range(0, len(bounding_box_list)):
         bounding_box = bounding_box_list[index]
-        if index == len(bounding_box_list)-1:
-            previous_bounding_box = bounding_box_list[len(bounding_box_list)-2]
+        if index == len(bounding_box_list) - 1:
+            previous_bounding_box = bounding_box_list[len(bounding_box_list) - 2]
         else:
-            previous_bounding_box = bounding_box_list[index-1]
+            previous_bounding_box = bounding_box_list[index - 1]
 
         if_previous_smaller_than_curr = \
             if_previous_b_b_smaller_than_curr_b_b(previous_bounding_box, bounding_box)
 
         val_old = val
-        lst = list(val)
-        lst[0] += 5
-        lst[1] += 5
-        lst[2] += 5
-        val = tuple(lst)
+        val += 10
 
         g_b_b1, g_b_b2, g_b_b3, g_b_b4 = bounding_box.corner_points
-        x1, y1 = g_b_b1
-        x2, y2 = g_b_b2
-        x3, y3 = g_b_b3
-        x4, y4 = g_b_b4
-        g_b_bmin_x = int(min(x1, x2, x3, x4))
-        g_b_bmin_y = int(min(y1, y2, y3, y4))
-        g_b_bmax_x = int(max(x1, x2, x3, x4))
-        g_b_bmax_y = int(max(y1, y2, y3, y4))
+        g_b_bmin_x = int(min(g_b_b1[0], g_b_b2[0], g_b_b3[0], g_b_b4[0]))
+        g_b_bmin_y = int(min(g_b_b1[1], g_b_b2[1], g_b_b3[1], g_b_b4[1]))
+        g_b_bmax_x = int(max(g_b_b1[0], g_b_b2[0], g_b_b3[0], g_b_b4[0]))
+        g_b_bmax_y = int(max(g_b_b1[1], g_b_b2[1], g_b_b3[1], g_b_b4[1]))
         b_bwidth_half_x = (g_b_bmax_x - g_b_bmin_x) / 2
         b_bheight_half_y = (g_b_bmax_y - g_b_bmin_y) / 2
 
-        rel_b_b1 = (x1 - g_b_bmin_x, y1 - g_b_bmin_y)
-        rel_b_b2 = (x2 - g_b_bmin_x, y2 - g_b_bmin_y)
-        rel_b_b3 = (x3 - g_b_bmin_x, y3 - g_b_bmin_y)
-        rel_b_b4 = (x4 - g_b_bmin_x, y4 - g_b_bmin_y)
-
-        rel_points = []
-        rel_points.append(rel_b_b1)
-        rel_points.append(rel_b_b2)
-        rel_points.append(rel_b_b3)
-        rel_points.append(rel_b_b4)
+        rel_b_b1 = (g_b_b1[0] - g_b_bmin_x, g_b_b1[1] - g_b_bmin_y)
+        rel_b_b2 = (g_b_b2[0] - g_b_bmin_x, g_b_b2[1] - g_b_bmin_y)
+        rel_b_b3 = (g_b_b3[0] - g_b_bmin_x, g_b_b3[1] - g_b_bmin_y)
+        rel_b_b4 = (g_b_b4[0] - g_b_bmin_x, g_b_b4[1] - g_b_bmin_y)
+        rel_points = [rel_b_b1, rel_b_b2, rel_b_b3, rel_b_b4]
         cropped_bounding_box = bounding_box_tuple(bounding_box.area,
                                                   bounding_box.length_parallel,
                                                   bounding_box.length_orthogonal,
@@ -466,28 +455,39 @@ def get_mask_from_page_image(image_file_name, madcat_file_path, image_fh, my_dat
                                                   bounding_box.unit_vector,
                                                   bounding_box.unit_vector_angle,
                                                   set(rel_points),
-                                                  bounding_box.rotated_corner_points
                                                   )
-        (rel_rot_x1, rel_rot_y1), (rel_rot_x2, rel_rot_y2), (rel_rot_x3, rel_rot_y3),\
-        (rel_rot_x4, rel_rot_y4) = \
-        rotate_rectangle_corners(cropped_bounding_box, (b_bwidth_half_x, b_bheight_half_y))
+
+        rel_rot_points = rotate_list_points(rel_points, cropped_bounding_box,
+                           (b_bwidth_half_x, b_bheight_half_y))
+
+        (rel_rot_x1, rel_rot_y1), (rel_rot_x2, rel_rot_y2), (rel_rot_x3, rel_rot_y3), \
+        (rel_rot_x4, rel_rot_y4) = rel_rot_points[0] , rel_rot_points[1], rel_rot_points[2], rel_rot_points[3]
+
         rel_rot_b_bmin_x = int(min(rel_rot_x1, rel_rot_x2, rel_rot_x3, rel_rot_x4))
         rel_rot_b_bmin_y = int(min(rel_rot_y1, rel_rot_y2, rel_rot_y3, rel_rot_y4))
         rel_rot_b_bmax_x = int(max(rel_rot_x1, rel_rot_x2, rel_rot_x3, rel_rot_x4))
         rel_rot_b_bmax_y = int(max(rel_rot_y1, rel_rot_y2, rel_rot_y3, rel_rot_y4))
 
-        for rel_rot_x in range(rel_rot_b_bmin_x,rel_rot_b_bmax_x):
-            for rel_rot_y in range(rel_rot_b_bmin_y, rel_rot_b_bmax_y):
-                point = rel_rot_x, rel_rot_y
-                rel_x_old, rel_y_old = \
-                rotate_single_point(point, cropped_bounding_box, (b_bwidth_half_x, b_bheight_half_y), True)
-                g_x_y_old = (rel_x_old + g_b_bmin_x, rel_y_old + g_b_bmin_y)
-                if pixels[int(g_x_y_old[0]), int(g_x_y_old[1])] == val_old and if_previous_smaller_than_curr:
-                    continue
-                pixels[int(g_x_y_old[0]), int(g_x_y_old[1])] = val
+        list1 = range(rel_rot_b_bmin_x, rel_rot_b_bmax_x)
+        list2 = range(rel_rot_b_bmin_y, rel_rot_b_bmax_y)
+        points = list(itertools.product(list1, list2))
 
-    set_line_image_data(img, image_file_name, image_fh)
+        rel_points_old = rotate_list_points(points, cropped_bounding_box,
+                                            (b_bwidth_half_x, b_bheight_half_y), True)
 
+        for pt in rel_points_old:
+            x, y = pt[0] + g_b_bmin_x, pt[1] + g_b_bmin_y
+            if if_previous_smaller_than_curr and pixels[int(x), int(y)] == val_old:
+                continue
+            pixels[int(x), int(y)] = val
+
+    min_x = int(args.padding // 2)
+    min_y = int(args.padding // 2)
+    width_x = int(im_wo_pad.size[0])
+    height_y = int(im_wo_pad.size[1])
+    box = (min_x, min_y, width_x + min_x, height_y + min_y)
+    img_crop = img.crop(box)
+    set_line_image_data(img_crop, image_file_name, image_fh)
 
 def get_bounding_box(image_file_name, madcat_file_path):
     """ Given a page image, extracts the line images from it.
@@ -518,7 +518,6 @@ def get_bounding_box(image_file_name, madcat_file_path):
         mydata[line_image_file_name] = bounding_box
     return mydata
 
-
 def check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3):
     """ Returns the complete path of the page image and corresponding
         xml file.
@@ -547,7 +546,6 @@ def check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3):
 
     return None, None, None
 
-
 def parse_writing_conditions(writing_conditions):
     """ Given writing condition file path, returns a dictionary which have writing condition
         of each page image.
@@ -562,8 +560,7 @@ def parse_writing_conditions(writing_conditions):
             file_writing_cond[line_list[0]] = line_list[3]
     return file_writing_cond
 
-
-def check_writing_condition(wc_dict):
+def check_writing_condition(wc_dict, base_name):
     """ Given writing condition dictionary, checks if a page image is writing
         in a specifed writing condition.
         It is used to create subset of dataset based on writing condition.
@@ -577,9 +574,7 @@ def check_writing_condition(wc_dict):
 
     return True
 
-
 ### main ###
-
 def main():
     writing_condition_folder_list = args.database_path1.split('/')
     writing_condition_folder1 = ('/').join(writing_condition_folder_list[:5])
@@ -610,12 +605,11 @@ def main():
         if prev_base_name != base_name:
             prev_base_name = base_name
             madcat_file_path, image_file_path, wc_dict = check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3)
-            if wc_dict is None or not check_writing_condition(wc_dict):
+            if wc_dict is None or not check_writing_condition(wc_dict, base_name):
                 continue
             if madcat_file_path is not None:
                 my_data = get_bounding_box(image_file_path, madcat_file_path)
                 get_mask_from_page_image(image_file_path, madcat_file_path, image_fh, my_data)
-
 
 if __name__ == '__main__':
       main()
