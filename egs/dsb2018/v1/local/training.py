@@ -16,7 +16,7 @@ import torchvision
 import random
 from torchvision import transforms as tsf
 from models.Unet import UNet
-from dataset import Dataset
+from dataset import Dataset_dsb2018
 
 parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
 parser.add_argument('--epochs', default=10, type=int,
@@ -80,13 +80,13 @@ def main():
     train_data = args.train_dir + '/' + 'train.pth.tar'
     val_data = args.train_dir + '/' + 'val.pth.tar'
 
-    trainset = Dataset(train_data, s_trans, offset_list,
-                       args.num_classes, args.img_height, args.img_width)
+    trainset = Dataset_dsb2018(train_data, s_trans, offset_list,
+                               args.num_classes, args.img_height, args.img_width)
     trainloader = torch.utils.data.DataLoader(
-        trainset, num_workers=1, batch_size=args.batch_size)
+        trainset, num_workers=1, batch_size=args.batch_size, shuffle=True)
 
-    valset = Dataset(val_data, s_trans, offset_list,
-                     args.num_classes, args.img_height, args.img_width)
+    valset = Dataset_dsb2018(val_data, s_trans, offset_list,
+                             args.num_classes, args.img_height, args.img_width)
     valloader = torch.utils.data.DataLoader(
         valset, num_workers=1, batch_size=args.batch_size)
 
@@ -141,7 +141,7 @@ def main():
     outdir = 'exp/{}/imgs'.format(args.name)
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    sample(model, trainloader, offset_list, outdir)
+    sample(model, valloader, offset_list, outdir)
 
     # # Load the best model and evaluate on test set
     # checkpoint = torch.load('exp/%s/' %
