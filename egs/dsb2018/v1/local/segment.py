@@ -76,6 +76,7 @@ def main():
 
     model.eval()  # convert the model into evaluation mode
 
+    img = torch.autograd.Variable(img)
     predictions = model(img)
     predictions = predictions.data
     # [batch-idx, class-idx, row, col]

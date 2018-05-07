@@ -17,44 +17,6 @@ import scipy.misc
 
 # offset_list = [(1, 1), (0, -2)]
 
-
-def compute_class_logprobs(pixels, segmenter):
-    logprobs = np.zeros(segmenter.num_classes)
-    for c in range(len(logprobs)):
-        for p in pixels:
-            logprobs[c] += segmenter.get_class_logprob(p, c)
-    return logprobs
-
-
-def compute_obj_merge_logprob(obj1, obj2, segmenter):
-    logprob = 0
-    for o, i in zip(segmenter.offsets, range(len(segmenter.offsets))):
-        for p1 in obj1.pixels:
-            p2 = (p1[0] + o[0], p1[1] + o[1])
-            if p2 in obj2.pixels:
-                same_prob = segmenter.get_sameness_prob(p1, i)
-                logprob += np.log(same_prob) - np.log(1.0 - same_prob)
-
-        for p1 in obj2.pixels:
-            p2 = (p1[0] + o[0], p1[1] + o[1])
-            if p2 in obj1.pixels:
-                same_prob = segmenter.get_sameness_prob(p1, i)
-                logprob += np.log(same_prob) - np.log(1.0 - same_prob)
-    return logprob
-
-
-def compute_class_delta_logprob(adj_rec):
-    if adj_rec.obj1.object_class == adj_rec.obj2.object_class:
-        return 0.0, adj_rec.obj1.object_class
-    else:
-        joint_class_logprobs = adj_rec.obj1.class_logprobs + adj_rec.obj2.class_logprobs
-        merged_class = np.argmax(joint_class_logprobs)
-        merged_class_joint_logprob = joint_class_logprobs[merged_class]
-        delta_logprob = merged_class_joint_logprob - \
-            adj_rec.obj1.class_logprob() - adj_rec.obj2.class_logprob()
-    return delta_logprob, merged_class
-
-
 class ObjPair:
     """
     This class is used to make an unordered pair from 2 Objects.
@@ -84,11 +46,17 @@ class Object:
 
     def __init__(self, pixels, id, segmenter):
         self.pixels = pixels
-        self.class_logprobs = compute_class_logprobs(pixels, segmenter)
+        self.compute_class_logprobs(segmenter)
         self.object_class = np.argmax(self.class_logprobs)
         # it's actually a map (from obj pairs to adj record) for faster search and access
         self.adjacency_list = {}
         self.id = id
+
+    def compute_class_logprobs(self, segmenter):
+        self.class_logprobs = np.zeros(segmenter.num_classes)
+        for c in range(len(self.class_logprobs)):
+            for p in self.pixels:
+                self.class_logprobs[c] += segmenter.get_class_logprob(p, c)
 
     def class_logprob(self):
         return self.class_logprobs[self.object_class]
@@ -110,8 +78,7 @@ class AdjacencyRecord:
     def __init__(self, obj1, obj2, segmenter):
         self.obj1 = obj1
         self.obj2 = obj2
-        self.obj_merge_logprob = compute_obj_merge_logprob(
-            obj1, obj2, segmenter)
+        self.compute_obj_merge_logprob(segmenter)
         if self.obj_merge_logprob is None:
             raise Exception(
                 "Bad adjacency record. The given objects are not adjacent.")
@@ -120,9 +87,36 @@ class AdjacencyRecord:
         self.merge_priority = None
         self.update_merge_priority()
 
+
+    def compute_obj_merge_logprob(self, segmenter):
+        logprob = 0
+        for o, i in zip(segmenter.offsets, range(len(segmenter.offsets))):
+            for p1 in self.obj1.pixels:
+                p2 = (p1[0] + o[0], p1[1] + o[1])
+                if p2 in self.obj2.pixels:
+                    same_prob = segmenter.get_sameness_prob(p1, i)
+                    logprob += np.log(same_prob) - np.log(1.0 - same_prob)
+
+            for p1 in self.obj2.pixels:
+                p2 = (p1[0] + o[0], p1[1] + o[1])
+                if p2 in self.obj1.pixels:
+                    same_prob = segmenter.get_sameness_prob(p1, i)
+                    logprob += np.log(same_prob) - np.log(1.0 - same_prob)
+        self.obj_merge_logprob = logprob
+
+
+    def compute_class_delta_logprob(self):
+        if self.obj1.object_class == self.obj2.object_class:
+            self.class_delta_logprob, self.merged_class = 0.0, self.obj1.object_class
+        else:
+            joint_class_logprobs = self.obj1.class_logprobs + self.obj2.class_logprobs
+            self.merged_class = np.argmax(joint_class_logprobs)
+            merged_class_joint_logprob = joint_class_logprobs[self.merged_class]
+            self.class_delta_logprob = merged_class_joint_logprob - \
+                            self.obj1.class_logprob() - self.obj2.class_logprob()
+
     def update_merge_priority(self):
-        self.class_delta_logprob, self.merged_class = compute_class_delta_logprob(
-            self)
+        self.compute_class_delta_logprob()
         den = min(len(self.obj1.pixels), len(self.obj2.pixels))
         self.merge_priority = (self.obj_merge_logprob +
                                self.class_delta_logprob) / den
@@ -161,18 +155,16 @@ class ObjectSegmenter:
 
     def init_objects_and_adjacency_records(self):
         print("Initializing the segmenter...")
-        print("Mem: {} GB".format(resource.getrusage(
+        print("Max mem: {} GB".format(resource.getrusage(
             resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024))
         obj_id = 0
         for row in range(self.img_height):
             for col in range(self.img_width):
-                # pixels = np.array([(x, y)])
-                # np.append(p, [[5,6]], axis=0)
                 pixels = [(row, col)]
                 obj = Object(pixels, obj_id, self)
-                obj_id += 1
                 self.objects[obj_id] = obj
                 self.pixel2obj[(row, col)] = obj
+                obj_id += 1
 
         for row in range(self.img_height):
             for col in range(self.img_width):
@@ -219,18 +211,18 @@ class ObjectSegmenter:
     def run_segmentation(self):
         print("Starting segmentation...")
         n = 0
-        N = 200000  # max iters -- for experimentation
+        N = 50000  # max iters -- for experimentation
         target_objs = 10  # for experimentation
         verbose = 0
         while self.queue:
             if len(self.objects) <= target_objs:
                 print("Target objects reached: {}".format(target_objs))
                 break
-            if len(self.queue) < 100:
+            if len(self.queue) < 1:  # in case we want to see a few last steps of the algorithm
                 verbose = 1
             n += 1
             if n % 1000 == 0:
-                print("At iteration {}:   mem: {} GB".format(
+                print("At iteration {}:  max mem: {} GB".format(
                     n, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024))
                 self.show_stats()
                 print("")
@@ -287,12 +279,13 @@ class ObjectSegmenter:
                 this_arec.obj2 = obj1
                 needs_update = True
             if this_arec.obj1 is this_arec.obj2:
+                obj_pair = ObjPair(this_arec.obj1, this_arec.obj2)
+                if obj_pair in obj1.adjacency_list:
+                    del obj1.adjacency_list[obj_pair]
                 continue
             if ObjPair(this_arec.obj1, this_arec.obj2) in obj1.adjacency_list:
                 that_arec = obj1.adjacency_list[ObjPair(
                     this_arec.obj1, this_arec.obj2)]
-                if that_arec == this_arec:
-                    continue
                 that_arec.obj_merge_logprob += this_arec.obj_merge_logprob
                 that_arec.update_merge_priority()
                 if that_arec.merge_priority >= 0:
@@ -306,4 +299,3 @@ class ObjectSegmenter:
                     heappush(self.queue, (-this_arec.merge_priority, this_arec))
         # print("Deleting {} being merged to {} according to {}".format(obj2, obj1, arec), file=sys.stderr)
         del self.objects[obj2.id]
-        del obj2
