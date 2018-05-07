@@ -344,9 +344,7 @@ def set_line_image_data(output_directory, image, line_id, image_path, text, imag
 	line_image_path = base_name + line_id + '.tif'
 	image_path = os.path.join(output_directory, line_image_path)
 	imgray = image.convert('L')
-	imgray_rev_arr = np.fliplr(imgray)
-	imgray_rev = toimage(imgray_rev_arr)
-	imgray_rev.save(image_path)
+	imgray.save(image_path)
 	image_fh.write(image_path + '\n')
 	lbl_fh.write(text + '\n')
 
