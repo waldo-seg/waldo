@@ -255,7 +255,8 @@ class ObjectSegmenter:
             if verbose >= 1:
                 print("", file=sys.stderr)
 
-        print("Finished. Queue is empty.")
+        if len(self.queue) == 0:
+            print("Finished. Queue is empty.")
         self.visualize()
 
     def merge(self, arec):

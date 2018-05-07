@@ -11,8 +11,8 @@ from waldo.segmenter import ObjectSegmenter
 
 
 parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
-parser.add_argument('--model', default='', type=str,
-                    help='path to final model (default: none)')
+parser.add_argument('model', type=str,
+                    help='path to final model')
 parser.add_argument('--img-height', default=128, type=int,
                     help='Height of resized images')
 parser.add_argument('--img-width', default=128, type=int,
