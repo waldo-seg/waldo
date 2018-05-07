@@ -210,7 +210,6 @@ class UNet(nn.Module):
         self.down_convs = nn.ModuleList(self.down_convs)
         self.up_convs = nn.ModuleList(self.up_convs)
 
-
     def forward(self, x):
         encoder_outs = []
 
