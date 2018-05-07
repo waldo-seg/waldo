@@ -525,11 +525,3 @@ class ICDAR:
 	# 	imgray_rev.save(image_path)
 	# 	image_fh.write(image_path + '\n')
 	# 	lbl_fh.write(text + '\n')
-
-
-
-
-
-
-icdar = ICDAR(data_dir='/home/desh/Research/icdar/icdar_2015/')
-data = icdar.load_data()
