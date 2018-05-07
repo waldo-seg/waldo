@@ -27,7 +27,8 @@ parser.add_argument('--test-data', default='./data/test.pth.tar', type=str,
                     help='Path of processed test data')
 parser.add_argument('--num-classes', default=2, type=int,
                     help='Number of classes to classify')
-
+parser.add_argument('--num-offsets', default=15, type=int,
+                    help='Number of points in offset list')
 
 random.seed(0)
 
@@ -38,7 +39,19 @@ def main():
     args.batch_size = 1
     args.depth = 16
 
-    offset_list = [(1, 1), (0, -2)]
+    # # of classes, # of offsets
+    model = UNet(args.num_classes, args.num_offsets)
+
+    if os.path.isfile(args.model):
+        print("=> loading checkpoint '{}'".format(args.model))
+        checkpoint = torch.load(args.model,
+                                map_location=lambda storage, loc: storage)
+        model.load_state_dict(checkpoint['state_dict'])
+        offset_list = checkpoint['offset_list']
+        print("loaded.")
+        print("offsets are {}".format(offset_list))
+    else:
+        print("=> no checkpoint found at '{}'".format(args.model))
 
     s_trans = tsf.Compose([
         tsf.ToPILImage(),
@@ -63,16 +76,6 @@ def main():
     torchvision.utils.save_image(
         class_id[0, 0, :, :], 'class0.png')  # backgrnd
     torchvision.utils.save_image(class_id[0, 1, :, :], 'class1.png')  # cells
-
-    model = UNet(2, 2)
-
-    if os.path.isfile(args.model):
-        print("=> loading checkpoint '{}'".format(args.model))
-        checkpoint = torch.load(args.model)
-        model.load_state_dict(checkpoint['state_dict'])
-        print("loaded.")
-    else:
-        print("=> no checkpoint found at '{}'".format(args.model))
 
     model.eval()  # convert the model into evaluation mode
 
