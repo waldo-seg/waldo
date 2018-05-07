@@ -13,4 +13,3 @@
 
 # queue.pl is for GridEngine, you may want run.pl instead.
 export cmd="queue.pl"
-export cuda_cmd="queue.pl --gpu 1 --mem 2G"
