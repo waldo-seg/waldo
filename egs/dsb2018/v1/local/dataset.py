@@ -8,9 +8,11 @@ import torch
 import numpy as np
 
 
-class Dataset():
+class Dataset_dsb2018():
     def __init__(self, path, transformation, offset_list,
                  num_classes, height, width):
+        # self.data is a dictionary with keys ['img', 'mask'] and probably
+        # 'class_object' in the future
         self.data = torch.load(path)
         self.transformation = transformation
         self.offset_list = offset_list
