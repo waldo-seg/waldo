@@ -212,7 +212,7 @@ class ObjectSegmenter:
         print("Starting segmentation...")
         n = 0
         N = 50000  # max iters -- for experimentation
-        target_objs = 10  # for experimentation
+        target_objs = 4  # for experimentation
         verbose = 0
         while self.queue:
             if len(self.objects) <= target_objs:
@@ -294,9 +294,9 @@ class ObjectSegmenter:
             else:
                 obj1.adjacency_list[ObjPair(
                     this_arec.obj1, this_arec.obj2)] = this_arec
-            if needs_update:
-                this_arec.update_merge_priority()
-                if this_arec.merge_priority >= 0:
-                    heappush(self.queue, (-this_arec.merge_priority, this_arec))
+                if needs_update:
+                    this_arec.update_merge_priority()
+                    if this_arec.merge_priority >= 0:
+                        heappush(self.queue, (-this_arec.merge_priority, this_arec))
         # print("Deleting {} being merged to {} according to {}".format(obj2, obj1, arec), file=sys.stderr)
         del self.objects[obj2.id]
