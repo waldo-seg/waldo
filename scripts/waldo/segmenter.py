@@ -214,16 +214,20 @@ class ObjectSegmenter:
 
 
     def visualize(self, iter):
-        pix2class = np.zeros((self.img_width, self.img_height))
+        img = np.zeros((self.img_height, self.img_width))
+        k = 1
         for obj in self.objects.values():
             for p in obj.pixels:
-                pix2class[p] = obj.object_class
-        scipy.misc.imsave('img/{}.png'.format(iter), pix2class)
+                img[p] = k
+            center = tuple(np.array(obj.pixels).mean(axis=0))
+            img[int(center[0]), int(center[1])] = 0.0
+            k += 1
+        scipy.misc.imsave('{}.png'.format(iter), img)
 
     def run_segmentation(self):
         print("Starting segmentation...")
         n = 0
-        N = 200000  # max iters -- for experimentation
+        N = 500000  # max iters -- for experimentation
         target_objs = 4  # for experimentation
         self.verbose = 1
         while self.queue:
@@ -239,7 +243,7 @@ class ObjectSegmenter:
                     n, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024))
                 self.show_stats()
                 print("")
-                self.visualize(n)
+                #self.visualize(n)
             if n > N:
                 print("Breaking after {} iters.".format(N))
                 break
@@ -270,6 +274,8 @@ class ObjectSegmenter:
 
         if len(self.queue) == 0:
             print("Finished. Queue is empty.")
+
+        self.show_stats()
         self.visualize('final')
 
     def merge(self, arec):
@@ -284,10 +290,6 @@ class ObjectSegmenter:
         obj1.object_class = arec.merged_class
         obj1.pixels += obj2.pixels
         obj1.class_logprobs += obj2.class_logprobs
-        if arec.obj_pair() not in self.adjacency_records:
-            if self.verbose >= 1: print("Error: arec {} was already merged!".format(arec), file=sys.stderr)
-            sys.exit(1)
-        if self.verbose >= 1: print("Deleting obj-pair {}".format(arec.obj_pair()), file=sys.stderr)
         del self.adjacency_records[arec.obj_pair()]
         del obj1.adjacency_list[arec.obj_pair()]
         del obj2.adjacency_list[arec.obj_pair()]
