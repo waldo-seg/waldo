@@ -10,4 +10,6 @@
 # conf/queue.conf in http://kaldi-asr.org/doc/queue.html for more information,
 # or search for the string 'default_config' in utils/queue.pl or utils/slurm.pl.
 
-export cmd="scripts/run.pl"
+
+# queue.pl is for GridEngine, you may want run.pl instead.
+export cmd="queue.pl"
