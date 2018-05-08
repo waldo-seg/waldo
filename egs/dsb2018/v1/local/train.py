@@ -8,6 +8,7 @@
 """
 
 import torch
+import math
 import argparse
 import os
 import shutil
@@ -16,7 +17,7 @@ import torchvision
 import random
 from torchvision import transforms as tsf
 from models.Unet import UNet
-from dataset import Dataset
+from dataset import Dataset_dsb2018
 
 parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
 parser.add_argument('--epochs', default=10, type=int,
@@ -38,6 +39,8 @@ parser.add_argument('--weight-decay', '--wd', default=5e-4, type=float,
                     help='weight decay (default: 5e-4)')
 parser.add_argument('--depth', default=5, type=int,
                     help='Number of conv blocks.')
+parser.add_argument('--num-offsets', default=15, type=int,
+                    help='Number of points in offset list')
 parser.add_argument('--img-height', default=128, type=int,
                     help='Height of resized images')
 parser.add_argument('--img-width', default=128, type=int,
@@ -75,18 +78,19 @@ def main():
         tsf.ToTensor(),
     ])
 
-    offset_list = [(1, 1), (0, -2)]
+    offset_list = generate_offsets(args.num_offsets)
+    print("offsets are: {}".format(offset_list))
 
     train_data = args.train_dir + '/' + 'train.pth.tar'
     val_data = args.train_dir + '/' + 'val.pth.tar'
 
-    trainset = Dataset(train_data, s_trans, offset_list,
-                       args.num_classes, args.img_height, args.img_width)
+    trainset = Dataset_dsb2018(train_data, s_trans, offset_list,
+                               args.num_classes, args.img_height, args.img_width)
     trainloader = torch.utils.data.DataLoader(
-        trainset, num_workers=1, batch_size=args.batch_size)
+        trainset, num_workers=1, batch_size=args.batch_size, shuffle=True)
 
-    valset = Dataset(val_data, s_trans, offset_list,
-                     args.num_classes, args.img_height, args.img_width)
+    valset = Dataset_dsb2018(val_data, s_trans, offset_list,
+                             args.num_classes, args.img_height, args.img_width)
     valloader = torch.utils.data.DataLoader(
         valset, num_workers=1, batch_size=args.batch_size)
 
@@ -131,6 +135,7 @@ def main():
         is_best = val_loss < best_loss
         best_loss = min(val_loss, best_loss)
         save_checkpoint({
+            'offset_list': offset_list,
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
             'best_prec1': best_loss,
@@ -141,7 +146,7 @@ def main():
     outdir = 'exp/{}/imgs'.format(args.name)
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    sample(model, trainloader, offset_list, outdir)
+    sample(model, valloader, offset_list, outdir)
 
     # # Load the best model and evaluate on test set
     # checkpoint = torch.load('exp/%s/' %
@@ -251,6 +256,19 @@ def sample(model, dataloader, offset_list, outdir):
     for i in range(args.num_classes):
         torchvision.utils.save_image(
             class_pred[:, i:i + 1, :, :], '{0}/class_pred{1}.png'.format(outdir, i))
+
+
+def generate_offsets(num_offsets=15):
+    offset_list = []
+    size_ratio = 1.4
+    angle = math.pi * 5 / 9  # 100 degrees: just over 90 degrees.
+
+    for n in range(num_offsets):
+        x = round(math.cos(n * angle) * math.pow(size_ratio, n))
+        y = round(math.sin(n * angle) * math.pow(size_ratio, n))
+        offset_list.append((x, y))
+
+    return offset_list
 
 
 def soft_dice_loss(inputs, targets):

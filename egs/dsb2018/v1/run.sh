@@ -33,11 +33,13 @@ fi
 name=unet_${depth}_${epochs}_sgd
 if [ $stage -le 1 ]; then
   # training the network
-  $cuda_cmd limit_num_gpus.sh ./local/training.py \
-	    --name $name \
-	    --depth $depth \
-	    --batch-size $batch \
-	    --img-height $height \
-	    --img-width $width \
-	    --epochs $epochs
+  logdir=exp/$name
+  mkdir -p $logdir
+  $cmd --gpu 1 --mem 2G $logdir/train.log limit_num_gpus.sh local/train.py \
+            --name $name \
+            --depth $depth \
+            --batch-size $batch \
+            --img-height $height \
+            --img-width $width \
+            --epochs $epochs
 fi
