@@ -7,7 +7,6 @@
 import numpy as np
 from PIL import Image, ImageDraw
 from data_types import *
-from data_types import validate_config, validate_image_with_mask, validate_image_with_objects, validate_object, validate_polygon, validate_combined_image
 
 
 def convert_to_mask(x):
