@@ -27,7 +27,7 @@ parser.add_argument('--test-data', default='./data/test.pth.tar', type=str,
                     help='Path of processed test data')
 parser.add_argument('--num-classes', default=2, type=int,
                     help='Number of classes to classify')
-parser.add_argument('--num-offsets', default=15, type=int,
+parser.add_argument('--num-offsets', default=10, type=int,
                     help='Number of points in offset list')
 
 random.seed(0)
@@ -47,6 +47,7 @@ def main():
         checkpoint = torch.load(args.model,
                                 map_location=lambda storage, loc: storage)
         model.load_state_dict(checkpoint['state_dict'])
+        model.cpu()
         offset_list = checkpoint['offset_list']
         print("loaded.")
         print("offsets are {}".format(offset_list))
@@ -67,7 +68,7 @@ def main():
         testset, num_workers=1, batch_size=args.batch_size)
 
     data_iter = iter(dataloader)
-#    data_iter.next()
+    # data_iter.next()
     img, class_id, sameness = data_iter.next()
     torch.set_printoptions(threshold=5000)
     torchvision.utils.save_image(img, 'input.png')

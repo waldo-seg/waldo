@@ -175,7 +175,7 @@ def Train(trainloader, model, optimizer, epoch):
         loss_fn = torch.nn.BCELoss()
         loss = loss_fn(output, target)
 
-        losses.update(loss.item(), args.batch_size)
+        losses.update(loss.data[0], args.batch_size)
 
         loss.backward()
         optimizer.step()
@@ -217,7 +217,7 @@ def Validate(validateloader, model, epoch):
         loss_fn = torch.nn.BCELoss()
         loss = loss_fn(output, target)
 
-        losses.update(loss.item(), args.batch_size)
+        losses.update(loss.data[0], args.batch_size)
 
         if i % args.print_freq == 0:
             print('Val: [{0}][{1}/{2}]\t'

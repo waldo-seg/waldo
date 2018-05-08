@@ -38,6 +38,9 @@ class ObjPair:
     def __ne__(self, other):
         return not(self == other)
 
+    def __str__(self):
+        return "<ObjPair({},{})>".format(self.obj1.id, self.obj2.id)
+
 
 class Object:
     """
@@ -71,7 +74,7 @@ class Object:
         return not(self == other)
 
     def __str__(self):
-        return "<OBJ: {} class:{} npix: {}  nadj: {}>".format(self.id, self.object_class, len(self.pixels), len(self.adjacency_list))
+        return "<OBJ:{} class:{} npix:{}  nadj:{}>".format(self.id, self.object_class, len(self.pixels), len(self.adjacency_list))
 
 
 class AdjacencyRecord:
@@ -117,18 +120,21 @@ class AdjacencyRecord:
 
     def update_merge_priority(self):
         self.compute_class_delta_logprob()
-        den = min(len(self.obj1.pixels), len(self.obj2.pixels))
+        den = (len(self.obj1.pixels) * len(self.obj2.pixels))
         self.merge_priority = (self.obj_merge_logprob +
                                self.class_delta_logprob) / den
 
+    def obj_pair(self):
+        return ObjPair(self.obj1, self.obj2)
+
     def __eq__(self, other):
-        return ObjPair(self.obj1, self.obj2) == ObjPair(other.obj1, other.obj2)
+        return self.obj_pair() == other.obj_pair()
 
     def __lt__(self, other):
         return self.merge_priority < other.merge_priority
 
     def __str__(self):
-        return "<AREC-{}:  [{}, {}]  oml:{}  cdl:{}  mp:{}>".format(
+        return "<AREC-{}:  [{}, {}]  oml:{:0.2f}  cdl:{:0.2f}  mp:{:0.2f}>".format(
             id(self), self.obj1, self.obj2, self.obj_merge_logprob, self.class_delta_logprob, self.merge_priority)
 
 
@@ -148,7 +154,7 @@ class ObjectSegmenter:
         self.img_height = img_height
 
         self.objects = {}
-        self.adjacency_records = []
+        self.adjacency_records = {}
         self.queue = []   # Python's heapq
         self.init_objects_and_adjacency_records()
         self.show_stats()
@@ -174,9 +180,9 @@ class ObjectSegmenter:
                             0 <= col + j < self.img_height):
                         obj2 = self.pixel2obj[(row + i, col + j)]
                         arec = AdjacencyRecord(obj1, obj2, self)
-                        self.adjacency_records.append(arec)
-                        obj1.adjacency_list[ObjPair(obj1, obj2)] = arec
-                        obj2.adjacency_list[ObjPair(obj1, obj2)] = arec
+                        self.adjacency_records[arec.obj_pair()] = arec
+                        obj1.adjacency_list[arec.obj_pair()] = arec
+                        obj2.adjacency_list[arec.obj_pair()] = arec
                         if arec.merge_priority >= 0:
                             heappush(self.queue, (-arec.merge_priority, arec))
 
@@ -201,63 +207,76 @@ class ObjectSegmenter:
         print("Top 10 biggest objs (adj_list size): {}".format(
             adjlistsize[:10]))
 
-    def visualize(self):
-        pix2class = np.zeros((self.img_width, self.img_height))
+    def compute_total_logprob(self):
+        tot_class_logprob = 0
+        for obj in self.objects.values():
+            tot_class_logprob += obj.class_logprob()
+
+
+    def visualize(self, iter):
+        img = np.zeros((self.img_height, self.img_width))
+        k = 1
         for obj in self.objects.values():
             for p in obj.pixels:
-                pix2class[p] = obj.object_class
-        scipy.misc.imsave('final.png', pix2class)
+                img[p] = k
+            center = tuple(np.array(obj.pixels).mean(axis=0))
+            img[int(center[0]), int(center[1])] = 0.0
+            k += 1
+        scipy.misc.imsave('{}.png'.format(iter), img)
 
     def run_segmentation(self):
         print("Starting segmentation...")
         n = 0
-        N = 50000  # max iters -- for experimentation
+        N = 500000  # max iters -- for experimentation
         target_objs = 4  # for experimentation
-        verbose = 0
+        self.verbose = 1
         while self.queue:
             if len(self.objects) <= target_objs:
                 print("Target objects reached: {}".format(target_objs))
                 break
-            if len(self.queue) < 1:  # in case we want to see a few last steps of the algorithm
-                verbose = 1
-            n += 1
-            if n % 1000 == 0:
-                print("At iteration {}:  max mem: {} GB".format(
+            if len(self.queue) < 1000:  # in case we want to see a few last steps of the algorithm
+                self.verbose = 1
+            if n > 1000:
+                self.verbose = 0
+            if n % 5000 == 0:
+                print("At iteration {}:  max mem: {:0.2f} GB".format(
                     n, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024))
                 self.show_stats()
                 print("")
+                #self.visualize(n)
             if n > N:
                 print("Breaking after {} iters.".format(N))
                 break
+            n += 1
             merge_cost, arec = heappop(self.queue)
-            if verbose >= 1:
-                print("Popped: {},{}".format(merge_cost, arec), file=sys.stderr)
+            if self.verbose >= 1:
+                print("Iter: {} Popped: {:0.2f},{}".format(n, merge_cost, arec), file=sys.stderr)
             merge_priority = -merge_cost
             if merge_priority != arec.merge_priority:
-                if verbose >= 1:
-                    print("Not merging {} != {}".format(
+                if self.verbose >= 1:
+                    print("Not merging {:0.2f} != {:0.2f}\n".format(
                         merge_priority, arec.merge_priority), file=sys.stderr)
                 continue
             arec.update_merge_priority()
             if arec.merge_priority >= merge_priority:
-                if verbose >= 1:
-                    print("Merging...{} >= {}".format(
+                if self.verbose >= 1:
+                    print("Merging...{:0.2f} >= {:0.2f}\n".format(
                         arec.merge_priority, merge_priority), file=sys.stderr)
                 self.merge(arec)
             elif arec.merge_priority >= 0.0:
-                if verbose >= 1:
-                    print("Pushing with new mp: {}".format(
+                if self.verbose >= 1:
+                    print("Pushing with new mp: {:0.2f}\n".format(
                         arec.merge_priority), file=sys.stderr)
                 heappush(self.queue, (-arec.merge_priority, arec))
             else:
-                if verbose >= 1:
-                    print("Not merging >=0   {}".format(arec), file=sys.stderr)
-            if verbose >= 1:
-                print("", file=sys.stderr)
+                if self.verbose >= 1:
+                    print("Not merging <0   {}\n".format(arec), file=sys.stderr)
 
         if len(self.queue) == 0:
             print("Finished. Queue is empty.")
-        self.visualize()
+
+        self.show_stats()
+        self.visualize('final')
 
     def merge(self, arec):
         obj1, obj2 = arec.obj1, arec.obj2
@@ -271,32 +290,39 @@ class ObjectSegmenter:
         obj1.object_class = arec.merged_class
         obj1.pixels += obj2.pixels
         obj1.class_logprobs += obj2.class_logprobs
+        del self.adjacency_records[arec.obj_pair()]
+        del obj1.adjacency_list[arec.obj_pair()]
+        del obj2.adjacency_list[arec.obj_pair()]
         for this_arec in obj2.adjacency_list.values():
-            needs_update = False
+            obj3 = this_arec.obj2 if this_arec.obj1 is obj2 else this_arec.obj1  # obj3 is any object adjacent to obj2 (never is obj1)
+            del obj3.adjacency_list[this_arec.obj_pair()]
+            del self.adjacency_records[this_arec.obj_pair()]
+
             if this_arec.obj1 is obj2:
                 this_arec.obj1 = obj1
-                needs_update = True
             if this_arec.obj2 is obj2:
                 this_arec.obj2 = obj1
-                needs_update = True
-            if this_arec.obj1 is this_arec.obj2:
-                obj_pair = ObjPair(this_arec.obj1, this_arec.obj2)
-                if obj_pair in obj1.adjacency_list:
-                    del obj1.adjacency_list[obj_pair]
-                continue
-            if ObjPair(this_arec.obj1, this_arec.obj2) in obj1.adjacency_list:
-                that_arec = obj1.adjacency_list[ObjPair(
-                    this_arec.obj1, this_arec.obj2)]
+            obj3.adjacency_list[this_arec.obj_pair()] = this_arec
+            self.adjacency_records[this_arec.obj_pair()] = this_arec
+
+            assert(this_arec.obj1 is not this_arec.obj2)
+
+            if this_arec.obj_pair() in obj1.adjacency_list:
+                that_arec = obj1.adjacency_list[this_arec.obj_pair()]
                 that_arec.obj_merge_logprob += this_arec.obj_merge_logprob
                 that_arec.update_merge_priority()
                 if that_arec.merge_priority >= 0:
                     heappush(self.queue, (-that_arec.merge_priority, that_arec))
             else:
-                obj1.adjacency_list[ObjPair(
-                    this_arec.obj1, this_arec.obj2)] = this_arec
-                if needs_update:
-                    this_arec.update_merge_priority()
-                    if this_arec.merge_priority >= 0:
-                        heappush(self.queue, (-this_arec.merge_priority, this_arec))
-        # print("Deleting {} being merged to {} according to {}".format(obj2, obj1, arec), file=sys.stderr)
+                obj1.adjacency_list[this_arec.obj_pair()] = this_arec
+                this_arec.update_merge_priority()
+                if this_arec.merge_priority >= 0:
+                    heappush(self.queue, (-this_arec.merge_priority, this_arec))
+        if self.verbose >= 1:
+            print("Deleting {} being merged to {} according to {}".format(obj2, obj1, arec), file=sys.stderr)
+        if self.verbose >= 1:
+            print("Adj list of obj {}:".format(obj1.id), file=sys.stderr)
+            for obj_pair in obj1.adjacency_list:
+                print("\t{}   -->   {}".format(obj_pair, obj1.adjacency_list[obj_pair]), file=sys.stderr)
+            print("", file=sys.stderr)
         del self.objects[obj2.id]
