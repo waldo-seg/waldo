@@ -25,7 +25,7 @@ def visualize_mask(image, masks):
         # Alpha is set 127 for a 50% reduced transparency
         data[..., :][white_areas.T] = (
             np.random.randint(low=10, high=255), np.random.randint(low=10, high=255),
-            np.random.randint(low=10, high=255), 127)
+            np.random.randint(low=10, high=255), 51)
         # removing black areas
         data[..., :][black_areas.T] = 0
 
