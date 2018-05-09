@@ -32,8 +32,7 @@ def visualize_mask(image, masks):
         mask_transformed = Image.fromarray(data, mode='RGBA')
         mask_background = Image.alpha_composite(mask_background, mask_transformed)
 
-    result = Image.alpha_composite(background, mask_background)
-    result.show()
+    result = Image.alpha_composite(background, mask_background).save('Image.png')
     return None
     """This function accepts an object x that should represent an image with a
        mask, and it modifies the image to superimpose the "mask" on it.  The
