@@ -9,62 +9,27 @@
 
 import os
 import numpy as np
-from collections import namedtuple
 from math import hypot
 from PIL import Image,ImageDraw
 from glob import glob
+from data_manipulation import * 
 
 
 class Dataset_icdar2015:
     """Class to load and process the ICDAR 2015 data.
     Initialize with path to directory containing downloaded dataset.
-    If no path is provided, the default path /export/b18/draj/icdar_2015/
-    will be used.
+    The load_data() function can be used after initialization. It returns
+    a dict containing two lists: train and test.
     """
 
-    DATA_DIR= "/export/b18/draj/icdar_2015/"
-    TRAIN_IMAGES = "ch4_training_images"
-    TEST_IMAGES = "ch4_test_images"
-    TRAIN_LABELS = "ch4_training_labels"
-    TEST_LABELS = "ch4_test_labels"
+    TRAIN_IMAGES = "train/images"
+    TEST_IMAGES = "test/images"
+    TRAIN_LABELS = "train/labels"
+    TEST_LABELS = "test/labels"
 
     
-    """
-    image_tuple is a named tuple which contains:
-                image (np.arr): actual image in numpy array format
-                mask (np.arr): numpy array of the same size as the image, 
-                mapping each pixel to the object-id.
-                object_class (np.arr): numpy array indexed by object-id, returning the
-                object-class for that object-id
-    """
 
-    image_tuple = namedtuple('image_tuple', 'image '
-                                'mask '
-                                'object_class'
-                            )
-
-    """
-    data_tuple is a named tuple which contains:
-                train_data (list(image_tuple)): training set
-                test_data (list(image_tuple)): test set
-    """
-
-    data_tuple = namedtuple('data_tuple', 'train_data '
-                                'test_data'
-                            )
-
-
-    """
-    bounding_box_tuple is a named tuple which contains:
-                corner_points (list((int,int))): list of 4 points which make up the box
-                text (string): text contained in the bounding box
-    """
-    bounding_box_tuple = namedtuple('bounding_box_tuple', 'corner_points '
-                                        'text'
-                                    )
-
-
-    def __init__(self, data_dir=None):
+    def __init__(self, data_dir):
         """Constructor for the class.
         Validates the path to ICDAR 2015 data.
         """
@@ -85,18 +50,20 @@ class Dataset_icdar2015:
 
 
     def load_data(self):
-        """Loads the ICDAR data and returns a tuple containing two structures: train and test
+        """Loads the ICDAR data and returns a dict containing two structures: train and test
         Returns
         --------
-        data (image_tuple,image_tuple): train and test image tuples
+        data (image,image): train and test image lists
         """
-        train_data = self._load_data_wrapper(self.tr_img_dir, self.tr_lbl_dir)
-        test_data = self._load_data_wrapper(self.te_img_dir, self.te_lbl_dir)
+        train_data = self._load_data_worker(self.tr_img_dir, self.tr_lbl_dir)
+        test_data = self._load_data_worker(self.te_img_dir, self.te_lbl_dir)
 
-        return self.data_tuple(
-            train_data=train_data,
-            test_data=test_data
-        )
+        data = {
+            'train':train_data,
+            'test':test_data
+        }
+
+        return data
 
 
     def _check_images_and_labels(self, image_dir, label_dir):
@@ -134,7 +101,7 @@ class Dataset_icdar2015:
 
 
 
-    def _load_data_wrapper(self,img_dir,lbl_dir):
+    def _load_data_worker(self,img_dir,lbl_dir):
         """Given the image and label directories, returns a structured list.
         Input
         ------
@@ -143,7 +110,7 @@ class Dataset_icdar2015:
 
         Returns
         -------
-        data (list(image_tuple)): list containing image data
+        data (list(image)): list containing image data
         """
         data = []
 
@@ -152,138 +119,78 @@ class Dataset_icdar2015:
             im_arr = np.array(im)
             lbl_fh = open(lbl,encoding='utf-8')
 
-            bounding_box_list = self._get_bounding_boxes(lbl_fh)
-            sorted_bounding_box_list = self._sort_b_b_list_for_mask(bounding_box_list)
-            object_class_arr = self._get_object_classes(sorted_bounding_box_list)
-            im_mask_arr = self._get_mask_arr(im_arr,sorted_bounding_box_list)
+            objects = self._get_objects(lbl_fh)
+            sorted_objects = self._sort_object_list(objects)
+            object_class_arr = self._get_object_classes(sorted_objects)
             
+            image_with_objects = {
+                'img':im_arr,
+                'objects':sorted_objects
+            }
 
-            data.append(
-                self.image_tuple(
-                    image=im_arr,
-                    mask=im_mask_arr,
-                    object_class=object_class_arr
-                )
-            )
+            image_with_mask = convert_to_mask(image_with_objects)
+
+            data.append(image_with_mask)
 
         return data
 
 
-    def _get_bounding_boxes(self,label_fh):
+    def _get_objects(self,label_fh):
         """ Given the file handle of the file containing image data, it returns
-        a list of the bounding boxes contained in the image.
+        a list of the objects contained in the image.
         Returns
-        --------
-        bounding_box_list (list(bounding_box_tuple))
+        -------
+        objects (list(object)), where object is a dict. Currently, object has only
+        one key, namely 'polygon' which is a list of points in clockwise order.
         """
-        bounding_box_list = []
+        objects = []
         for line in label_fh.readlines():
             try:
+                object = {}
                 line = line.replace(u'\ufeff', '')
                 if line != '':
                     x1, y1, x2, y2, x3, y3, x4, y4= [int(i) for i in line.split(',')[:-1]]
-                    text = line.split(',')[-1]
                     p1 = (x1, y1)
                     p2 = (x2, y2)
                     p3 = (x3, y3)
                     p4 = (x4, y4)
-                    bounding_box_list.append(
-                        self.bounding_box_tuple(
-                            corner_points=[p1,p2,p3,p4],
-                            text=text
-                        )
-                    )
+                    object['polygon'] = [p1,p2,p3,p4]
+                    objects.append(object)
             except:
                 pass
-        return bounding_box_list
+        return objects
 
 
-    def _get_object_classes(self,bounding_box_list):
-        """Given the list of bounding boxes, it returns an array mapping object ids to their
+    def _get_object_classes(self,objects):
+        """Given the list of objects, it returns an array mapping object ids to their
         respective classes. Background has class 0 and text has class 1.
-        Input
-        ------
-        bounding_box_list (list(bounding_box_tuple))
-
-        Returns
-        --------
-        object_class_arr (np.arr): numpy array indexed by object id.
-        Note: index 0 refers to the background object_id and object_class
         """
-        class_names = np.array([1 for bb in bounding_box_list])
+        class_names = np.array([1 for object in objects])
         object_class_arr = np.insert(class_names, 0, 0)
         return object_class_arr
 
 
-    
-    def _sort_b_b_list_for_mask(self,bounding_box_list):
+
+    def _sort_object_list(self,objects):
         """Given a list of bounding boxes, returns a new list sorted in descending order by
         the breadth (shorter side) of the rectangles.
         """
-        sorted_bounding_box_list = sorted(bounding_box_list,
-            key=lambda bb: self._get_shorter_side(bb), reverse=True)
-        return sorted_bounding_box_list
+
+        def _get_shorter_side(object):
+            """Given an object, returns the length of the shorter side of the associated rectangle
+            as a float.
+            """
+            return min(
+                _Euclidean_distance(object['polygon'][0],object['polygon'][1]),
+                _Euclidean_distance(object['polygon'][1],object['polygon'][2])
+            )
 
 
-    def _get_shorter_side(self,bounding_box):
-        """Given a bounding box, returns the length of the shorter side.
-        Input
-        ------
-        bounding_box (bounding_box_tuple)
+        def _Euclidean_distance(a,b):
+            """Given two points, returns their Euclidean distance.
+            """
+            return hypot(a[0]-b[0],a[1]-b[1])
 
-        Returns
-        -------
-        shorter_side_length (float)
-        """
-        return min(
-            self._Euclidean_distance(bounding_box.corner_points[0],bounding_box.corner_points[1]),
-            self._Euclidean_distance(bounding_box.corner_points[1],bounding_box.corner_points[2])
-        )
-
-
-    def _Euclidean_distance(self,a,b):
-        """Given two points, returns their Euclidean distance.
-        Input
-        -----
-        a ((int,int)): first point
-        b ((int,int)): second point
-        """
-        return hypot(a[0]-b[0],a[1]-b[1])
-
-
-    def _get_mask_arr(self,im_arr,bounding_box_list):
-        """Given the image array and the list of bounding boxes, it returns the mask array.
-        Input
-        ------
-        im_array (np.arr): original image array
-        bounding_box_list (list(bounding_box_tuple)): list of bounding boxes in the image
-
-        Returns
-        --------
-        im_mask_arr (np.arr): array having same dimensions as im_arr, mapping each pixel 
-        to the object-id
-        """
-        (height, width, _) = np.shape(im_arr)
-        im_mask_arr = np.zeros((height,width))
-
-        for i,bounding_box in enumerate(bounding_box_list):
-            im_mask_arr = self._update_mask_arr(im_mask_arr,bounding_box,i+1)
-
-        return im_mask_arr
-
-
-    def _update_mask_arr(self,im_mask_arr,bounding_box,object_id):
-        """Given a bounding box and its object_id, updates the mask array to set the value of
-        all pixels contained in the bounding box to the object_id.
-        Input
-        ------
-        im_mask_arr (np.arr): numpy mask array
-        bounding_box (bounding_box_tuple): a bounding box
-        object_id (int): object_id of the bounding box
-        """
-        (height, width) = np.shape(im_mask_arr)
-        img = Image.new('L', (width, height), 0)
-        ImageDraw.Draw(img).polygon(bounding_box.corner_points, outline=1, fill=1)
-        mask_update = np.array(img)
-        updated_mask_arr = np.where(mask_update == 1, im_mask_arr, object_id)
-        return updated_mask_arr
+        sorted_objects = sorted(objects,
+            key=lambda object: _get_shorter_side(object), reverse=True)
+        return sorted_objects
