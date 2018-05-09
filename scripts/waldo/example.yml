@@ -1,0 +1,16 @@
+# network training
+TRAIN:
+    EPOCHS: 20
+    START_EPOCH: 0
+    BATCH_SIZE: 16
+    INIT_LEARNING_RATE: 0.01
+    MOMENTUM: 0.9
+    NESTEROV: True
+
+# network architecture
+NET:
+    DEPTH: 5
+    NUM_OFFSETS: 10
+    NUM_CLASSES: 2
+
+# we don't have to supply all configurations in this file. If not provided, these options will be the default ones.
