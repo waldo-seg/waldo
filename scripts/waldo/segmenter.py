@@ -281,7 +281,7 @@ class ObjectSegmenter:
                         print("Error re-computing obj-merge logprob changed it for "
                               "arec {}".format(arec), file=sys.stderr)
                         print("Old logprob: {}   "
-                              "new logprob: {}".format(old_obj_merge_logprob,
+                              "new logprob: {}".format(obj_merge_logprob,
                                                        arec.obj_merge_logprob),
                               file=sys.stderr)
                         arec.print()
@@ -386,7 +386,6 @@ class ObjectSegmenter:
                     heappush(self.queue, (-that_arec.merge_priority, that_arec))
             else:
                 obj1.adjacency_list[this_arec.obj_pair()] = this_arec
-                old_obj_merge_logprob = this_arec.obj_merge_logprob
                 this_arec.update_merge_priority()
                 if this_arec.merge_priority >= 0:
                     heappush(self.queue, (-this_arec.merge_priority, this_arec))
