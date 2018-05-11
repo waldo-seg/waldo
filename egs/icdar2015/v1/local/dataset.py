@@ -15,11 +15,17 @@ from glob import glob
 from waldo.data_manipulation import * 
 
 
-class Dataset_icdar2015:
+class DatasetICDAR2015:
     """Class to load and process the ICDAR 2015 data.
     Initialize with path to directory containing downloaded dataset.
     The load_data() function can be used after initialization. It returns
     a dict containing two lists: train and test.
+
+    Elements in both lists are dicts x as follows:
+    x['img'] is a numpy array of shape (num_colors, width, height),
+            num_colors is c.num_colors.
+    x['mask'] is an integer numpy array of the same size as x['img'] containing
+             integer object-ids from 0 ... num-objects - 1.
     """
 
     TRAIN_IMAGES = "train/images"

@@ -9,7 +9,7 @@
 import argparse
 import random
 import torch
-from dataset import Dataset_icdar2015
+from dataset import DatasetICDAR2015
 
 parser = argparse.ArgumentParser(
     description='ICDAR2015 Data Process with Pytorch')
@@ -25,7 +25,7 @@ parser.add_argument('--train_prop', default=0.9, type=float,
 
 
 def DataProcess(input_path, train_prop=0.9):
-    icdar = Dataset_icdar2015(input_path)
+    icdar = DatasetICDAR2015(input_path)
     data = icdar.load_data()
 
     num_train = len(data['train'])
