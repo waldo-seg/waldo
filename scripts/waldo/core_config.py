@@ -66,7 +66,6 @@ class CoreConfig:
         assert len(offsets_set) == len(self.offsets)
         for o in self.offsets:
             assert isinstance(o, tuple) and len(o) == 2
-            assert 0 != (0,0)
             # check that the negative of an offset is not in the set-- that
             # would be redundant.
             assert not (-o[0],-o[1]) in offsets_set
