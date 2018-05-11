@@ -79,25 +79,27 @@ def main():
         print('Using core configuration from {}'.format(args.core_config))
 
     # loading Unet configuration
-    u_config = UnetConfig(c_config)
+    u_config = UnetConfig()
     if args.unet_config == '':
         print('No unet config file given, using default unet configuration')
-    if not os.path.exists(args.core_config):
+    if not os.path.exists(args.unet_config):
         sys.exit('Cannot find the unet configuration file: {}'.format(
             args.unet_config))
     else:
-        u_config.read(args.unet_config)
+        # need c_config for validation
+        u_config.read(args.unet_config, c_config)
         print('Using unet configuration from {}'.format(args.unet_config))
 
     offset_list = c_config.offsets
     print("offsets are: {}".format(offset_list))
 
-    # model configuration
-    image_width = u_config.image_width
-    image_height = u_config.image_height
-    num_classes = u_config.num_classes
-    num_colors = u_config.num_colors
-    num_offsets = u_config.num_offsets
+    # model configurations from core config
+    image_width = c_config.train_image_size
+    image_height = c_config.train_image_size
+    num_classes = c_config.num_classes
+    num_colors = c_config.num_colors
+    num_offsets = len(c_config.offsets)
+    # model configurations from unet config
     start_filters = u_config.start_filters
     up_mode = u_config.up_mode
     merge_mode = u_config.merge_mode

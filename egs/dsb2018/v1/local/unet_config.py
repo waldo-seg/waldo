@@ -5,24 +5,17 @@
 from waldo.core_config import CoreConfig
 
 
-class UnetConfig(CoreConfig):
+class UnetConfig:
     """
     A class to store certain configuration information that is needed
     to initialize a Unet. Making these network specific configurations
     store on disk can help us keep the network compatible in testing.
     """
 
-    def __init__(self, coreconfig):
+    def __init__(self):
         """
-        Initialize default network config values and inherit some from coreconfig.
+        Initialize default network config values.
         """
-
-        # these configurations are inherited from core config
-        self.num_classes = coreconfig.num_classes
-        self.num_colors = coreconfig.num_colors
-        self.num_offsets = len(coreconfig.offsets)
-        self.image_width = coreconfig.train_image_size
-        self.image_height = coreconfig.train_image_size
 
         # number of subsampling/upsampling blocks in Unet
         self.depth = 5
@@ -37,17 +30,13 @@ class UnetConfig(CoreConfig):
         # are connected.
         self.merge_mode = 'concat'
 
-    def validate(self):
+    def validate(self, core_config):
         """
         Validate that configuration values are sensible.  Dies on error.
         """
-        assert self.num_classes >= 2
-        # We can change the assertion that num_colors <= 3 later on if we ever
-        # need to operate on images with larger color spaces.
-        assert self.num_colors >= 1 and self.num_colors <= 3
         # the network can't downsample the input image to a size samller than 1*1
-        assert (self.image_width >= 2 ** self.depth and
-                self.image_width % (2 ** self.depth) == 0)
+        assert (core_config.train_image_size >= 2 ** self.depth and
+                core_config.train_image_size % (2 ** self.depth) == 0)
         assert self.up_mode in ['transpose', 'upsample']
         assert self.merge_mode in ['concat', 'add']
 
@@ -63,7 +52,7 @@ class UnetConfig(CoreConfig):
             print("{0} {1}".format(s, self.__dict__[s]), file=f)
         f.close()
 
-    def read(self, filename):
+    def read(self, filename, core_config):
         try:
             f = open(filename, 'r')
         except:
@@ -87,16 +76,16 @@ class UnetConfig(CoreConfig):
                 except:
                     raise Exception("Parsing config line in {0}: bad line: {1}".format(
                         filename, line))
-        self.validate()
+        self.validate(core_config)
 
 
 def test():
     # very non-thorough test.
     c = CoreConfig()
-    n_c = UnetConfig(c)
+    n_c = UnetConfig()
 
     n_c.write('foo')
-    n_c.read('foo')
+    n_c.read('foo', c)
     n_c.write('foo')
 
 
