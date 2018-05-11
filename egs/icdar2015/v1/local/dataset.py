@@ -12,7 +12,7 @@ import numpy as np
 from math import hypot
 from PIL import Image,ImageDraw
 from glob import glob
-from data_manipulation import * 
+from waldo.data_manipulation import * 
 
 
 class Dataset_icdar2015:

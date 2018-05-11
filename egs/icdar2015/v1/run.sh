@@ -13,3 +13,4 @@ nj=4
 
 
 ./local/check_dependencies.sh
+./local/prepare_data.sh # [data-dir] OPTIONAL

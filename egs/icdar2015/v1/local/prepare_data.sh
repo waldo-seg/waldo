@@ -7,26 +7,22 @@
 
 [ -f ./path.sh ] && . ./path.sh; # source the path.
 
-dl_dir=/export/b18/draj/icdar_2015
-
-train_images_dir="$download_dir"/train/images
-test_images_dir="$download_dir"/test/images
-train_labels_dir="$download_dir"/train/labels
-test_labels_dir="$download_dir"/test/labels
+dl_dir=${1:-/export/b18/draj/icdar_2015/}
 
 
-mkdir -p $train_images_dir
-mkdir -p $train_labels_dir
-mkdir -p $test_images_dir
-mkdir -p $test_labels_dir
-
-if [ ! -d $train_dir ] || [ ! -d $test_dir ] ; then
-  echo "Please download ICDAR2015 dataset (and labels) and extract in created directories 
-  in $dl_dir to proceed."
+if [ ! -d $dl_dir ] ; then
+  echo "Please download ICDAR2015 dataset (and labels) and extract in $dl_dir to proceed."
+  echo "The extracted directory structure should look like:"
+  echo "root"
+  echo -e "- train \n -- images \n -- labels"
+  echo -e "- test \n -- images \n -- labels"
 fi
 
 
 ### Process data and save it to pytorch path file
 . parse_options.sh
 
-# local/process_data.py --train-input $train_dir --test-input $test_dir --outdir data --train-prop $train_prop --img-channels 3 --seed $seed
+outdir=data
+mkdir -p $outdir
+
+local/process_data.py --dl_dir $dl_dir --outdir $outdir
