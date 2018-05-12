@@ -163,10 +163,12 @@ def validate_combined_image(x, c):
     array that contains both input and output information, ready for further
     preprocessing and eventually neural network training (although we'll split it
     up before we actually train the network.
+
     A combined image should be a numpy array with shape (dim, width, height),
     where 'dim' equals num_colors + 2 * (num_classes + num_offsets)
     where num_colors, num_classes and num_offsets are derived from the
     configuration object 'c'.
+    
     The meaning of the combined image is as follows:
       x[0:num_colors,...] is the input image
     Let 'num_outputs' equal num_classes + num_offsets.
