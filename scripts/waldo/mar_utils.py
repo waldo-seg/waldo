@@ -4,11 +4,10 @@
 #https://github.com/BebeSparkelSparkel/MinimumBoundingBox
 #https://startupnextdoor.com/computing-convex-hull-in-python/
 
-""" Given the list of word segmentation bounding box, it will
- extract line bounding box. It will create a minimum area bounding box
- that will contain all corner points of word bounding boxes. The
- obtained bounding box (will not necessarily be vertically
- or horizontally aligned).
+""" It is a collection of utility functions that finds minimum area rectangle (mar).
+ Given the list of points, get_mar functionn finds a mar that contains all the
+ points. The obtained mar (not necessarily be vertically or horizontally
+ aligned) will have smallest area.
 """
 
 from math import atan2, cos, sin, pi, sqrt
@@ -200,3 +199,25 @@ def rectangle_corners(rectangle):
 
     return rotate_points(rectangle['rectangle_center'], rectangle['unit_vector_angle'], corner_points)
 
+
+def get_mar(polygon):
+    """ Given a list of points, returns a minimum area rectangle that will
+    contain all points. It will not necessarily be vertically or horizontally
+     aligned.
+    Returns
+    -------
+    list((int, int)): 4 corner points of rectangle.
+    """
+    hull_ordered = compute_hull(list(polygon))
+    hull_ordered = tuple(hull_ordered)
+    min_rectangle = bounding_area(0, hull_ordered)
+    for i in range(1, len(hull_ordered) - 1):
+        rectangle = bounding_area(i, hull_ordered)
+        if rectangle['area'] < min_rectangle['area']:
+            min_rectangle = rectangle
+
+    min_rectangle['unit_vector_angle'] = atan2(min_rectangle['unit_vector'][1], min_rectangle['unit_vector'][0])
+    min_rectangle['rectangle_center'] = to_xy_coordinates(min_rectangle['unit_vector_angle'],
+                                                          min_rectangle['rectangle_center'])
+    points_list = rectangle_corners(min_rectangle)
+    return points_list
