@@ -138,9 +138,8 @@ def get_bounding_box(madcat_file_path):
                 word_coordinate = (int(word_node.getAttribute('x')), int(word_node.getAttribute('y')))
                 minimum_bounding_box_input.append(word_coordinate)
         updated_mbb_input = update_minimum_bounding_box_input(minimum_bounding_box_input)
-        bounding_box = get_minimum_bounding_box(updated_mbb_input)
-        points_ordered = compute_hull(list(bounding_box.corner_points))
-        object['bounding_box'] = bounding_box
+        points = get_minimum_bounding_box(updated_mbb_input)
+        points_ordered = compute_hull(points)
         object['polygon'] = points_ordered
         objects.append(object)
     return objects
