@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2018 Johns Hopkins University (author: Yiwen Shao, Desh Raj)
+# Copyright 2018 Johns Hopkins University (author: Desh Raj)
 # Apache 2.0
 
 """ This script prepares the training, validation and test data for DSB2018 in a pytorch fashion
@@ -28,12 +28,19 @@ def DataProcess(input_path, train_prop=0.9):
     icdar = DatasetICDAR2015(input_path)
     data = icdar.load_data()
 
-    num_train = len(data['train'])
-    train = data['train'][:num_train*train_prop]
-    val = data['train'][num_train*train_prop + 1:]
+    num_total = len(data['train'])
+    num_train = int(num_total*train_prop)
+    train = data['train'][:num_train]
+    val = data['train'][num_train + 1:]
     test = data['test']
 
     return train, val, test
+
+
+def save_object(object, filename):
+    fh = open(filename,'wb')
+    torch.save(object, fh)
+    fh.close()
     
 
 if __name__ == '__main__':
@@ -49,6 +56,6 @@ if __name__ == '__main__':
     random.seed(args.seed)
     train, val, test = DataProcess(args.dl_dir, train_prop=args.train_prop)
 
-    torch.save(train, train_output)
-    torch.save(val, val_output)
-    torch.save(test, test_output)
+    save_object(train, train_output)
+    save_object(val, val_output)
+    save_object(test, test_output)

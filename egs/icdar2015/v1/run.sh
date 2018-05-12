@@ -13,4 +13,4 @@ nj=4
 
 
 ./local/check_dependencies.sh
-./local/prepare_data.sh # [data-dir] OPTIONAL
+./local/prepare_data.sh /home/desh/Research/icdar/icdar_2015/sample/ # [data-dir] OPTIONAL

@@ -25,4 +25,10 @@ fi
 outdir=data
 mkdir -p $outdir
 
+train_prop=0.9
+seed=0
+
+mkdir -p ${outdir}/train_val/split${train_prop}_seed${seed}
+mkdir -p ${outdir}/test
+
 local/process_data.py --dl_dir $dl_dir --outdir $outdir

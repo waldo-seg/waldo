@@ -9,10 +9,10 @@
 
 import os
 import numpy as np
-from math import hypot
 from PIL import Image,ImageDraw
 from glob import glob
 from waldo.data_manipulation import * 
+from waldo.core_config import CoreConfig
 
 
 class DatasetICDAR2015:
@@ -40,8 +40,9 @@ class DatasetICDAR2015:
         Validates the path to ICDAR 2015 data.
         """
         self.data_dir=""
-        if data_dir is None:
-            data_dir = self.DATA_DIR
+        
+        self.core_config = CoreConfig()
+        self.core_config.num_colors = 3
 
         if not self._validate_path(data_dir):
             raise ValueError("The path is invalid. Either of the following"
@@ -122,19 +123,20 @@ class DatasetICDAR2015:
 
         for img,lbl in zip(glob(img_dir+"/*.jpg"),glob(lbl_dir+"/*.txt")):
             im = Image.open(img)
-            im_arr = np.array(im)
+            im_arr = np.swapaxes(np.array(im), 2, 0)
             lbl_fh = open(lbl,encoding='utf-8')
 
             objects = self._get_objects(lbl_fh)
-            sorted_objects = self._sort_object_list(objects)
-            object_class_arr = self._get_object_classes(sorted_objects)
+            sorted_objects = sort_object_list(objects)
+            object_class = self._get_object_classes(sorted_objects)
             
             image_with_objects = {
                 'img':im_arr,
-                'objects':sorted_objects
+                'objects':sorted_objects,
+                'object_class': object_class
             }
 
-            image_with_mask = convert_to_mask(image_with_objects)
+            image_with_mask = convert_to_mask(image_with_objects, self.core_config)
 
             data.append(image_with_mask)
 
@@ -171,32 +173,6 @@ class DatasetICDAR2015:
         """Given the list of objects, it returns an array mapping object ids to their
         respective classes. Background has class 0 and text has class 1.
         """
-        class_names = np.array([1 for object in objects])
-        object_class_arr = np.insert(class_names, 0, 0)
-        return object_class_arr
-
-
-
-    def _sort_object_list(self,objects):
-        """Given a list of bounding boxes, returns a new list sorted in descending order by
-        the breadth (shorter side) of the rectangles.
-        """
-
-        def _get_shorter_side(object):
-            """Given an object, returns the length of the shorter side of the associated rectangle
-            as a float.
-            """
-            return min(
-                _Euclidean_distance(object['polygon'][0],object['polygon'][1]),
-                _Euclidean_distance(object['polygon'][1],object['polygon'][2])
-            )
-
-
-        def _Euclidean_distance(a,b):
-            """Given two points, returns their Euclidean distance.
-            """
-            return hypot(a[0]-b[0],a[1]-b[1])
-
-        sorted_objects = sorted(objects,
-            key=lambda object: _get_shorter_side(object), reverse=True)
-        return sorted_objects
+        object_class = [1 for object in objects]
+        object_class.insert(0, 0)
+        return object_class
