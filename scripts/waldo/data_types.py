@@ -2,7 +2,7 @@
 
 # Apache 2.0
 import numpy as np
-from waldo.core_config import CoreConfig  # import waldo.core_config
+from waldo.scripts.waldo.core_config import CoreConfig  # import waldo.core_config
 
 
 def validate_config(c):
@@ -43,10 +43,19 @@ def validate_image_with_mask(x, c):
     n_classes, n_colors = c.num_classes, c.num_colors
     im = x['img']
     dims = im.shape
-    if len(dims) != 3:
-        raise ValueError('3 dimensional image required.')
-    if dims[0] != n_colors:
-        raise ValueError('first dimension of np.array should match with config num colors')
+    if n_colors == 1:
+        if len(dims) != 2:
+            raise ValueError('2 dimensional image required.')
+    else:
+        if len(dims) != 3:
+            raise ValueError('3 dimensional image required.')
+
+    if n_colors == 1:
+        if len(dims) != 2:
+            raise ValueError('2 dimensional image required.')
+    else:
+        if len(dims) != 3:
+            raise ValueError('3 dimensional image required.')
 
     x_mask = x['mask']
     dims_mask = x_mask.shape
@@ -92,10 +101,16 @@ def validate_image_with_objects(x, c):
     n_colors = c.num_colors
     im = x['img']
     dims = im.shape
-    if len(dims) != 3:
-        raise ValueError('3 dimensional image required.')
-    if dims[0] != n_colors:
-        raise ValueError('first dimension of np.array should match with config num colors')
+    if n_colors == 1:
+        if len(dims) != 2:
+            raise ValueError('2 dimensional image required.')
+    else:
+        if len(dims) != 3:
+            raise ValueError('3 dimensional image required.')
+
+    if n_colors != 1:
+        if dims[0] != n_colors:
+            raise ValueError('first dimension of np.array should match with config num colors')
 
     return
 

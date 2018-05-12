@@ -6,8 +6,12 @@
 
 import numpy as np
 from PIL import Image, ImageDraw
+<<<<<<< HEAD
 from math import hypot
 from waldo.data_types import *
+=======
+from waldo.scripts.waldo.data_types import *
+>>>>>>> 3b4e2cbb0953f1c5b4b102cc224558f580cd78c4
 
 
 def convert_to_mask(x, c):
@@ -23,8 +27,9 @@ def convert_to_mask(x, c):
     y['img'] = im
     mask_img = Image.new('L', (im.shape[1], im.shape[2]), 0)
     mask_img_arr = np.transpose(np.array(mask_img))
+    
     object_class = list()
-    object_class.append(object_id)
+    object_class.append(0)
     for object in x['objects']:
         ordered_polygon_points = object['polygon']
         object_id += 1
@@ -35,14 +40,14 @@ def convert_to_mask(x, c):
         array = np.array(pixels, dtype=np.uint8)
         new_image = Image.fromarray(array)
         mask_img_arr = np.array(new_image)
-        object_class.append(object_id)
+        object_class.append(1)
     y['mask'] = mask_img_arr
 
     if 'object_class' in x:
         y['object_class'] = x['object_class']
     else:
         y['object_class'] = get_object_class(x)
-
+    
     validate_image_with_mask(y, c)
     return y
 
@@ -80,7 +85,7 @@ def convert_to_combined_image(x, c):
     this function doesn't do padding, you need to call pad_combined_image.
     """
     validate_config(c)
-    validate_image_with_mask(x)
+    validate_image_with_mask(x, c)
     y = dict()
     # # TODO.. set y.
     validate_combined_image(y, c)
