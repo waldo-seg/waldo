@@ -6,30 +6,31 @@
 
 import numpy as np
 from PIL import Image, ImageDraw
-from data_types import *
+from math import hypot
+from waldo.data_types import *
 
 
-def convert_to_mask(x):
+def convert_to_mask(x, c):
     """ This function accepts an object x that should represent an image
         with polygon objects in it, and returns an object representing an image
         with an object mask.
      """
-    validate_image_with_objects(x)
+    validate_image_with_objects(x, c)
 
     im = x['img']
     object_id = 0
     y = dict()
     y['img'] = im
-    mask_img = Image.new('L', (im.size[0], im.size[1]), 0)
-    mask_img_arr = np.array(mask_img)
+    mask_img = Image.new('L', (im.shape[1], im.shape[2]), 0)
+    mask_img_arr = np.transpose(np.array(mask_img))
     object_class = list()
     object_class.append(object_id)
     for object in x['objects']:
         ordered_polygon_points = object['polygon']
         object_id += 1
-        temp_img = Image.new('L', (im.size[0], im.size[1]), 0)
+        temp_img = Image.new('L', (im.shape[1], im.shape[2]), 0)
         ImageDraw.Draw(temp_img).polygon(ordered_polygon_points, fill=object_id)
-        temp_img_arr = np.array(temp_img)
+        temp_img_arr = np.transpose(np.array(temp_img))
         pixels = np.where(temp_img_arr == object_id, temp_img_arr, mask_img_arr)
         array = np.array(pixels, dtype=np.uint8)
         new_image = Image.fromarray(array)
@@ -37,7 +38,12 @@ def convert_to_mask(x):
         object_class.append(object_id)
     y['mask'] = mask_img_arr
 
-    validate_image_with_mask(y)
+    if 'object_class' in x:
+        y['object_class'] = x['object_class']
+    else:
+        y['object_class'] = get_object_class(x)
+
+    validate_image_with_mask(y, c)
     return y
 
 
@@ -111,3 +117,37 @@ def randomly_crop_combined_image(x, c):
     # TODO
     validate_combined_image(y, c)
     return y
+
+
+def sort_object_list(objects):
+    """Given a list of objects as defined in data_types, returns a new list sorted 
+    in descending order by the breadth (shorter side) of the rectangles.
+    """
+
+    def _get_shorter_side(object):
+        """Given an object, returns the length of the shorter side of the associated rectangle
+        as a float.
+        """
+        return min(
+            _Euclidean_distance(object['polygon'][0],object['polygon'][1]),
+            _Euclidean_distance(object['polygon'][1],object['polygon'][2])
+        )
+
+
+    def _Euclidean_distance(a,b):
+        """Given two points, returns their Euclidean distance.
+        """
+        return hypot(a[0]-b[0],a[1]-b[1])
+
+    map(lambda x: validate_object(x), objects)
+
+    sorted_objects = sorted(objects,
+        key=lambda object: _get_shorter_side(object), reverse=True)
+    return sorted_objects
+
+
+def get_object_class(x):
+    """Given a list of objects as defined in the data_types, it returns an array mapping 
+    object ids to their respective classes.
+    """
+    #TODO
