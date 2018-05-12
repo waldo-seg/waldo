@@ -2,7 +2,7 @@
 
 # Apache 2.0
 import numpy as np
-import core_config  # import waldo.core_config
+from waldo.scripts.waldo.core_config import CoreConfig  # import waldo.core_config
 
 
 def validate_config(c):
@@ -43,23 +43,32 @@ def validate_image_with_mask(x, c):
     n_classes, n_colors = c.num_classes, c.num_colors
     im = x['img']
     dims = im.shape
-    if len(dims) != 3:
-        raise ValueError('3 dimensional image required.')
-    if dims[0] != n_colors:
-        raise ValueError('first dimension of np.array should match with config num colors')
+    if n_colors == 1:
+        if len(dims) != 2:
+            raise ValueError('2 dimensional image required.')
+    else:
+        if len(dims) != 3:
+            raise ValueError('3 dimensional image required.')
+
+    if n_colors == 1:
+        if len(dims) != 2:
+            raise ValueError('2 dimensional image required.')
+    else:
+        if len(dims) != 3:
+            raise ValueError('3 dimensional image required.')
 
     x_mask = x['mask']
     dims_mask = x_mask.shape
-    if len(dims_mask) != 2 or dims_mask[0] != dims[1] or dims_mask[1] != dims[2]:
+    if len(dims_mask) != 2 or dims_mask[0] != dims[0] or dims_mask[1] != dims[1]:
         raise ValueError('same mask shape and image shape required.')
 
     mask_unique_val = np.unique(x_mask)
     for val in mask_unique_val:
-        if type(val) != int:
+        if isinstance(val, int):
             raise ValueError('int type mask value required.')
 
     object_class_list = x['object_class']
-    if not set(object_class_list) < set(range(0, n_classes)):
+    if not set(object_class_list) <= set(range(0, n_classes)):
         raise ValueError('object classes between 0 and num_classes required')
 
     return
@@ -70,7 +79,6 @@ def validate_image_with_objects(x, c):
     with a list of objects inside it.  c is the config object as validated by
     'validate_config'.  This function has no return value; it raises an
     an exception on failure.
-
      Specifically it is checking that:
       x['img'] is a numpy array of shape (num_colors, width, height),
            where num_colors is c.num_colors'].
@@ -92,10 +100,16 @@ def validate_image_with_objects(x, c):
     n_colors = c.num_colors
     im = x['img']
     dims = im.shape
-    if len(dims) != 3:
-        raise ValueError('3 dimensional image required.')
-    if dims[0] != n_colors:
-        raise ValueError('first dimension of np.array should match with config num colors')
+    if n_colors == 1:
+        if len(dims) != 2:
+            raise ValueError('2 dimensional image required.')
+    else:
+        if len(dims) != 3:
+            raise ValueError('3 dimensional image required.')
+
+    if n_colors != 1:
+        if dims[0] != n_colors:
+            raise ValueError('first dimension of np.array should match with config num colors')
 
     return
 
@@ -149,12 +163,10 @@ def validate_combined_image(x, c):
     array that contains both input and output information, ready for further
     preprocessing and eventually neural network training (although we'll split it
     up before we actually train the network.
-
     A combined image should be a numpy array with shape (dim, width, height),
     where 'dim' equals num_colors + 2 * (num_classes + num_offsets)
     where num_colors, num_classes and num_offsets are derived from the
     configuration object 'c'.
-
     The meaning of the combined image is as follows:
       x[0:num_colors,...] is the input image
     Let 'num_outputs' equal num_classes + num_offsets.
@@ -197,3 +209,4 @@ def validate_combined_image(x, c):
         raise ValueError('unique values 0, 1 expected)')
 
     return
+

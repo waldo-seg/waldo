@@ -6,38 +6,38 @@
 
 import numpy as np
 from PIL import Image, ImageDraw
-from data_types import *
+from waldo.scripts.waldo.data_types import *
 
 
-def convert_to_mask(x):
+def convert_to_mask(x, c):
     """ This function accepts an object x that should represent an image
         with polygon objects in it, and returns an object representing an image
         with an object mask.
      """
-    validate_image_with_objects(x)
+    validate_image_with_objects(x, c)
 
     im = x['img']
     object_id = 0
     y = dict()
     y['img'] = im
-    mask_img = Image.new('L', (im.size[0], im.size[1]), 0)
+    mask_img = Image.new('L', (im.shape[1], im.shape[0]), 0)
     mask_img_arr = np.array(mask_img)
     object_class = list()
-    object_class.append(object_id)
+    object_class.append(0)
     for object in x['objects']:
         ordered_polygon_points = object['polygon']
         object_id += 1
-        temp_img = Image.new('L', (im.size[0], im.size[1]), 0)
+        temp_img = Image.new('L', (im.shape[1], im.shape[0]), 0)
         ImageDraw.Draw(temp_img).polygon(ordered_polygon_points, fill=object_id)
         temp_img_arr = np.array(temp_img)
         pixels = np.where(temp_img_arr == object_id, temp_img_arr, mask_img_arr)
         array = np.array(pixels, dtype=np.uint8)
         new_image = Image.fromarray(array)
         mask_img_arr = np.array(new_image)
-        object_class.append(object_id)
+        object_class.append(1)
     y['mask'] = mask_img_arr
-
-    validate_image_with_mask(y)
+    y['object_class'] = object_class
+    validate_image_with_mask(y, c)
     return y
 
 
@@ -69,12 +69,11 @@ def convert_to_combined_image(x, c):
     containing both input and supervision information in a single numpy array.
     see 'validate_combined_image' in data_types.py for a description of what
     a combined image is.
-
     The width of the resulting image will be the same as the image in x:
     this function doesn't do padding, you need to call pad_combined_image.
     """
     validate_config(c)
-    validate_image_with_mask(x)
+    validate_image_with_mask(x, c)
     y = dict()
     # # TODO.. set y.
     validate_combined_image(y, c)
@@ -103,7 +102,6 @@ def randomly_crop_combined_image(x, c):
     c.train_image_size by c.train_image_size, and returns the
     cropped image (x is not modified).  You should probably call
     pad_combined_image before calling this function.
-
     It is an error if the width or height of image x were previously smaller
     than that. """
     validate_combined_image(x, c)
@@ -111,3 +109,4 @@ def randomly_crop_combined_image(x, c):
     # TODO
     validate_combined_image(y, c)
     return y
+
