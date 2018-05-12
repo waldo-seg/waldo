@@ -31,4 +31,4 @@ seed=0
 mkdir -p ${outdir}/train_val/split${train_prop}_seed${seed}
 mkdir -p ${outdir}/test
 
-local/process_data.py --dl_dir $dl_dir --outdir $outdir
+python3 local/process_data.py --dl_dir $dl_dir --outdir $outdir

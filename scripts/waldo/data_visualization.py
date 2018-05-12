@@ -7,28 +7,46 @@ import numpy as np
 from waldo.data_types import *
 
 
-def visualize_mask(x, c):
-  """This function accepts an object x that should represent an image with a
-       mask and a config class c, and it modifies the image to superimpose the "mask" on it.  
-       The image will still be visible through a semi-transparent mask layer.
-       This function returns None; it modifies x in-place.
+def visualize_mask(x, c, transparency):
     """
+    This function accepts an object x that should represent an image with a
+    mask, a config class c, and a float 0 < transparency < 1.  
+    It displays the mask overlay on the image with the mask transparency 
+    described by the parameter.
+    """
+
+    def get_cmap(n, name='hsv'):
+        '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
+        RGB color; the keyword argument name must be a standard mpl colormap name.
+        '''
+        return plt.cm.get_cmap(name, n)
+
+
+    def get_colored_mask(mask, n, cmap):
+        """Given a BW mask, number of objects, and a LinearSegmentedColormap object, 
+        returns a RGB mask.
+        """
+        color_mask = np.array([cmap(i) for i in mask])
+        return np.array(color_mask)
+
+
 
     validate_image_with_mask(x, c)
     im = x['img']
-    mask = x['mask']
+    im = np.swapaxes(im, 0, 2)
+    mask = np.transpose(x['mask'])
     
-    num_objects = np.unique(mask)
-    mask_dilated = int(mask*255 / num_objects)
-    w, h = mask.shape
-    mask_rgb = np.empty((w, h, 3), dtype=np.uint8)
-    mask_rgb[:, :, :] = mask_dilated[:, :, np.newaxis]
-    
+    num_objects = np.unique(mask).shape[0]
+    cmap = get_cmap(num_objects)
+    mask_rgb = get_colored_mask(mask,num_objects,cmap)
+
     plt.imshow(im)
-    plt.imshow(mask_rgb, alpha=0.2)
+    plt.imshow(mask_rgb, alpha=transparency)
     plt.show()
 
     return
+
+
 
 def visualize_polygons(x):
     """This function accepts an object x that should represent an image with

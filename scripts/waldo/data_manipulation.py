@@ -6,12 +6,8 @@
 
 import numpy as np
 from PIL import Image, ImageDraw
-<<<<<<< HEAD
 from math import hypot
 from waldo.data_types import *
-=======
-from waldo.scripts.waldo.data_types import *
->>>>>>> 3b4e2cbb0953f1c5b4b102cc224558f580cd78c4
 
 
 def convert_to_mask(x, c):
