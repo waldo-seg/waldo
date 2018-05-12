@@ -70,7 +70,7 @@ class CoreConfig:
             # would be redundant.
             assert not (-o[0],-o[1]) in offsets_set
 
-        assert self.padding > 0
+        assert self.padding >= 0
         assert self.train_image_size > 0 and self.train_image_size > 4 * self.padding
 
 
