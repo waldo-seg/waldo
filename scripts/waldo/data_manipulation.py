@@ -7,6 +7,7 @@
 import numpy as np
 from PIL import Image, ImageDraw
 from waldo.scripts.waldo.data_types import *
+from waldo.scripts.waldo.minimum_area_rectangle import *
 
 
 def convert_to_mask(x, c):
@@ -60,6 +61,33 @@ def convert_polygon_to_points(polygon):
     points_list = []
     for x, y in zip(points_location[0], points_location[1]):
         points_list.append((x, y))
+
+    validate_polygon(points_list)
+
+    return points_list
+
+
+def get_minimum_bounding_box(polygon):
+    """  This function accepts an object representing a list of rectangles
+         and returns a polygon (minimum area rectangle).
+    """
+    validate_polygon(polygon)
+
+    hull_ordered = compute_hull(list(polygon))
+    hull_ordered = tuple(hull_ordered)
+    min_rectangle = bounding_area(0, hull_ordered)
+    for i in range(1, len(hull_ordered) - 1):
+        rectangle = bounding_area(i, hull_ordered)
+        if rectangle['area'] < min_rectangle['area']:
+            min_rectangle = rectangle
+
+    min_rectangle['unit_vector_angle'] = atan2(min_rectangle['unit_vector'][1], min_rectangle['unit_vector'][0])
+    min_rectangle['rectangle_center'] = to_xy_coordinates(min_rectangle['unit_vector_angle'],
+                                                          min_rectangle['rectangle_center'])
+    points_list = rectangle_corners(min_rectangle)
+
+    print(points_list)
+    validate_polygon(points_list)
 
     return points_list
 
