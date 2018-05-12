@@ -85,7 +85,6 @@ def get_minimum_bounding_box(polygon):
     min_rectangle['rectangle_center'] = to_xy_coordinates(min_rectangle['unit_vector_angle'],
                                                           min_rectangle['rectangle_center'])
     points_list = rectangle_corners(min_rectangle)
-    print(points_list)
     validate_polygon(points_list)
 
     return points_list
