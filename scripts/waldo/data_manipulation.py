@@ -69,6 +69,7 @@ def convert_to_combined_image(x, c):
     containing both input and supervision information in a single numpy array.
     see 'validate_combined_image' in data_types.py for a description of what
     a combined image is.
+
     The width of the resulting image will be the same as the image in x:
     this function doesn't do padding, you need to call pad_combined_image.
     """
