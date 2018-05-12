@@ -6,8 +6,8 @@
 
 import numpy as np
 from PIL import Image, ImageDraw
-from waldo.scripts.waldo.data_types import *
-from waldo.scripts.waldo.minimum_area_rectangle import *
+from data_types import *
+from minimum_area_rectangle import *
 
 
 def convert_to_mask(x, c):
