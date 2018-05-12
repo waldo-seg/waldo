@@ -46,19 +46,20 @@ parser = argparse.ArgumentParser(description="Creates line images from page imag
                                              " data/LDC2013T09 data/LDC2013T15 data/madcat.train.raw.lineid "
                                              " data/local/lines ",
                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--database_path1', type=str,
+parser.add_argument('database_path1', type=str,
                     help='Path to the downloaded madcat data directory 1')
-parser.add_argument('--database_path2', type=str,
+parser.add_argument('database_path2', type=str,
                     help='Path to the downloaded madcat data directory 2')
-parser.add_argument('--database_path3', type=str,
+parser.add_argument('database_path3', type=str,
                     help='Path to the downloaded madcat data directory 3')
-parser.add_argument('--data_splits', type=str,
+parser.add_argument('data_splits', type=str,
                     help='Path to file that contains the train/test/dev split information')
-parser.add_argument('--out_dir', type=str,
+parser.add_argument('out_dir', type=str,
                     help='directory location to write output files')
-parser.add_argument('--padding', type=int, default=400,
+parser.add_argument('padding', type=int, default=400,
                     help='padding across horizontal/verticle direction')
 args = parser.parse_args()
+
 
 """
 bounding_box is a named tuple which contains:
@@ -92,6 +93,7 @@ def get_orientation(origin, p1, p2):
         - ((p1[0] - origin[0]) * (p2[1] - origin[1]))
     )
     return difference
+
 
 def compute_hull(points):
     """ Given input list of points, return a list of points that
@@ -135,6 +137,7 @@ def compute_hull(points):
         point = far_point
     return hull_points
 
+
 def unit_vector(pt0, pt1):
     """ Given two points pt0 and pt1, return a unit vector that
         points in the direction of pt0 to pt1.
@@ -146,6 +149,7 @@ def unit_vector(pt0, pt1):
     return (pt1[0] - pt0[0]) / dis_0_to_1, \
            (pt1[1] - pt0[1]) / dis_0_to_1
 
+
 def orthogonal_vector(vector):
     """ Given a vector, returns a orthogonal/perpendicular vector of equal length.
     Returns
@@ -153,6 +157,7 @@ def orthogonal_vector(vector):
     (float, float): A vector that points in the direction orthogonal to vector.
     """
     return -1 * vector[1], vector[0]
+
 
 def bounding_area(index, hull):
     """ Given index location in an array and convex hull, it gets two points
@@ -188,6 +193,7 @@ def bounding_area(index, hull):
             'unit_vector': unit_vector_p,
             }
 
+
 def to_xy_coordinates(unit_vector_angle, point):
     """ Given angle from horizontal axis and a point from origin,
         returns converted unit vector coordinates in x, y coordinates.
@@ -199,6 +205,7 @@ def to_xy_coordinates(unit_vector_angle, point):
     angle_orthogonal = unit_vector_angle + pi / 2
     return point[0] * cos(unit_vector_angle) + point[1] * cos(angle_orthogonal), \
            point[0] * sin(unit_vector_angle) + point[1] * sin(angle_orthogonal)
+
 
 def rotate_points(center_of_rotation, angle, points):
     """ Rotates a point cloud around the center_of_rotation point by angle
@@ -223,6 +230,7 @@ def rotate_points(center_of_rotation, angle, points):
 
     return rot_points
 
+
 def rectangle_corners(rectangle):
     """ Given rectangle center and its inclination, returns the corner
         locations of the rectangle.
@@ -237,6 +245,7 @@ def rectangle_corners(rectangle):
                             rectangle['rectangle_center'][1] + i2 * rectangle['length_orthogonal']))
 
     return rotate_points(rectangle['rectangle_center'], rectangle['unit_vector_angle'], corner_points)
+
 
 def minimum_bounding_box(points):
     """ Given a list of 2D points, it returns the minimum area rectangle bounding all
@@ -275,6 +284,7 @@ def minimum_bounding_box(points):
         corner_points=set(rectangle_corners(min_rectangle))
     )
 
+
 def pad_image(image):
     """ Given an image, returns a padded image around the border.
         This routine save the code from crashing if bounding boxes that are
@@ -287,6 +297,7 @@ def pad_image(image):
     padded_image = Image.new('L', (image.size[0] + int(args.padding), image.size[1] + int(args.padding)), "white")
     padded_image.paste(im=image, box=(offset, offset))
     return padded_image
+
 
 def update_minimum_bounding_box_input(bounding_box_input):
     """ Given list of 2D points, returns list of 2D points shifted by an offset.
@@ -305,12 +316,14 @@ def update_minimum_bounding_box_input(bounding_box_input):
 
     return updated_minimum_bounding_box_input
 
+
 def get_shorter_side(object):
     bounding_box = object['bounding_box']
     if bounding_box.length_parallel < bounding_box.length_orthogonal:
         return bounding_box.length_parallel
     else:
         return bounding_box.length_orthogonal
+
 
 def get_mask_from_page_image(image_file_name, objects):
     """ Given a page image, extracts the page image mask from it.
@@ -341,8 +354,9 @@ def get_mask_from_page_image(image_file_name, objects):
 
 
 def get_bounding_box(madcat_file_path):
-    """ Given a page image, extracts the line images from it.
-    Inout
+    """ Given word boxes of each line, return bounding box for each
+     line in sorted order
+    Input
     -----
     image_file_name (string): complete path and name of the page image.
     madcat_file_path (string): complete path and name of the madcat xml file
@@ -363,17 +377,7 @@ def get_bounding_box(madcat_file_path):
         updated_mbb_input = update_minimum_bounding_box_input(minimum_bounding_box_input)
         bounding_box = minimum_bounding_box(updated_mbb_input)
         points_ordered = compute_hull(list(bounding_box.corner_points))
-
-        ordered_bounding_box = bounding_box_tuple(bounding_box.area,
-                                                  bounding_box.length_parallel,
-                                                  bounding_box.length_orthogonal,
-                                                  bounding_box.length_orthogonal,
-                                                  bounding_box.unit_vector,
-                                                  bounding_box.unit_vector_angle,
-                                                  set(points_ordered),
-                                                  )
-
-        object['bounding_box'] = ordered_bounding_box
+        object['bounding_box'] = bounding_box
         object['polygon'] = points_ordered
         objects.append(object)
 
@@ -381,6 +385,7 @@ def get_bounding_box(madcat_file_path):
                             key=lambda object: get_shorter_side(object), reverse=True)
 
     return sorted_objects
+
 
 def check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3):
     """ Returns the complete path of the page image and corresponding
@@ -410,6 +415,7 @@ def check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3):
 
     return None, None, None
 
+
 def parse_writing_conditions(writing_conditions):
     """ Given writing condition file path, returns a dictionary which have writing condition
         of each page image.
@@ -424,6 +430,7 @@ def parse_writing_conditions(writing_conditions):
             file_writing_cond[line_list[0]] = line_list[3]
     return file_writing_cond
 
+
 def check_writing_condition(wc_dict, base_name):
     """ Given writing condition dictionary, checks if a page image is writing
         in a specifed writing condition.
@@ -437,6 +444,7 @@ def check_writing_condition(wc_dict, base_name):
         return False
 
     return True
+
 
 def main():
     writing_condition_folder_list = args.database_path1.split('/')
