@@ -4,6 +4,9 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
+from io import BytesIO
+
 from waldo.data_types import *
 
 
@@ -11,7 +14,7 @@ def visualize_mask(x, c, transparency):
     """
     This function accepts an object x that should represent an image with a
     mask, a config class c, and a float 0 < transparency < 1.  
-    It displays the mask overlay on the image with the mask transparency 
+    It changes the image in-place by overlaying the mask with transparency 
     described by the parameter.
     """
 
@@ -42,7 +45,13 @@ def visualize_mask(x, c, transparency):
 
     plt.imshow(im)
     plt.imshow(mask_rgb, alpha=transparency)
-    plt.show()
+    plt.subplots_adjust(0,0,1,1)
+    buffer_ = BytesIO()
+    plt.savefig(buffer_, format = "png")
+    buffer_.seek(0)
+    image = Image.open(buffer_)
+    x['img'] = np.swapaxes(np.array(image), 0, 2)
+    buffer_.close()
 
     return
 

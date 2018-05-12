@@ -9,7 +9,6 @@ from PIL import Image, ImageDraw
 from math import hypot
 from waldo.data_types import *
 
-
 def convert_to_mask(x, c):
     """ This function accepts an object x that should represent an image
         with polygon objects in it, and returns an object representing an image
