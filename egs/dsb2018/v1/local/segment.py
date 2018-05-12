@@ -37,7 +37,6 @@ def main():
     global args
     args = parser.parse_args()
     args.batch_size = 1
-    args.depth = 16
 
     # # of classes, # of offsets
     model = UNet(args.num_classes, args.num_offsets)
@@ -47,7 +46,6 @@ def main():
         checkpoint = torch.load(args.model,
                                 map_location=lambda storage, loc: storage)
         model.load_state_dict(checkpoint['state_dict'])
-        model.cpu()
         offset_list = checkpoint['offset_list']
         print("loaded.")
         print("offsets are {}".format(offset_list))
@@ -82,7 +80,6 @@ def main():
 
     img = torch.autograd.Variable(img)
     predictions = model(img)
-    predictions = predictions.data
     # [batch-idx, class-idx, row, col]
     class_pred = predictions[0, :args.num_classes, :, :]
     # [batch-idx, offset-idx, row, col]
