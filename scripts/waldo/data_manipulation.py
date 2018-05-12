@@ -102,6 +102,7 @@ def randomly_crop_combined_image(x, c):
     c.train_image_size by c.train_image_size, and returns the
     cropped image (x is not modified).  You should probably call
     pad_combined_image before calling this function.
+
     It is an error if the width or height of image x were previously smaller
     than that. """
     validate_combined_image(x, c)

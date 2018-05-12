@@ -168,7 +168,7 @@ def validate_combined_image(x, c):
     where 'dim' equals num_colors + 2 * (num_classes + num_offsets)
     where num_colors, num_classes and num_offsets are derived from the
     configuration object 'c'.
-    
+
     The meaning of the combined image is as follows:
       x[0:num_colors,...] is the input image
     Let 'num_outputs' equal num_classes + num_offsets.
