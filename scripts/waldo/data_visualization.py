@@ -1,37 +1,34 @@
-# Copyright      2018  Johns Hopkins University (author: Daniel Povey)
+# Copyright      2018  Johns Hopkins University (author: Daniel Povey, Desh Raj, Adel Rahimi)
 
 # Apache 2.0
 
+import matplotlib.pyplot as plt
+import numpy as np
+from waldo.data_types import *
 
-""" TODO
-"""
-"""randomly coloring white areas. low is 10 as a threshold.
- dimensions are = Red, Blue, Green, Alpha
- Alpha is set 38 for a ~20% transparency"""
-def visualize_mask(x):
-    validate_image_with_mask(x)
-    mask = x['mask']
-    red, green, blue, alpha = mask.T
-    white_areas = (red > 0) & (blue > 0) & (green > 0)
-    black_areas = (red == 0) & (blue == 0) & (green == 0) & (alpha == 255)
 
-    mask[..., :][white_areas.T] = (
-        np.random.randint(low=10, high=255), np.random.randint(low=10, high=255),
-        np.random.randint(low=10, high=255), 38)
-    mask[..., :][black_areas.T] = 0
-
-    x['mask'] = mask
-    validate_image_with_mask(x)
-    return None
-
-    """This function accepts an object x that should represent an image with a
-       mask, and it modifies the image to superimpose the "mask" on it.  The
-       image will still be visible through a semi-transparent mask layer.
+def visualize_mask(x, c):
+  """This function accepts an object x that should represent an image with a
+       mask and a config class c, and it modifies the image to superimpose the "mask" on it.  
+       The image will still be visible through a semi-transparent mask layer.
        This function returns None; it modifies x in-place.
     """
-    validate_image_with_mask(x)
-    # ... do something, modifying x somehow
-    return None
+
+    validate_image_with_mask(x, c)
+    im = x['img']
+    mask = x['mask']
+    
+    num_objects = np.unique(mask)
+    mask_dilated = int(mask*255 / num_objects)
+    w, h = mask.shape
+    mask_rgb = np.empty((w, h, 3), dtype=np.uint8)
+    mask_rgb[:, :, :] = mask_dilated[:, :, np.newaxis]
+    
+    plt.imshow(im)
+    plt.imshow(mask_rgb, alpha=0.2)
+    plt.show()
+
+    return
 
 def visualize_polygons(x):
     """This function accepts an object x that should represent an image with
