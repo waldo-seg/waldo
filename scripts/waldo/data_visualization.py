@@ -10,7 +10,7 @@ from io import BytesIO
 from waldo.data_types import *
 
 
-def visualize_mask(x, c, transparency):
+def visualize_mask(x, c, transparency=0.3):
     """
     This function accepts an object x that should represent an image with a
     mask, a config class c, and a float 0 < transparency < 1.  

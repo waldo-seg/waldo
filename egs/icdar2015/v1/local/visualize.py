@@ -53,3 +53,4 @@ if __name__ == '__main__':
     # x = random.choice(data['train'])
     x = data['test'][1]
     visualize_object(x,transparency)
+
