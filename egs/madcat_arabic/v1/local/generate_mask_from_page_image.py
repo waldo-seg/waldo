@@ -56,7 +56,7 @@ parser.add_argument('data_splits', type=str,
                     help='Path to file that contains the train/test/dev split information')
 parser.add_argument('out_dir', type=str,
                     help='directory location to write output files')
-parser.add_argument('padding', type=int, default=400,
+parser.add_argument('--padding', type=int, default=400,
                     help='padding across horizontal/verticle direction')
 args = parser.parse_args()
 
