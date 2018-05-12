@@ -2,7 +2,7 @@
 
 # Apache 2.0
 import numpy as np
-import core_config  # import waldo.core_config
+from waldo.scripts.waldo.core_config import CoreConfig  # import waldo.core_config
 
 
 def validate_config(c):
@@ -43,23 +43,32 @@ def validate_image_with_mask(x, c):
     n_classes, n_colors = c.num_classes, c.num_colors
     im = x['img']
     dims = im.shape
-    if len(dims) != 3:
-        raise ValueError('3 dimensional image required.')
-    if dims[0] != n_colors:
-        raise ValueError('first dimension of np.array should match with config num colors')
+    if n_colors == 1:
+        if len(dims) != 2:
+            raise ValueError('2 dimensional image required.')
+    else:
+        if len(dims) != 3:
+            raise ValueError('3 dimensional image required.')
+
+    if n_colors == 1:
+        if len(dims) != 2:
+            raise ValueError('2 dimensional image required.')
+    else:
+        if len(dims) != 3:
+            raise ValueError('3 dimensional image required.')
 
     x_mask = x['mask']
     dims_mask = x_mask.shape
-    if len(dims_mask) != 2 or dims_mask[0] != dims[1] or dims_mask[1] != dims[2]:
+    if len(dims_mask) != 2 or dims_mask[0] != dims[0] or dims_mask[1] != dims[1]:
         raise ValueError('same mask shape and image shape required.')
 
     mask_unique_val = np.unique(x_mask)
     for val in mask_unique_val:
-        if type(val) != int:
+        if isinstance(val, int):
             raise ValueError('int type mask value required.')
 
     object_class_list = x['object_class']
-    if not set(object_class_list) < set(range(0, n_classes)):
+    if not set(object_class_list) <= set(range(0, n_classes)):
         raise ValueError('object classes between 0 and num_classes required')
 
     return
@@ -92,10 +101,16 @@ def validate_image_with_objects(x, c):
     n_colors = c.num_colors
     im = x['img']
     dims = im.shape
-    if len(dims) != 3:
-        raise ValueError('3 dimensional image required.')
-    if dims[0] != n_colors:
-        raise ValueError('first dimension of np.array should match with config num colors')
+    if n_colors == 1:
+        if len(dims) != 2:
+            raise ValueError('2 dimensional image required.')
+    else:
+        if len(dims) != 3:
+            raise ValueError('3 dimensional image required.')
+
+    if n_colors != 1:
+        if dims[0] != n_colors:
+            raise ValueError('first dimension of np.array should match with config num colors')
 
     return
 
