@@ -112,38 +112,6 @@ def convert_to_combined_image(x, c):
     return y
 
 
-def pad_combined_image(x, c):
-    """ This function adds zero-padding (on both the input and the supervision
-    information) to a 'combined image'.  It pads by adding c.padding zero pixels
-    on each side of x, plus any additional zero-valued pixels as required to
-    make the width and height of x at least c.train_image_size.
-    x is not modified; the padded image is returned.
-    """
-    validate_combined_image(x, c)
-    y = dict()
-    if c.padding == 0:
-        return None
-
-    # TODO. set y.
-    validate_combined_image(y, c)
-    return y
-
-
-def randomly_crop_combined_image(x, c):
-    """ This function randomly crops the combined image 'x' to the size
-    c.train_image_size by c.train_image_size, and returns the
-    cropped image (x is not modified).  You should probably call
-    pad_combined_image before calling this function.
-
-    It is an error if the width or height of image x were previously smaller
-    than that. """
-    validate_combined_image(x, c)
-    y = dict()
-    # TODO
-    validate_combined_image(y, c)
-    return y
-
-
 def sort_object_list(objects):
     """Given a list of objects as defined in data_types, returns a new list sorted 
     in descending order by the breadth (shorter side) of the rectangles.
