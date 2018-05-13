@@ -1,9 +1,13 @@
-# Copyright      2018  Hossein Hadian
+# Copyright      2018  Daniel Povey, Hossein Hadian
 
 # Apache 2.0
 
-""" This module contains codes and algorithms for post-processing the output of the nnet to
-    find the objects in the image.
+""" This module contains codes and algorithms for post-processing the output of
+    the nnet to find the objects in the image.
+    Specifically it is a greedy algorithm in which the only operation is merging
+    objects, starting from individual pixels, and the only choice is in which
+    order to merge objects.  At all stages of optimization, objects will maintain
+    their optimal class assignment.
 """
 
 import os
@@ -42,13 +46,22 @@ class ObjPair:
 class Object:
     """
     This class represents an "object" in the output image.
+    Attributes:
+        object_class:    A record of the current assigned class (an integer)
+        pixels:    A set of pixels (2-tuples) that are part of the object
+        class_log_probs:    An array indexed by class, of the total (over all pixels
+               in this object) of the log-prob of assigning this pixel to this class;
+               the object_class corresponds to the index of the max element of this.
+        adjacency_list:   A list of adjacency records, recording other objects to which
+                this object is adjacent.  ('Adjacent' means "linked by an offset", not
+                adjacency in the normal sense). It's actually a map (from obj
+                pairs to adjacency record) for faster search and access.
     """
 
     def __init__(self, pixels, id, segmenter):
         self.pixels = pixels
         self.compute_class_logprobs(segmenter)
         self.object_class = np.argmax(self.class_logprobs)
-        # it's actually a map (from obj pairs to adj record) for faster search and access
         self.adjacency_list = {}
         self.id = id
 
@@ -86,6 +99,43 @@ class Object:
 
 
 class AdjacencyRecord:
+    """
+    This class implements an adjacency record with functions for computing object merge
+    log-probs and class merge log-probs.
+
+    Attributes:
+        obj1, obj2:    The two objects to which it refers
+        object_merge_log_prob:    This is the change in log-probability from merging these two objects,
+                without considering the effect arising from changes of class assignments.
+                This is the sum of the following:
+                For each p,o such that o is in "offsets", p is in one of the two objects
+                and p+o is in the other, the value log(p(same) / p(different)), i.e.g
+                log(b_{p,o} / (1-b{p,o})).
+                Note: if the sum above had no terms in it, this
+                adjacency record should not exist because the objects would not be
+                "adjacent" in the sense which we refer to.
+        merge_priority:    This merge priority is a heuristic which will determine what kinds of
+               objects will get merged first, and is a key choice that we'll have to
+               experiment with.  (Note: you can change the sign if it turns out to be
+               easier for python heap reasons).  The general idea will be:
+               merge_priority = merge_log_prob / den
+               where merge_log_prob is the log-prob change from doing this merge, and
+               for example, "den" might be the maximum of the num-pixels in
+               object1 and object2.  We can experiment with different heuristics for
+              "den" though.
+        class_delta_logprob:   It is a term representing a change in the total
+              log-prob that we'll get from merging the two objects, that arises from
+              forcing the class assignments to be the same.  If the two objects already
+              have the same assigned class, this will be zero.  If different, then this
+              is a value <= 0 which can be obtained by summing the objects'
+              'class_logprobs' arrays, finding the largest log-prob in the total, and
+              subtracting the total from the current class-assignments of the two
+              objects.
+        merged_class:    The class that the merged object would have, obtained when figuring
+              out class_delta_log_prob.
+    """
+
+
     def __init__(self, obj1, obj2, segmenter):
         self.obj1 = obj1
         self.obj2 = obj2
@@ -291,6 +341,25 @@ class ObjectSegmenter:
 
 
     def run_segmentation(self):
+        """ This is the top-level function that performs the optimization.
+            This is the overview:
+            - While the queue is non-empty:
+                - Pop (merge_priority, arec) from the queue.
+                - If merge_priority != arec.merge_priority
+                     continue   # don't worry, the queue will have the right
+                                # merge_priority for this arec somewhere else in it.
+                - Recompute arec.merge_priority, which involves recomputing
+                  class_delta_log_prob.  This is needed because as we
+                  merge objects, the value of class_delta_log_prob and/or the
+                  number of pixels may have changed and the adjacency record
+                  may not have been updated.
+                - If the newly computed arec.merge_priority is >= the old value (i.e. this
+                  merge is at least as good a merge as we thought it was when
+                  we got it from the queue), go ahead and merge the objects.
+                - Otherwise if arec.merge_priority >=0 then re-insert "arec" into the
+                  queue with its newly computed merge priority.
+
+        """
         print("Starting segmentation...")
         n = 0
         N = 500000  # max iters -- for experimentation
@@ -345,7 +414,35 @@ class ObjectSegmenter:
         self.show_stats()
         self.visualize('final')
 
+
     def merge(self, arec):
+        """ This is the most nontrivial aspect of the algorithm: how to merge objects.
+        The basic steps in this function are as follows:
+            - Swap object1 and object2 as necessary to ensure that the
+              num-pixels in object1 is >= the num-pixels in object2.  We will
+              assimilate object2 into object1 and we can let object2 be deleted.
+            - Set object1's object_class to merged_class
+            - Append object2's pixels to object1's pixels
+            - Add object2's class_log_probs to object1's class_log_probs
+            - Merge object2's adjancency records into object1's adjacency
+              records: more specifically,
+              - For each element "this_arec" in object2.adjacency_list, change
+                whichever of this_arec.object1 or this_arec.object2 equals "object2"
+                to "object1".  That is, make it point to the merged object
+                "object1", instead of to the doomed "object2".
+              - If object1.adjacency_list already contains an adjacency record with
+                same pair of objects that are now in this_arec (viewing them as an
+                unordered pair), then add this_arec.object_merge_log_prob to that
+                adjacency record's object_merge_log_prob.  Otherwise, add this_arec
+                to object1.adjacency_list.
+
+            - For each adjacency record that is directly touched during the
+              process above:
+              - Recompute its class_delta_log_prob, merged_class and
+                merge_priority; if its merge_priority has changed and is >= 0,
+                re-insert it into the queue.
+        """
+
         obj1, obj2 = arec.obj1, arec.obj2
         if obj1.id not in self.objects or obj2.id not in self.objects:
             return
