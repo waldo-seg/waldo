@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+""" This module will be used to check whether the common requirements 
+    that we think the bulk of the example directories will need exist or not.
+  It will check the requirements from requirements file 
+  (scripts/dependencies/requirements.txt). It will prints the required 
+  dependencies that are not present and will exist with status 1 if all dependencies
+  are not present.
+"""
+
 import pkg_resources
 import argparse
 import sys
