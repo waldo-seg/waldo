@@ -36,6 +36,10 @@ parser.add_argument('--print-freq', '-p', default=10, type=int,
                     help='print frequency (default: 10)')
 parser.add_argument('-b', '--batch-size', default=16, type=int,
                     help='mini-batch size (default: 16)')
+parser.add_argument('--train-image-size', defult=None, type=int,
+                    help='The size of the parts of training images that we train on (in order to' 
+                    ' form a fixed minibatch size). These are derived from the input images'
+                    ' by padding and then random cropping.')
 parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
                     help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
@@ -94,8 +98,8 @@ def main():
     print("offsets are: {}".format(offset_list))
 
     # model configurations from core config
-    image_width = c_config.train_image_size
-    image_height = c_config.train_image_size
+    image_width = args.train_image_size
+    image_height = args.train_image_size
     num_classes = c_config.num_classes
     num_colors = c_config.num_colors
     num_offsets = len(c_config.offsets)

@@ -47,15 +47,18 @@ class CoreConfig:
         # self.train_image_size).
         self.padding = 10
 
-        # The size of the parts of training images that we train on (in order to
-        # form a fixed minibatch size).  These are derived from the input images
-        # by padding and then random cropping.
-        self.train_image_size = 256
 
-    def validate(self):
+    def validate(self, train_image_size=None):
         """
-        Validate that configuration values are sensible.  Dies on error.
+        Validate that configuration values are sensible.  Dies on error. 
+        Args
+        -----
+        train_image_size: The size of the parts of training images that we train on (in order to
+        form a fixed minibatch size).  These are derived from the input images
+        by padding and then random cropping.
         """
+        self.train_image_size = train_image_size
+
         assert self.num_classes >= 2
         # We can change the assertion that num_colors <= 3 later on if we ever
         # need to operate on images with larger color spaces.
@@ -71,7 +74,8 @@ class CoreConfig:
             assert not (-o[0],-o[1]) in offsets_set
 
         assert self.padding >= 0
-        assert self.train_image_size > 0 and self.train_image_size > 4 * self.padding
+        assert (self.train_image_size is None) 
+            or (self.train_image_size > 0 and self.train_image_size > 4 * self.padding)
 
 
     # write the configuration file to 'filename'
@@ -81,8 +85,7 @@ class CoreConfig:
         except:
             raise Exception("Failed to open file {0} for writing configuration".format(filename))
 
-        for s in [ 'num_classes', 'num_colors',
-                   'padding', 'train_image_size' ]:
+        for s in [ 'num_classes', 'num_colors', 'padding' ]:
             print("{0} {1}".format(s, self.__dict__[s]), file=f)
         print("offsets {}".format('  '.join(['{0} {1}'.format(o[0],o[1]) for o in self.offsets])),
               file=f)
@@ -98,8 +101,7 @@ class CoreConfig:
             a = line.split()
             if len(a) == 0 or a[0][0] == '#':
                 continue
-            if len(a) == 2 and a[0] in [ 'num_classes', 'num_colors',
-                                         'padding', 'train_image_size' ]:
+            if len(a) == 2 and a[0] in [ 'num_classes', 'num_colors', 'padding' ]:
                 # parsing line like: 'num_classes 10'
                 try:
                     self.__dict__[a[0]] = int(a[1])
