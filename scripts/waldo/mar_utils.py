@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 
-# minimum bounding box  is originally from
+# Copyright   2018 Ashish Arora
+# Apache 2.0
+
+# minimum bounding box script is originally from
 #https://github.com/BebeSparkelSparkel/MinimumBoundingBox
 #https://startupnextdoor.com/computing-convex-hull-in-python/
 
-""" It is a collection of utility functions that finds minimum area rectangle (mar).
- Given the list of points, get_mar functionn finds a mar that contains all the
- points. The obtained mar (not necessarily be vertically or horizontally
- aligned) will have smallest area.
+""" It is a collection of utility functions that finds minimum area rectangle (MAR).
+ Given the list of points, get_mar function finds a MAR that contains all the
+ points and have minimum area. The obtained MAR (not necessarily be vertically
+ or horizontally aligned).
 """
 
 from math import atan2, cos, sin, pi, sqrt
@@ -34,7 +37,7 @@ bounding_box_tuple = namedtuple('bounding_box_tuple', 'area '
                          )
 
 
-def get_orientation(origin, p1, p2):
+def _get_orientation(origin, p1, p2):
     """ Given origin and two points, return the orientation of the Point p1 with
         regards to Point p2 using origin.
         Returns
@@ -48,7 +51,7 @@ def get_orientation(origin, p1, p2):
     return difference
 
 
-def compute_hull(points):
+def _compute_hull(points):
     """ Given input list of points, return a list of points that
         made up the convex hull.
         Returns
@@ -82,7 +85,7 @@ def compute_hull(points):
             if p2 is point or p2 is p1:
                 continue
             else:
-                direction = get_orientation(point, far_point, p2)
+                direction = _get_orientation(point, far_point, p2)
                 if direction > 0:
                     far_point = p2
 
@@ -91,7 +94,7 @@ def compute_hull(points):
     return hull_points
 
 
-def unit_vector(pt0, pt1):
+def _unit_vector(pt0, pt1):
     """ Given two points pt0 and pt1, return a unit vector that
         points in the direction of pt0 to pt1.
     Returns
@@ -103,7 +106,7 @@ def unit_vector(pt0, pt1):
            (pt1[1] - pt0[1]) / dis_0_to_1
 
 
-def orthogonal_vector(vector):
+def _orthogonal_vector(vector):
     """ Given a vector, returns a orthogonal/perpendicular vector of equal length.
     Returns
     ------
@@ -112,7 +115,7 @@ def orthogonal_vector(vector):
     return -1 * vector[1], vector[0]
 
 
-def bounding_area(index, hull):
+def _bounding_area(index, hull):
     """ Given index location in an array and convex hull, it gets two points
         hull[index] and hull[index+1]. From these two points, it returns a named
         tuple that mainly contains area of the box that bounds the hull. This
@@ -128,8 +131,8 @@ def bounding_area(index, hull):
     unit_vector: direction of the length_parallel side.
     (it's orthogonal vector can be found with the orthogonal_vector function)
     """
-    unit_vector_p = unit_vector(hull[index], hull[index+1])
-    unit_vector_o = orthogonal_vector(unit_vector_p)
+    unit_vector_p = _unit_vector(hull[index], hull[index + 1])
+    unit_vector_o = _orthogonal_vector(unit_vector_p)
 
     dis_p = tuple(np.dot(unit_vector_p, pt) for pt in hull)
     dis_o = tuple(np.dot(unit_vector_o, pt) for pt in hull)
@@ -147,7 +150,7 @@ def bounding_area(index, hull):
             }
 
 
-def to_xy_coordinates(unit_vector_angle, point):
+def _to_xy_coordinates(unit_vector_angle, point):
     """ Given angle from horizontal axis and a point from origin,
         returns converted unit vector coordinates in x, y coordinates.
         angle of unit vector should be in radians.
@@ -160,7 +163,7 @@ def to_xy_coordinates(unit_vector_angle, point):
            point[0] * sin(unit_vector_angle) + point[1] * sin(angle_orthogonal)
 
 
-def rotate_points(center_of_rotation, angle, points):
+def _rotate_points(center_of_rotation, angle, points):
     """ Rotates a point cloud around the center_of_rotation point by angle
     input
     -----
@@ -184,7 +187,7 @@ def rotate_points(center_of_rotation, angle, points):
     return rot_points
 
 
-def rectangle_corners(rectangle):
+def _rectangle_corners(rectangle):
     """ Given rectangle center and its inclination, returns the corner
         locations of the rectangle.
     Returns
@@ -197,7 +200,7 @@ def rectangle_corners(rectangle):
             corner_points.append((rectangle['rectangle_center'][0] + i1 * rectangle['length_parallel'],
                             rectangle['rectangle_center'][1] + i2 * rectangle['length_orthogonal']))
 
-    return rotate_points(rectangle['rectangle_center'], rectangle['unit_vector_angle'], corner_points)
+    return _rotate_points(rectangle['rectangle_center'], rectangle['unit_vector_angle'], corner_points)
 
 
 def get_mar(polygon):
@@ -208,16 +211,16 @@ def get_mar(polygon):
     -------
     list((int, int)): 4 corner points of rectangle.
     """
-    hull_ordered = compute_hull(list(polygon))
+    hull_ordered = _compute_hull(list(polygon))
     hull_ordered = tuple(hull_ordered)
-    min_rectangle = bounding_area(0, hull_ordered)
+    min_rectangle = _bounding_area(0, hull_ordered)
     for i in range(1, len(hull_ordered) - 1):
-        rectangle = bounding_area(i, hull_ordered)
+        rectangle = _bounding_area(i, hull_ordered)
         if rectangle['area'] < min_rectangle['area']:
             min_rectangle = rectangle
 
     min_rectangle['unit_vector_angle'] = atan2(min_rectangle['unit_vector'][1], min_rectangle['unit_vector'][0])
-    min_rectangle['rectangle_center'] = to_xy_coordinates(min_rectangle['unit_vector_angle'],
-                                                          min_rectangle['rectangle_center'])
-    points_list = rectangle_corners(min_rectangle)
+    min_rectangle['rectangle_center'] = _to_xy_coordinates(min_rectangle['unit_vector_angle'],
+                                                           min_rectangle['rectangle_center'])
+    points_list = _rectangle_corners(min_rectangle)
     return points_list
