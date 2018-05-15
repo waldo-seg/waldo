@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from math import hypot
 from waldo.data_types import *
+from waldo.mar_utils import get_mar
 
 
 def convert_to_mask(x, c):
@@ -69,6 +70,25 @@ def convert_polygon_to_points(polygon):
     points_list = []
     for x, y in zip(points_location[0], points_location[1]):
         points_list.append((x, y))
+
+    validate_polygon(points_list)
+
+    return points_list
+
+
+def get_minimum_bounding_box(polygon):
+    """ Given a list of points, returns a minimum area rectangle that will
+    contain all points. It will not necessarily be vertically or horizontally
+     aligned.
+    Returns
+    -------
+    list((int, int)): 4 corner points of rectangle.
+    """
+    validate_polygon(polygon)
+
+    points_list = get_mar(polygon)
+
+    validate_polygon(points_list)
 
     return points_list
 
@@ -142,4 +162,5 @@ def get_object_class(x):
     """Given a list of objects as defined in the data_types, it returns an array mapping 
     object ids to their respective classes.
     """
-    # TODO
+    #TODO
+
