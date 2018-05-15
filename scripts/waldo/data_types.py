@@ -5,13 +5,13 @@ import numpy as np
 from waldo.core_config import CoreConfig  # import waldo.core_config
 
 
-def validate_config(c):
+def validate_config(c, train_image_size=None):
     """
     This function validates that 'c' is a valid configuration object of
     type CoreConfig.
     """
     assert isinstance(c, CoreConfig)
-    c.validate()
+    c.validate(train_image_size)
 
 
 def validate_image_with_mask(x, c):
