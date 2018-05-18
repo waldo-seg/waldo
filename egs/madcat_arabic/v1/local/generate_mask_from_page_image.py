@@ -105,20 +105,18 @@ def get_mask_from_page_image(image_file_name, objects, image_fh):
     """
     im_wo_pad = Image.open(image_file_name)
     im_pad = pad_image(im_wo_pad)
-    im_arr = np.array(im_pad)
+    im_arr = np.transpose(np.array(im_pad))
 
     config = CoreConfig()
     config.padding = int(args.padding // 2)
-    base_name = os.path.splitext(os.path.basename(image_file_name))[0]
-    config_path = os.path.join(args.out_dir, base_name + '.txt')
 
     image_with_objects = {
         'img': im_arr,
         'objects': objects
     }
 
-    scaled_image_with_objects = scale_down_image_with_objects(image_with_objects, 
-                                                     config, args.max_image_size)
+    scaled_image_with_objects = scale_down_image_with_objects(image_with_objects,
+                                                              config, args.max_image_size)
     
     y = convert_to_mask(scaled_image_with_objects, config)
     y_mask_arr = y['mask']
@@ -163,6 +161,7 @@ def get_bounding_box(madcat_file_path):
         updated_mbb_input = update_minimum_bounding_box_input(minimum_bounding_box_input)
         points = get_minimum_bounding_box(updated_mbb_input)
         points_ordered = compute_hull(points)
+        points_ordered = points_ordered[:-1]
         object['polygon'] = points_ordered
         objects.append(object)
     return objects
@@ -228,7 +227,6 @@ def check_writing_condition(wc_dict, base_name):
 
 
 def main():
-
     writing_condition_folder_list = args.database_path1.split('/')
     writing_condition_folder1 = ('/').join(writing_condition_folder_list[:5])
 
@@ -271,4 +269,5 @@ def main():
 
 if __name__ == '__main__':
       main()
+
 
