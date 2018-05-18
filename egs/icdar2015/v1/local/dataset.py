@@ -123,7 +123,7 @@ class DatasetICDAR2015:
 
         for img,lbl in zip(glob(img_dir+"/*.jpg"),glob(lbl_dir+"/*.txt")):
             im = Image.open(img)
-            im_arr = np.swapaxes(np.array(im), 2, 0)
+            im_arr = np.array(im)
             lbl_fh = open(lbl,encoding='utf-8')
 
             objects = self._get_objects(lbl_fh)

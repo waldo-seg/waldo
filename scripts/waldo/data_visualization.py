@@ -36,8 +36,7 @@ def visualize_mask(x, c, transparency=0.3):
 
     validate_image_with_mask(x, c)
     im = x['img']
-    im = np.swapaxes(im, 0, 2)
-    mask = np.transpose(x['mask'])
+    mask = x['mask']
     
     num_objects = np.unique(mask).shape[0]
     cmap = get_cmap(num_objects)
@@ -50,7 +49,7 @@ def visualize_mask(x, c, transparency=0.3):
     plt.savefig(buffer_, format = "png")
     buffer_.seek(0)
     image = Image.open(buffer_)
-    x['img'] = np.swapaxes(np.array(image), 0, 2)
+    x['img'] = np.array(image)
     buffer_.close()
 
     return

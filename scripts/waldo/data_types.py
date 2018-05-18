@@ -21,7 +21,7 @@ def validate_image_with_mask(x, c):
     it raises an exception.  Specifically it is checking that:
       x['img'] is a numpy array of shape (height, width, num_colors),
             num_colors is c.num_colors.
-      x['mask'] is an integer numpy array of the same size as x['img'] containing
+      x['mask'] is an integer numpy array of shape (height,width) containing
              integer object-ids from 0 ... num-objects - 1.
       x['object_class'] is a list indexed by object-id giving the class of each object;
             object classes should be in the range 0 .. num_classes - 1, where
@@ -60,7 +60,7 @@ def validate_image_with_mask(x, c):
     x_mask = x['mask']
     dims_mask = x_mask.shape
 
-    if len(dims_mask) != 2 or dims_mask[0] != dims[1] or dims_mask[1] != dims[2]:
+    if len(dims_mask) != 2 or dims_mask[0] != dims[0] or dims_mask[1] != dims[1]:
         raise ValueError('same mask shape and image shape required.')
 
     mask_unique_val = np.unique(x_mask)
@@ -110,7 +110,7 @@ def validate_image_with_objects(x, c):
             raise ValueError('3 dimensional image required.')
 
     if n_colors != 1:
-        if dims[0] != n_colors:
+        if dims[2] != n_colors:
             raise ValueError('first dimension of np.array should match with config num colors')
 
     return

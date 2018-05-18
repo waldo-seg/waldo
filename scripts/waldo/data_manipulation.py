@@ -14,7 +14,12 @@ from waldo.mar_utils import get_mar
 def convert_to_mask(x, c):
     """ This function accepts an object x that should represent an image
         with polygon objects in it, and returns an object representing an image
-        with an object mask.
+        with an object mask. The elements of x are described as
+
+        x['img']: numpy array representation of the image with shape (height, width, colors).
+        x['objects']: a dictionary containing all polygon objects in the image under the
+        key 'polygon'. Each polygon object is a list of points.
+        x['object_class']: an array mapping object ids to their respective classes.
      """
     validate_image_with_objects(x, c)
 
@@ -22,18 +27,18 @@ def convert_to_mask(x, c):
     object_id = 0
     y = dict()
     y['img'] = im
-    mask_img = Image.new('L', (im.shape[1], im.shape[2]), 0)
-    mask_img_arr = np.transpose(np.array(mask_img))
+    mask_img = Image.new('L', (im.shape[1], im.shape[0]), 0)
+    mask_img_arr = np.array(mask_img)
 
     object_class = list()
     object_class.append(0)
     for object in x['objects']:
         ordered_polygon_points = object['polygon']
         object_id += 1
-        temp_img = Image.new('L', (im.shape[1], im.shape[2]), 0)
+        temp_img = Image.new('L', (im.shape[1], im.shape[0]), 0)
         ImageDraw.Draw(temp_img).polygon(
             ordered_polygon_points, fill=object_id)
-        temp_img_arr = np.transpose(np.array(temp_img))
+        temp_img_arr = np.array(temp_img)
         pixels = np.where(temp_img_arr == object_id,
                           temp_img_arr, mask_img_arr)
         array = np.array(pixels, dtype=np.uint8)

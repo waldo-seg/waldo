@@ -44,7 +44,7 @@ class CoreConfig:
 
         # The amount of zero-padding we do around images prior to training and test.
         # (more zero padding than this will be done for images that are smaller than
-        # self.train_image_size).
+        # train_image_size).
         self.padding = 10
 
 
@@ -57,8 +57,7 @@ class CoreConfig:
         form a fixed minibatch size).  These are derived from the input images
         by padding and then random cropping.
         """
-        self.train_image_size = train_image_size
-
+        
         assert self.num_classes >= 2
         # We can change the assertion that num_colors <= 3 later on if we ever
         # need to operate on images with larger color spaces.
@@ -74,8 +73,7 @@ class CoreConfig:
             assert not (-o[0],-o[1]) in offsets_set
 
         assert self.padding >= 0
-        assert (self.train_image_size is None) 
-            or (self.train_image_size > 0 and self.train_image_size > 4 * self.padding)
+        assert (train_image_size is None) or (train_image_size > 0 and train_image_size > 4 * self.padding)
 
 
     # write the configuration file to 'filename'
