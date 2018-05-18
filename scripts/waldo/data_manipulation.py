@@ -93,22 +93,25 @@ def get_minimum_bounding_box(polygon):
     return points_list
 
 
-def convert_to_combined_image(x, c, train_image_size=None):
-    """ This function turns an 'image-with-mask' x into a 'combined' image,
+def convert_to_combined_image(x, c):
+    """ This function processes an 'image-with-mask' x into a 'combined' image,
     containing both input and supervision information in a single numpy array.
     see 'validate_combined_image' in data_types.py for a description of what
     a combined image is.
 
+    This function returns the 'combined' image; it does not modify x.
+
     The width of the resulting image will be the same as the image in x:
     this function doesn't do padding, you need to call pad_combined_image.
     """
-    validate_config(c, train_image_size)
+    validate_config(c)
     validate_image_with_mask(x, c)
     im = x['img']
     mask = x['mask']
     object_class = x['object_class']
     num_outputs = c.num_classes + len(c.offsets)
     num_all_features = c.num_colors + 2 * num_outputs
+    # TODO: remove train_image_size.
     y = np.ndarray(
         shape=(num_all_features, train_image_size, train_image_size))
 
@@ -133,7 +136,7 @@ def convert_to_combined_image(x, c, train_image_size=None):
 
 
 def sort_object_list(objects):
-    """Given a list of objects as defined in data_types, returns a new list sorted 
+    """Given a list of objects as defined in data_types, returns a new list sorted
     in descending order by the breadth (shorter side) of the rectangles.
     """
 
@@ -159,8 +162,7 @@ def sort_object_list(objects):
 
 
 def get_object_class(x):
-    """Given a list of objects as defined in the data_types, it returns an array mapping 
+    """Given a list of objects as defined in the data_types, it returns an array mapping
     object ids to their respective classes.
     """
     #TODO
-
