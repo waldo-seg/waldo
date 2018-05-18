@@ -32,6 +32,8 @@ def scale_down_image_with_objects(image_with_objects, max_size):
     validate_image_with_objects(), if the length of its largest side is
     greater than 'max_size'.  (Otherwise it leaves it the same size).
 
-    It modifies the object in-place if necessary; it has no return value.
+    It returns the scaled-down image; but note, if it does not have
+    to scale down the image, it just returns the input variable
+    'image_with_objects', it does not make a deep copy.
     """
     pass
