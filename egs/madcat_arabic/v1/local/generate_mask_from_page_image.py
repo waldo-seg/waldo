@@ -22,6 +22,7 @@ from waldo.data_manipulation import *
 from waldo.core_config import CoreConfig
 from waldo.mar_utils import compute_hull
 from waldo.data_visualization import visualize_mask
+from waldo.data_transformation import scale_down_image_with_objects
 
 import torch
 import numpy as np
@@ -56,8 +57,9 @@ parser.add_argument('out_dir', type=str,
                     help='directory location to write output files')
 parser.add_argument('--padding', type=int, default=400,
                     help='padding across horizontal/verticle direction')
-parser.add_argument('--downsampling_ratio', type=int, default=2,
-                    help='ratio of original image and resized image')
+parser.add_argument('--max-image-size', type=int, default=1280,
+                    help='scales down an image if the length of its largest'
+                         ' side is greater than max_size')
 args = parser.parse_args()
 
 
@@ -81,25 +83,16 @@ def update_minimum_bounding_box_input(bounding_box_input):
     ------
     points [(float, float)]: points, a list or tuple of 2D coordinates
     """
-    paded_mbb = []
+    padded_mbb = []
     offset = int(args.padding // 2)
     for point in bounding_box_input:
         x, y = point
         new_x = x + offset
         new_y = y + offset
         new_point = (new_x, new_y)
-        paded_mbb.append(new_point)
+        padded_mbb.append(new_point)
 
-    resized_mbb = []
-    ratio = int(args.downsampling_ratio)
-    for point in paded_mbb:
-        x, y = point
-        new_x = int(x/ratio)
-        new_y = int(y/ratio)
-        new_point = (new_x, new_y)
-        resized_mbb.append(new_point)
-
-    return resized_mbb
+    return padded_mbb
 
 
 def get_mask_from_page_image(image_file_name, objects, image_fh):
@@ -112,38 +105,38 @@ def get_mask_from_page_image(image_file_name, objects, image_fh):
     """
     im_wo_pad = Image.open(image_file_name)
     im_pad = pad_image(im_wo_pad)
-    im_resized = downsample_image(im_pad)
-    im_arr = np.array(im_resized)
+    im_arr = np.array(im_pad)
 
     config = CoreConfig()
     config.padding = int(args.padding // 2)
     base_name = os.path.splitext(os.path.basename(image_file_name))[0]
     config_path = os.path.join(args.out_dir, base_name + '.txt')
-    config.write(config_path)
 
     image_with_objects = {
         'img': im_arr,
         'objects': objects
     }
 
-    y = convert_to_mask(image_with_objects, config)
+    scaled_image_with_objects = scale_down_image_with_objects(image_with_objects, 
+                                                     args.max_image_size, config)
+    
+    y = convert_to_mask(scaled_image_with_objects, config)
+    y_mask_arr = y['mask']
+    new_image = Image.fromarray(y_mask_arr)
+    set_line_image_data(new_image, image_file_name, image_fh)
     return y
 
 
-def downsample_image(image):
-    """ Given an image, returns a resized image.
-    Returns
-    -------
-    image: page image
-    """
-    ratio = int(args.downsampling_ratio)
-    sx = float(image.size[0])
-    sy = float(image.size[1])
-    new_sx = sx/ratio
-    new_sy = sy/ratio
 
-    img = image.resize((int(new_sx), int(new_sy)))
-    return img
+def set_line_image_data(image, image_file_name, image_fh):
+    """ Given an image, saves the image.
+    """
+    base_name = os.path.splitext(os.path.basename(image_file_name))[0]
+    image_file_name = base_name + '.png'
+    image_path = os.path.join(args.out_dir, image_file_name)
+    imgray = image.convert('L')
+    imgray.save(image_path)
+    image_fh.write(image_path + '\n')
 
 
 def get_bounding_box(madcat_file_path):
