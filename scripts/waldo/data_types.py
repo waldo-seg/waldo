@@ -19,7 +19,7 @@ def validate_image_with_mask(x, c):
     with the corresponding object mask.  c is the config object as validated
     by 'validate_config'.  This function returns no value; on failure
     it raises an exception.  Specifically it is checking that:
-      x['img'] is a numpy array of shape (num_colors, width, height),
+      x['img'] is a numpy array of shape (height, width, num_colors),
             num_colors is c.num_colors.
       x['mask'] is an integer numpy array of the same size as x['img'] containing
              integer object-ids from 0 ... num-objects - 1.
@@ -77,13 +77,14 @@ def validate_image_with_mask(x, c):
 def validate_image_with_objects(x, c):
     """This function validates an object x that is supposed to represent an image
     with a list of objects inside it.  c is the config object as validated by
-    'validate_config'.  This function has no return value; it raises an
-    an exception on failure.
+    'validate_config'.  This function has no return value; it raises an an
+    exception on failure.
 
      Specifically it is checking that:
-      x['img'] is a numpy array of shape (num_colors, width, height),
+      x['img'] is a numpy array of shape (height, width, num_colors),
            where num_colors is c.num_colors'].
       x['objects'] is a sorted list of elements y satisfying validate_object(y).
+
     """
     validate_config(c)
     if type(x) != dict:
@@ -165,8 +166,8 @@ def validate_combined_image(x, c):
     preprocessing and eventually neural network training (although we'll split it
     up before we actually train the network.
 
-    A combined image should be a numpy array with shape (dim, width, height),
-    where 'dim' equals num_colors + 2 * (num_classes + num_offsets)
+    A combined image should be a numpy array with shape (num_channels, height, width),
+    where 'num_channels' equals num_colors + 2 * (num_classes + num_offsets)
     where num_colors, num_classes and num_offsets are derived from the
     configuration object 'c'.
 
