@@ -118,7 +118,7 @@ def get_mask_from_page_image(image_file_name, objects, image_fh):
     }
 
     scaled_image_with_objects = scale_down_image_with_objects(image_with_objects, 
-                                                     args.max_image_size, config)
+                                                     config, args.max_image_size)
     
     y = convert_to_mask(scaled_image_with_objects, config)
     y_mask_arr = y['mask']
