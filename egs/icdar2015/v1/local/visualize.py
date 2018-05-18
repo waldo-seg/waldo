@@ -19,19 +19,19 @@ import numpy as np
 
 def visualize_object(x, transparency):
     """Given a dictionary object as follows
-    x['img']: numpy array of shape (num_class,width,height)
-    x['mask']: numpy array of same dimensions as image, but with every element categorizing it 
+    x['img']: numpy array of shape (height,width,colors)
+    x['mask']: numpy array of shape (height,width), with every element categorizing it 
     into one of the object ids
     The method generates an image overlaying a translucent mask on the image and displays it.
     """
     c = CoreConfig()
-    c.num_colors = x['img'].shape[0]
+    c.num_colors = x['img'].shape[2]
     visualize_mask(x,c,transparency)
     return
 
 
 parser = argparse.ArgumentParser(description='ICDAR2015 image mask visualization')
-parser.add_argument('--dl_dir', default='/export/b18/draj/icdar_2015/', type=str,
+parser.add_argument('--dl-dir', default='/export/b18/draj/icdar_2015/', type=str,
                     help='Path to downloaded dataset')
 parser.add_argument('--transparency', default=0.3, type=float,
                     help='Transparency of mask. Takes values between 0 and 1.')
