@@ -234,19 +234,6 @@ def check_writing_condition(wc_dict, base_name):
     return True
 
 
-def visualize_object(x, transparency):
-    """Given a dictionary object as follows
-    x['img']: numpy array of shape (num_class,width,height)
-    x['mask']: numpy array of same dimensions as image, but with every element categorizing it
-    into one of the object ids
-    The method generates an image overlaying a translucent mask on the image and displays it.
-    """
-    c = CoreConfig()
-    c.num_colors = 1
-    visualize_mask(x,c,transparency)
-    return
-
-
 def main():
 
     writing_condition_folder_list = args.database_path1.split('/')
