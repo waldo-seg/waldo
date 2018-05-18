@@ -18,8 +18,11 @@ import sys
 import argparse
 import os
 import xml.dom.minidom as minidom
-from waldo.scripts.waldo.data_manipulation import *
-from waldo.scripts.waldo.core_config import CoreConfig
+from waldo.data_manipulation import *
+from waldo.core_config import CoreConfig
+from waldo.mar_utils import compute_hull
+from waldo.data_visualization import visualize_mask
+
 import torch
 import numpy as np
 from PIL import Image
@@ -53,6 +56,8 @@ parser.add_argument('out_dir', type=str,
                     help='directory location to write output files')
 parser.add_argument('--padding', type=int, default=400,
                     help='padding across horizontal/verticle direction')
+parser.add_argument('--downsampling_ratio', type=int, default=2,
+                    help='ratio of original image and resized image')
 args = parser.parse_args()
 
 
@@ -76,32 +81,41 @@ def update_minimum_bounding_box_input(bounding_box_input):
     ------
     points [(float, float)]: points, a list or tuple of 2D coordinates
     """
-    updated_minimum_bounding_box_input = []
+    paded_mbb = []
     offset = int(args.padding // 2)
     for point in bounding_box_input:
         x, y = point
         new_x = x + offset
         new_y = y + offset
-        word_coordinate = (new_x, new_y)
-        updated_minimum_bounding_box_input.append(word_coordinate)
+        new_point = (new_x, new_y)
+        paded_mbb.append(new_point)
 
-    return updated_minimum_bounding_box_input
+    resized_mbb = []
+    ratio = int(args.downsampling_ratio)
+    for point in paded_mbb:
+        x, y = point
+        new_x = int(x/ratio)
+        new_y = int(y/ratio)
+        new_point = (new_x, new_y)
+        resized_mbb.append(new_point)
+
+    return resized_mbb
 
 
-def get_mask_from_page_image(image_file_name, objects):
+def get_mask_from_page_image(image_file_name, objects, image_fh):
     """ Given a page image, extracts the page image mask from it.
-        Input
-        -----
-        image_file_name (string): complete path and name of the page image.
-        madcat_file_path (string): complete path and name of the madcat xml file
-                                      corresponding to the page image.
-        """
+    Input
+    -----
+    image_file_name (string): complete path and name of the page image.
+    madcat_file_path (string): complete path and name of the madcat xml file
+                                  corresponding to the page image.
+    """
     im_wo_pad = Image.open(image_file_name)
-    im = pad_image(im_wo_pad)
-    im_arr = np.array(im)
+    im_pad = pad_image(im_wo_pad)
+    im_resized = downsample_image(im_pad)
+    im_arr = np.array(im_resized)
 
     config = CoreConfig()
-    config.train_image_size = int(im.size[0] // 2)
     config.padding = int(args.padding // 2)
     base_name = os.path.splitext(os.path.basename(image_file_name))[0]
     config_path = os.path.join(args.out_dir, base_name + '.txt')
@@ -114,6 +128,22 @@ def get_mask_from_page_image(image_file_name, objects):
 
     y = convert_to_mask(image_with_objects, config)
     return y
+
+
+def downsample_image(image):
+    """ Given an image, returns a resized image.
+    Returns
+    -------
+    image: page image
+    """
+    ratio = int(args.downsampling_ratio)
+    sx = float(image.size[0])
+    sy = float(image.size[1])
+    new_sx = sx/ratio
+    new_sy = sy/ratio
+
+    img = image.resize((int(new_sx), int(new_sy)))
+    return img
 
 
 def get_bounding_box(madcat_file_path):
@@ -204,7 +234,21 @@ def check_writing_condition(wc_dict, base_name):
     return True
 
 
+def visualize_object(x, transparency):
+    """Given a dictionary object as follows
+    x['img']: numpy array of shape (num_class,width,height)
+    x['mask']: numpy array of same dimensions as image, but with every element categorizing it
+    into one of the object ids
+    The method generates an image overlaying a translucent mask on the image and displays it.
+    """
+    c = CoreConfig()
+    c.num_colors = 1
+    visualize_mask(x,c,transparency)
+    return
+
+
 def main():
+
     writing_condition_folder_list = args.database_path1.split('/')
     writing_condition_folder1 = ('/').join(writing_condition_folder_list[:5])
 
@@ -224,6 +268,8 @@ def main():
 
     splits_handle = open(args.data_splits, 'r')
     splits_data = splits_handle.read().strip().split('\n')
+    image_file = os.path.join(args.out_dir, 'images.scp')
+    image_fh = open(image_file, 'w', encoding='utf-8')
 
     data = []
     output_path = args.out_dir + '.pth.tar'
@@ -237,7 +283,7 @@ def main():
                 continue
             if madcat_file_path is not None:
                 objects = get_bounding_box(madcat_file_path)
-                y = get_mask_from_page_image(image_file_path, objects)
+                y = get_mask_from_page_image(image_file_path, objects, image_fh)
                 y['name'] = base_name
                 data.append(y)
 
