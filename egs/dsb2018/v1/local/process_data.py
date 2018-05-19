@@ -55,18 +55,22 @@ def DataProcess(input_path, channels, mode='train', train_prop=0.9):
             img = np.array(Image.open(path + '/images/' + id_ +
                                       '.png'))[:, :, :channels]
 
-            train_item['img'] = torch.from_numpy(img)
+            train_item['img'] = img
             mask = None
             object_id = 1
             for mask_file in next(os.walk(path + '/masks/'))[2]:
-                mask_ = np.array(Image.open(path + '/masks/' + mask_file)
-                                 ).astype(float) / 255.0
+                mask_ = (np.array(Image.open(path + '/masks/' + mask_file)
+                                  ) / 255).astype('uint8')
                 if mask is None:
                     mask = mask_
                 else:
                     mask = np.maximum(mask, mask_ * object_id)
                 object_id += 1
-            train_item['mask'] = torch.from_numpy(mask)
+            train_item['mask'] = mask
+            # only object ID 0 belongs to background
+            object_class = np.ones(object_id)
+            object_class[0] = 0
+            train_item['object_class'] = object_class.tolist()
             train.append(train_item)
 
         print('Getting validation images and masks ... ')
@@ -78,18 +82,21 @@ def DataProcess(input_path, channels, mode='train', train_prop=0.9):
             img = np.array(Image.open(path + '/images/' +
                                       id_ + '.png'))[:, :, :channels]
 
-            val_item['img'] = torch.from_numpy(img)
+            val_item['img'] = img
             mask = None
             object_id = 1
             for mask_file in next(os.walk(path + '/masks/'))[2]:
-                mask_ = np.array(Image.open(path + '/masks/' + mask_file)
-                                 ).astype(float) / 255.0
+                mask_ = (np.array(Image.open(path + '/masks/' + mask_file)
+                                  ) / 255).astype('uint8')
                 if mask is None:
                     mask = mask_
                 else:
                     mask = np.maximum(mask, mask_ * object_id)
                 object_id += 1
-            val_item['mask'] = torch.from_numpy(mask)
+            val_item['mask'] = mask
+            object_class = np.ones(object_id)
+            object_class[0] = 0
+            val_item['object_class'] = object_class.tolist()
             val.append(val_item)
 
         print('Done with training and validation set!')
@@ -107,7 +114,7 @@ def DataProcess(input_path, channels, mode='train', train_prop=0.9):
             path = input_path + '/' + id_
             img = np.array(Image.open(path + '/images/' +
                                       id_ + '.png'))[:, :, :channels]
-            test_item['img'] = torch.from_numpy(img)
+            test_item['img'] = img
             test.append(test_item)
 
         print('Done with test set!')
@@ -118,9 +125,9 @@ if __name__ == '__main__':
     global args
     args = parser.parse_args()
 
-    train_output = "{0}/train_val/split{1}_seed{2}/train.pth.tar".format(
+    train_output = "{0}/train_val/train.pth.tar".format(
         args.outdir, args.train_prop, args.seed)
-    val_output = "{0}/train_val/split{1}_seed{2}/val.pth.tar".format(
+    val_output = "{0}/train_val/val.pth.tar".format(
         args.outdir, args.train_prop, args.seed)
     if not (os.path.exists(train_output) and
             os.path.exists(val_output)):

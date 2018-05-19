@@ -28,7 +28,6 @@ if [ $stage -le 1 ]; then
   num_classes $num_classes
   num_colors $num_colors
   padding $padding
-  train_image_size ${train_image_size}
   offsets 1 0  0 1  -2 -1  1 -2  3 2  -4 3  -4 -7  10 -4  3 15  -21 0
 EOF
 
@@ -43,13 +42,14 @@ fi
 
 if [ $stage -le 2 ]; then
   # training the network
+  echo "training the network....."
   $cmd --gpu 1 --mem 2G $dir/train.log limit_num_gpus.sh local/train.py \
+       --train-dir data/train_val \
        --batch-size $batch_size \
+       --train-image-size 128 \
        --epochs $epochs \
        --lr $lr \
        --core-config $dir/configs/core.config \
        --unet-config $dir/configs/unet.config \
        $dir
 fi
-
-exit 0;
