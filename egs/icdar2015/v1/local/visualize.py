@@ -10,9 +10,11 @@ Picks up a random image object from the training set and displays the mask overl
 
 from dataset import DatasetICDAR2015
 from waldo.data_visualization import visualize_mask
+from waldo.data_manipulation import compress_image_with_mask
 from waldo.core_config import CoreConfig
 
 import argparse
+import sys
 import random
 import numpy as np
 
@@ -30,9 +32,30 @@ def visualize_object(x, transparency):
     return
 
 
+def compress_object(x):
+    """Given a dictionary object as follows
+    x['img']: numpy array of shape (height,width,colors)
+    x['mask']: numpy array of shape (height,width), with every element categorizing it 
+    into one of the object ids
+    The method compresses the object and prints the original and compressed sizes.
+    """
+    c = CoreConfig()
+    c.num_colors = x['img'].shape[2]
+    y = compress_image_with_mask(x,c)
+    x_mem = sys.getsizeof(x)
+    y_mem = sys.getsizeof(y)
+    compression = (x_mem-y_mem)*100/x_mem
+    print ("Size of original image with mask %d bytes"%sys.getsizeof(x))
+    print ("Size of compressed image with mask %d bytes"%sys.getsizeof(y))
+    print ("%% compression = %f"%compression)
+    return
+
+
 parser = argparse.ArgumentParser(description='ICDAR2015 image mask visualization')
 parser.add_argument('--dl-dir', default='/export/b18/draj/icdar_2015/', type=str,
                     help='Path to downloaded dataset')
+parser.add_argument('--command', default=None, type=str,
+                    help='visualize/compress')
 parser.add_argument('--transparency', default=0.3, type=float,
                     help='Transparency of mask. Takes values between 0 and 1.')
 
@@ -52,5 +75,9 @@ if __name__ == '__main__':
 
     # x = random.choice(data['train'])
     x = data['test'][1]
-    visualize_object(x,transparency)
-
+    if args.command == 'visualize':
+        visualize_object(x,transparency)
+    elif args.command == 'compress':
+        compress_object(x)
+    else:
+        print (ValueError('Command should be either "visualize" or "compress".'))

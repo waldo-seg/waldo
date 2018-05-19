@@ -74,6 +74,36 @@ def validate_image_with_mask(x, c):
     return
 
 
+def validate_compressed_image_with_mask(x, c):
+    """This function validates an object x that is supposed to represent a compressed
+    image with the corresponding object mask.  c is the config object as validated
+    by 'validate_config'.  This function returns no value; on failure
+    it raises an exception.  
+
+    Specifically it is checking that x is an image_with_mask with some additional requirements:
+    x['img'] uses numpy dtype uint8 (from 0 to 255).
+    x['mask'] uses numpy dtype uint8 (from 0 to 255) if the largest object-id is less than
+    256; otherwise it used uint16.
+    """
+    validate_image_with_mask(x, c)
+
+    img = x['img']
+    mask = x['mask']
+
+    if img.dtype != np.int8:
+        raise ValueError('compressed image should be of type uint8')
+    if len(x['object_class']) <= 256:
+        if mask.dtype != np.int8:
+            raise ValueError('compressed mask should be of type uint8 for'
+                ' fewer than 256 objects')
+    else:
+        if mask.dtype != np.int16:
+            raise ValueError('compressed mask should be of type uint16 for'
+                ' greater than 256 objects')
+
+    return
+
+
 def validate_image_with_objects(x, c):
     """This function validates an object x that is supposed to represent an image
     with a list of objects inside it.  c is the config object as validated by
