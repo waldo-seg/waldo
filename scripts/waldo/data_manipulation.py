@@ -50,7 +50,7 @@ def convert_to_mask(x, c):
     if 'object_class' in x:
         y['object_class'] = x['object_class']
     else:
-        y['object_class'] = get_object_class(x)
+        y['object_class'] = object_class
 
     validate_image_with_mask(y, c)
     return y

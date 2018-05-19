@@ -28,17 +28,7 @@ import torch
 import numpy as np
 from PIL import Image
 import logging
-
-
-sys.path.insert(0, 'steps')
-logger = logging.getLogger('libs')
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s [%(pathname)s:%(lineno)s - "
-                              "%(funcName)s - %(levelname)s ] %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+import math
 
 parser = argparse.ArgumentParser(description="Creates line images from page image",
                                  epilog="E.g.  " + sys.argv[0] + "  data/LDC2012T15"
@@ -57,73 +47,55 @@ parser.add_argument('out_dir', type=str,
                     help='directory location to write output files')
 parser.add_argument('--padding', type=int, default=400,
                     help='padding across horizontal/verticle direction')
-parser.add_argument('--max-image-size', type=int, default=1280,
+parser.add_argument('--max-image-size', type=int, default=512,
                     help='scales down an image if the length of its largest'
                          ' side is greater than max_size')
 args = parser.parse_args()
 
 
-def pad_image(image):
-    """ Given an image, returns a padded image around the border.
-        This routine save the code from crashing if bounding boxes that are
-        slightly outside the page boundary.
-    Returns
-    -------
-    image: page image
-    """
-    offset = int(args.padding // 2)
-    padded_image = Image.new('L', (image.size[0] + int(args.padding), image.size[1] + int(args.padding)), "white")
-    padded_image.paste(im=image, box=(offset, offset))
-    return padded_image
-
-
-def update_minimum_bounding_box_input(bounding_box_input):
-    """ Given list of 2D points, returns list of 2D points shifted by an offset.
-    Returns
-    ------
-    points [(float, float)]: points, a list or tuple of 2D coordinates
-    """
-    padded_mbb = []
-    offset = int(args.padding // 2)
-    for point in bounding_box_input:
-        x, y = point
-        new_x = x + offset
-        new_y = y + offset
-        new_point = (new_x, new_y)
-        padded_mbb.append(new_point)
-
-    return padded_mbb
-
-
 def get_mask_from_page_image(image_file_name, objects, image_fh):
     """ Given a page image, extracts the page image mask from it.
-    Input
-    -----
-    image_file_name (string): complete path and name of the page image.
-    madcat_file_path (string): complete path and name of the madcat xml file
-                                  corresponding to the page image.
-    """
-    im_wo_pad = Image.open(image_file_name)
-    im_pad = pad_image(im_wo_pad)
-    im_arr = np.transpose(np.array(im_pad))
+        Input
+        -----
+        image_file_name (string): complete path and name of the page image.
+        madcat_file_path (string): complete path and name of the madcat xml file
+                                      corresponding to the page image.
+        """
+    im = Image.open(image_file_name)
+    im_arr = np.transpose(np.array(im))
 
     config = CoreConfig()
-    config.padding = int(args.padding // 2)
-
     image_with_objects = {
         'img': im_arr,
         'objects': objects
     }
 
-    scaled_image_with_objects = scale_down_image_with_objects(image_with_objects,
-                                                              config, args.max_image_size)
+    im_width = im_arr.shape[0]
+    im_height = im_arr.shape[1]
     
+    validated_objects = []
+    for original_object in image_with_objects['objects']:
+        ordered_polygon_points = original_object['polygon']
+        object = {}
+        resized_pp = []
+        for point in ordered_polygon_points:
+            new_point = validate_and_update_point(point, im_width, im_height)
+            resized_pp.append(new_point)
+        object['polygon'] = resized_pp
+        validated_objects.append(object)
+
+    validated_image_with_objects = {
+        'img': im_arr,
+        'objects': validated_objects
+    }
+    
+    scaled_image_with_objects = scale_down_image_with_objects(validated_image_with_objects, config,
+                                                              args.padding)
     y = convert_to_mask(scaled_image_with_objects, config)
     y_mask_arr = y['mask']
     new_image = Image.fromarray(y_mask_arr)
     set_line_image_data(new_image, image_file_name, image_fh)
     return y
-
 
 
 def set_line_image_data(image, image_file_name, image_fh):
@@ -152,19 +124,164 @@ def get_bounding_box(madcat_file_path):
     for node in zone:
         object = {}
         token_image = node.getElementsByTagName('token-image')
-        minimum_bounding_box_input = []
+        mbb_input = []
         for token_node in token_image:
             word_point = token_node.getElementsByTagName('point')
             for word_node in word_point:
                 word_coordinate = (int(word_node.getAttribute('x')), int(word_node.getAttribute('y')))
-                minimum_bounding_box_input.append(word_coordinate)
-        updated_mbb_input = update_minimum_bounding_box_input(minimum_bounding_box_input)
-        points = get_minimum_bounding_box(updated_mbb_input)
+                mbb_input.append(word_coordinate)
+        points = get_minimum_bounding_box(mbb_input)
         points_ordered = compute_hull(points)
         points_ordered = points_ordered[:-1]
         object['polygon'] = points_ordered
         objects.append(object)
     return objects
+
+
+def validate_and_update_point(pt0, im_width, im_height, pt1=(0, 0)):
+    new_point = pt0
+    if pt0[0] < 0:
+        new_point = _get_pointx_inside_origin(pt0, pt1)
+
+    if pt0[0] > im_width:
+        new_point = _get_pointx_inside_width(pt0, pt1, im_width)
+
+    if pt0[1] < 0:
+        new_point = _get_pointy_inside_origin(pt0, pt1)
+
+    if pt0[1] > im_height:
+        new_point = _get_pointy_inside_height(pt0, pt1, im_height)
+
+    return new_point
+
+def _unit_vector(pt0, pt1):
+    """ Given two points pt0 and pt1, return a unit vector that
+        points in the direction of pt0 to pt1.
+    Returns
+    -------
+    (float, float): unit vector
+    """
+    dis_0_to_1 = math.sqrt((pt0[0] - pt1[0])**2 + (pt0[1] - pt1[1])**2)
+    return (pt1[0] - pt0[0]) / dis_0_to_1, \
+           (pt1[1] - pt0[1]) / dis_0_to_1
+
+
+def _orthogonal_vector(vector):
+    """ Given a vector, returns a orthogonal/perpendicular vector of equal length.
+    Returns
+    ------
+    (float, float): A vector that points in the direction orthogonal to vector.
+    """
+    return -1 * vector[1], vector[0]
+
+
+def _get_vector_angle(pt0, pt1):
+    """ Given two points pt0 and pt1, return a unit vector angle
+    Returns
+    -------
+    float: angle in radian
+    """
+    vector = _unit_vector(pt0, pt1)
+    radian = math.atan2(vector[1], vector[0])
+    return radian
+
+
+def _get_pointx_inside_origin(pt0, pt1):
+    """ Given a point pt0, return an updated point that is
+    inside orgin. It finds line equation and uses it to
+    get updated point x value inside origin
+    Returns
+    -------
+    (float, float): updated point
+    """
+    return (0, pt0[1])
+    # TODO
+    x_0 = pt0[0]
+    y_0 = pt0[1]
+
+    slope = math.tan(_get_vector_angle(pt0, pt1))
+    new_x = 0
+    if 0 <= slope <= 10 or -10 <= slope <= 0:
+        new_y = slope * -1 * x_0 + y_0
+    else:
+        raise Exception("Both x's cannot be too close and outside image")
+
+    new_point = (new_x, new_y)
+
+    return new_point
+
+
+def _get_pointx_inside_width(pt0, pt1, im_width):
+    """ Given a point pt0, return an updated point that is
+    inside image width. It finds line equation and uses it to
+    get updated point x value inside image width
+    Returns
+    -------
+    (float, float): updated point
+    """
+    return (im_width, pt0[1])
+    # TODO
+    x_0 = pt0[0]
+    y_0 = pt0[1]
+
+    slope = math.tan(_get_vector_angle(pt0, pt1))
+    new_x = im_width
+    if 0 <= slope <= 10 or -10 <= slope <= 0:
+        new_y = slope * (im_width - x_0) + y_0
+    else:
+        raise Exception("Both x's cannot be too close outside image")
+
+    new_point = (new_x, new_y)
+    return new_point
+
+
+def _get_pointy_inside_origin(pt0, pt1):
+    """ Given a point pt0, return an updated point that is
+    inside orgin. It finds line equation and uses it to
+    get updated point y value inside origin
+    Returns
+    -------
+    (float, float): updated point
+    """
+    return (pt0[0], 0)
+    # TODO
+    x_0 = pt0[0]
+    y_0 = pt0[1]
+
+    slope = math.tan(_get_vector_angle(pt0, pt1))
+    new_y = 0
+    if slope >=0.01 or slope <= -0.01:
+        new_x = ((-1 * y_0)/slope) + x_0
+    else:
+        raise Exception("Both y's cannot be too close outside image")
+
+    new_point = (new_x, new_y)
+    return new_point
+
+
+def _get_pointy_inside_height(pt0, pt1, im_height):
+    """ Given a point pt0, return an updated point that is
+    inside image height. It finds line equation and uses it to
+    get updated point y value inside image height
+    Returns
+    -------
+    (float, float): updated point
+    """
+    return (pt0[0], im_height)
+    # TODO
+    x_0 = pt0[0]
+    y_0 = pt0[1]
+
+    slope = math.tan(_get_vector_angle(pt0, pt1))
+    new_y = im_height
+    if slope >= 0.01 or slope <= -0.01:
+        new_x = ((im_height - y_0) / slope) + x_0
+    else:
+        raise Exception("Both y's cannot be too close outside image")
+
+    new_point = (new_x, new_y)
+
+    return new_point
 
 
 def check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3):
