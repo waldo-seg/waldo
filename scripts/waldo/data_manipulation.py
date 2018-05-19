@@ -111,30 +111,33 @@ def convert_to_combined_image(x, c):
     """
     validate_config(c)
     validate_image_with_mask(x, c)
-    im = x['img']
+    im = np.moveaxis(x['img'], -1, 0)
+    im = im.astype(float) / 256.0
     mask = x['mask']
+    _, height, width = im.shape
     object_class = x['object_class']
     num_outputs = c.num_classes + len(c.offsets)
     num_all_features = c.num_colors + 2 * num_outputs
-    # TODO: remove train_image_size.
     y = np.ndarray(
-        shape=(num_all_features, train_image_size, train_image_size))
+        shape=(num_all_features, height, width))
 
     y[:c.num_colors, :, :] = im
-    class_mask = object_class[mask]
-    for c in range(c.num_classes):
-        class_feature = (class_mask == c).astype('float')
-        y[c.num_colors:c.num_colors + c, :, :] = class_feature
+    # map object_id to class_id
+    obj_2_class = np.vectorize(lambda x: object_class[x])
+    class_mask = obj_2_class(mask)
+    for n in range(c.num_classes):
+        class_feature = (class_mask == n).astype('float')
+        y[c.num_colors:c.num_colors + 1 + n, :, :] = class_feature
         y[c.num_colors + num_outputs:c.num_colors +
-            num_outputs + c, :, :] = 1 - class_feature
+            num_outputs + 1 + n, :, :] = 1 - class_feature
 
     for k, (i, j) in enumerate(c.offsets):
         rolled_mask = np.roll(np.roll(mask, i, axis=1), j, axis=0)
         offset_feature = (rolled_mask == mask).astype('float')
         y[c.num_colors + c.num_classes:c.num_colors +
-            c.num_classes + k] = offset_feature
+            c.num_classes + 1 + k] = offset_feature
         y[c.num_colors + num_outputs + c.num_classes:c.num_colors +
-            num_outputs + c.num_classes + k] = 1 - offset_feature
+            num_outputs + c.num_classes + 1 + k] = 1 - offset_feature
 
     validate_combined_image(y, c)
     return y
@@ -170,4 +173,4 @@ def get_object_class(x):
     """Given a list of objects as defined in the data_types, it returns an array mapping
     object ids to their respective classes.
     """
-    #TODO
+    # TODO

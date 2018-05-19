@@ -2,7 +2,7 @@
 
 
 # Apache 2.0
-
+import numpy as np
 from waldo.data_types import *
 
 
@@ -17,13 +17,22 @@ def randomly_crop_combined_image(combined_image, config,
     It returns the randomly cropped image; it doesn't modify
     'combined_image'.
     """
-    validate_combined_image(combined_image)
+    validate_combined_image(combined_image, config)
 
-    cropped_image = 1;  # actualy would be a numpy array.
+    n_channels, height, width = combined_image.shape
 
-    validate_combined_image(cropped_image)
+    if height < image_height or width < image_width:
+        cropped_image = np.zeros(n_channels, image_height, image_width)
+        cropped_image[:, :height, :width] = combined_image
+    else:
+        top = np.random.randint(0, height - image_height)
+        left = np.random.randint(0, width - image_width)
+        cropped_image = combined_image[:, top:top +
+                                       image_height, left:left + image_width]
 
-    # return cropped_image
+    validate_combined_image(cropped_image, config)
+
+    return cropped_image
 
 
 def scale_down_image_with_objects(image_with_objects, max_size):
