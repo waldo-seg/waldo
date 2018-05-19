@@ -56,6 +56,29 @@ def convert_to_mask(x, c):
     return y
 
 
+def compress_image_with_mask(x, c):
+    """ This function accepts an object x that should represent an image
+        with mask in it, and returns an object representing a compressed image
+        with a compressed mask. Specifically, it transforms the image numpy
+        array to dtype uint8, and the mask array to dtype uint8 for fewer
+        than 256 objects, or to uint16, otherwise.
+    """
+    validate_image_with_mask(x, c)
+
+    y = dict()
+    y['img'] = x['img'].astype(np.int8)
+    if len(x['object_class']) <= 256:
+        y['mask'] = x['mask'].astype(np.int8)
+    else:
+        y['mask'] = x['mask'].astype(np.int16)
+    y['object_class'] = x['object_class']
+
+    validate_compressed_image_with_mask(y, c)
+
+    return y
+
+
+
 def convert_polygon_to_points(polygon):
     """  This function accepts an object representing a polygon as a list of
        points in clockwise or anticlockwise order, and returns the list of
