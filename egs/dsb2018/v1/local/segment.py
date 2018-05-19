@@ -4,10 +4,10 @@ import torch
 import argparse
 import os
 import sys
-import torchvision
 import random
-from torchvision import transforms as tsf
+import numpy as np
 from models.Unet import UNet
+from train import sample
 from dataset import Dataset_dsb2018
 from waldo.segmenter import ObjectSegmenter
 from waldo.core_config import CoreConfig
@@ -18,12 +18,15 @@ from unet_config import UnetConfig
 parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
 parser.add_argument('model', type=str,
                     help='path to final model')
+parser.add_argument('--dir', default='exp/unet', type=str,
+                    help='directory to store segmentation results')
 parser.add_argument('--train-dir', default='./data/val.pth.tar', type=str,
                     help='Path of processed validation data')
-parser.add_argument('--num-classes', default=2, type=int,
-                    help='Number of classes to classify')
-parser.add_argument('--num-offsets', default=10, type=int,
-                    help='Number of points in offset list')
+parser.add_argument('--train-image-size', default=128, type=int,
+                    help='The size of the parts of training images that we'
+                    'train on (in order to form a fixed minibatch size).'
+                    'These are derived from the input images'
+                    ' by padding and then random cropping.')
 parser.add_argument('--core-config', default='', type=str,
                     help='path of core configuration file')
 parser.add_argument('--unet-config', default='', type=str,
@@ -34,7 +37,7 @@ random.seed(0)
 def main():
     global args
     args = parser.parse_args()
-    args.batch_size = 1
+    args.batch_size = 1  # only segment one image for experiment
 
     # loading core configuration
     c_config = CoreConfig()
@@ -55,15 +58,13 @@ def main():
             args.unet_config))
     else:
         # need c_config for validation reason
-        u_config.read(args.unet_config, c_config)
+        u_config.read(args.unet_config, args.train_image_size)
         print('Using unet configuration from {}'.format(args.unet_config))
 
     offset_list = c_config.offsets
     print("offsets are: {}".format(offset_list))
 
     # model configurations from core config
-    image_width = c_config.train_image_size
-    image_height = c_config.train_image_size
     num_classes = c_config.num_classes
     num_colors = c_config.num_colors
     num_offsets = len(c_config.offsets)
@@ -88,52 +89,27 @@ def main():
     else:
         print("=> no checkpoint found at '{}'".format(args.model))
 
-    s_trans = tsf.Compose([
-        tsf.ToPILImage(),
-        tsf.Resize((image_height, image_width)),
-        tsf.ToTensor(),
-    ])
+    model.eval()  # convert the model into evaluation mode
 
     val_data = args.train_dir + '/' + 'val.pth.tar'
 
-    testset = Dataset_dsb2018(val_data, s_trans, offset_list,
-                              num_classes, image_height, image_width)
+    testset = Dataset_dsb2018(val_data, c_config, args.train_image_size)
     print('Total samples in the test set: {0}'.format(len(testset)))
 
     dataloader = torch.utils.data.DataLoader(
         testset, num_workers=1, batch_size=args.batch_size)
 
-    data_iter = iter(dataloader)
-    # data_iter.next()
-    img, class_id, sameness = data_iter.next()
-    torchvision.utils.save_image(img, 'input.png')
-    torchvision.utils.save_image(sameness[0, 0, :, :], 'sameness0.png')
-    torchvision.utils.save_image(sameness[0, 1, :, :], 'sameness1.png')
-    torchvision.utils.save_image(
-        class_id[0, 0, :, :], 'class0.png')  # backgrnd
-    torchvision.utils.save_image(class_id[0, 1, :, :], 'class1.png')  # cells
+    seg_dir = '{}/seg'.format(args.dir)
+    if not os.path.exists(seg_dir):
+        os.makedirs(seg_dir)
+    img, class_pred, adj_pred = sample(model, dataloader, seg_dir, c_config)
 
-    model.eval()  # convert the model into evaluation mode
-
-    predictions = model(img)
-    # [batch-idx, class-idx, row, col]
-    class_pred = predictions[0, :args.num_classes, :, :]
-    # [batch-idx, offset-idx, row, col]
-    adj_pred = predictions[0, args.num_classes:, :, :]
-
-    # for i in range(len(offset_list)):
-    #     torchvision.utils.save_image(
-    #         adj_pred[i, :, :], 'sameness_pred{}.png'.format(i))
-    # for i in range(args.num_classes):
-    #     torchvision.utils.save_image(
-    #         class_pred[i, :, :], 'class_pred{}.png'.format(i))
-
-    seg = ObjectSegmenter(class_pred.detach().numpy(),
-                          adj_pred.detach().numpy()[:2, :, :], num_classes, offset_list[:2])
-#    seg = ObjectSegmenter(class_id[0, :, :, :].numpy(), sameness[0, :, :, :].numpy(), args.num_classes, offset_list)
+    seg = ObjectSegmenter(class_pred[0].detach().numpy(),
+                          adj_pred[0].detach().numpy()[:2, :, :],
+                          num_classes, offset_list[:2], seg_dir)
     mask_pred, object_class = seg.run_segmentation()
     x = {}
-    x['img'] = img[0].numpy()
+    x['img'] = np.moveaxis(img[0].numpy(), 0, -1)
     x['mask'] = mask_pred.astype(int)
     x['object_class'] = object_class
     visualize_mask(x, c_config)

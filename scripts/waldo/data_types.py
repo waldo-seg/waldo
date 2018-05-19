@@ -233,15 +233,10 @@ def validate_combined_image(x, c):
         raise ValueError(
             'first dimension of np.array should match with num_colors + 2 * (num_classes + num_offsets)')
 
-    n_outputs = n_classes + n_offsets
-    x1 = x[n_colors:n_colors + n_outputs, :, :]
-    unique_val = np.unique(x1)
-    if not set(unique_val) <= set(range(0, 2)):
+    # random check
+    k = np.random.randint(n_colors, dims[0])
+    i = np.random.randint(0, dims[1])
+    j = np.random.randint(0, dims[2])
+    if not (x[k, i, j] == 0 or x[k, i, j] == 1):
         raise ValueError('unique values 0, 1 expected)')
-
-    x1 = x[n_colors + n_outputs:, :, :]
-    unique_val = np.unique(x1)
-    if not set(unique_val) <= set(range(0, 2)):
-        raise ValueError('unique values 0, 1 expected)')
-
     return

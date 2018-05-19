@@ -267,7 +267,9 @@ def sample(model, dataloader, outdir, core_config):
     for i in range(core_config.num_classes):
         torchvision.utils.save_image(
             classification[:, i:i + 1, :, :], '{0}/class_{1}.png'.format(outdir, i))
-    img = torch.autograd.Variable(img).cuda()
+    img = torch.autograd.Variable(img)
+    if next(model.parameters()).is_cuda:
+        img = img.cuda()
     predictions = model(img)
     predictions = predictions.data
     class_pred = predictions[:, :core_config.num_classes, :, :]
@@ -279,18 +281,7 @@ def sample(model, dataloader, outdir, core_config):
         torchvision.utils.save_image(
             class_pred[:, i:i + 1, :, :], '{0}/class_pred{1}.png'.format(outdir, i))
 
-
-def generate_offsets(num_offsets=15):
-    offset_list = []
-    size_ratio = 1.4
-    angle = math.pi * 5 / 9  # 100 degrees: just over 90 degrees.
-
-    for n in range(num_offsets):
-        x = round(math.cos(n * angle) * math.pow(size_ratio, n))
-        y = round(math.sin(n * angle) * math.pow(size_ratio, n))
-        offset_list.append((x, y))
-
-    return offset_list
+    return img, class_pred, bound_pred
 
 
 def soft_dice_loss(inputs, targets):

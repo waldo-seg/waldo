@@ -145,22 +145,22 @@ def convert_to_combined_image(x, c):
         shape=(num_all_features, height, width))
 
     y[:c.num_colors, :, :] = im
+
     # map object_id to class_id
-    obj_2_class = np.vectorize(lambda x: object_class[x])
-    class_mask = obj_2_class(mask)
+    def obj_to_class(x):
+        return object_class[x]
+    class_mask = np.array([[obj_to_class(pixel)
+                            for pixel in row] for row in mask])
     for n in range(c.num_classes):
         class_feature = (class_mask == n).astype('float')
-        y[c.num_colors:c.num_colors + 1 + n, :, :] = class_feature
-        y[c.num_colors + num_outputs:c.num_colors +
-            num_outputs + 1 + n, :, :] = 1 - class_feature
+        y[c.num_colors + n, :, :] = class_feature
+        y[c.num_colors + num_outputs + n, :, :] = 1 - class_feature
 
     for k, (i, j) in enumerate(c.offsets):
         rolled_mask = np.roll(np.roll(mask, i, axis=1), j, axis=0)
         offset_feature = (rolled_mask == mask).astype('float')
-        y[c.num_colors + c.num_classes:c.num_colors +
-            c.num_classes + 1 + k] = offset_feature
-        y[c.num_colors + num_outputs + c.num_classes:c.num_colors +
-            num_outputs + c.num_classes + 1 + k] = 1 - offset_feature
+        y[c.num_colors + c.num_classes + k] = offset_feature
+        y[c.num_colors + num_outputs + c.num_classes + k] = 1 - offset_feature
 
     validate_combined_image(y, c)
     return y
