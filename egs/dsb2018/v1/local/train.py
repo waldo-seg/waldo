@@ -36,7 +36,7 @@ parser.add_argument('--print-freq', '-p', default=10, type=int,
                     help='print frequency (default: 10)')
 parser.add_argument('-b', '--batch-size', default=16, type=int,
                     help='mini-batch size (default: 16)')
-parser.add_argument('--train-image-size', defult=None, type=int,
+parser.add_argument('--train-image-size', defult=256, type=int,
                     help='The size of the parts of training images that we train on (in order to' 
                     ' form a fixed minibatch size). These are derived from the input images'
                     ' by padding and then random cropping.')
