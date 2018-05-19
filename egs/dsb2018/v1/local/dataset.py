@@ -8,7 +8,6 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from waldo.data_manipulation import convert_to_combined_image
 from waldo.data_transformation import randomly_crop_combined_image
-from waldo.core_config import CoreConfig
 
 
 class Dataset_dsb2018(Dataset):
@@ -20,8 +19,7 @@ class Dataset_dsb2018(Dataset):
 
     def __getitem__(self, index):
         data = self.data[index]
-        x = {key: data[key] for key in ['img', 'mask', 'object_class']}
-        combined_img = convert_to_combined_image(x, self.c_cfg)
+        combined_img = convert_to_combined_image(data, self.c_cfg)
         n_classes = self.c_cfg.num_classes
         n_offsets = len(self.c_cfg.offsets)
         n_colors = self.c_cfg.num_colors
@@ -43,6 +41,8 @@ class Dataset_dsb2018(Dataset):
 
 
 if __name__ == '__main__':
+    from waldo.core_config import CoreConfig
+    import torchvision
     c_config = CoreConfig()
     c_config.read('exp/unet_5_10_sgd/configs/core.config')
     trainset = Dataset_dsb2018('data/train_val/train.pth.tar',
@@ -52,4 +52,7 @@ if __name__ == '__main__':
     data_iter = iter(trainloader)
     # data_iter.next()
     img, class_label, bound = data_iter.next()
-    print(img.shape, class_label.shape, bound.shape)
+    # torchvision.utils.save_image(class_label[:, 0:1, :, :], 'class0.png')
+    # torchvision.utils.save_image(class_label[:, 1:2, :, :], 'class1.png')
+    # torchvision.utils.save_image(bound[:, 0:1, :, :], 'bound0.png')
+    # torchvision.utils.save_image(bound[:, 1:2, :, :], 'bound1.png')

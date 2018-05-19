@@ -203,11 +203,12 @@ class AdjacencyRecord:
 
 
 class ObjectSegmenter:
-    def __init__(self, nnet_class_probs, nnet_sameness_probs, num_classes, offsets):
+    def __init__(self, nnet_class_probs, nnet_sameness_probs, num_classes, offsets, dir):
         self.class_probs = nnet_class_probs
         self.sameness_probs = nnet_sameness_probs
         self.num_classes = num_classes
         self.offsets = offsets  # should be a list of tuples
+        self.dir = dir
         # the pixels here are python tuples (x,y) not numpy arrays
         self.pixel2obj = {}
         class_dim, img_width, img_height = self.class_probs.shape
@@ -291,7 +292,7 @@ class ObjectSegmenter:
             center = tuple(np.array(obj.pixels).mean(axis=0))
             img[int(center[0]), int(center[1])] = 0.0
             k += 1
-        scipy.misc.imsave('{}.png'.format(iter), img)
+        scipy.misc.imsave('{}/{}.png'.format(self.dir, iter), img)
 
     def output_mask(self):
         mask = np.zeros((self.img_height, self.img_width))
