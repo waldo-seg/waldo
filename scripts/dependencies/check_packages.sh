@@ -42,7 +42,7 @@ with open(args.requirements_path) as f:
         print("{0} not all the required python packages are installed."
               "Please do as follows (from your experiment directory, "
               "e.g. egs/dbs2018/v1): ".format(sys.argv[0]))
-        print(". ./cmd.sh \n"
+        print(". ./path.sh \n"
               "pip install {0} ".format(dependencies_str))
         os._exit(1)
 

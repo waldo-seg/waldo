@@ -2,8 +2,6 @@
 
 # Apache 2.0
 
-from waldo.core_config import CoreConfig
-
 
 class UnetConfig:
     """
@@ -30,13 +28,13 @@ class UnetConfig:
         # are connected.
         self.merge_mode = 'concat'
 
-    def validate(self, core_config):
+    def validate(self, train_image_size):
         """
         Validate that configuration values are sensible.  Dies on error.
         """
         # the network can't downsample the input image to a size samller than 1*1
-        assert (core_config.train_image_size >= 2 ** self.depth and
-                core_config.train_image_size % (2 ** self.depth) == 0)
+        assert (train_image_size >= 2 ** self.depth and
+                train_image_size % (2 ** self.depth) == 0)
         assert self.up_mode in ['transpose', 'upsample']
         assert self.merge_mode in ['concat', 'add']
 
@@ -52,7 +50,7 @@ class UnetConfig:
             print("{0} {1}".format(s, self.__dict__[s]), file=f)
         f.close()
 
-    def read(self, filename, core_config):
+    def read(self, filename, train_image_size):
         try:
             f = open(filename, 'r')
         except:
@@ -76,16 +74,15 @@ class UnetConfig:
                 except:
                     raise Exception("Parsing config line in {0}: bad line: {1}".format(
                         filename, line))
-        self.validate(core_config)
+        self.validate(train_image_size)
 
 
 def test():
     # very non-thorough test.
-    c = CoreConfig()
     n_c = UnetConfig()
 
     n_c.write('foo')
-    n_c.read('foo', c)
+    n_c.read('foo', 128)
     n_c.write('foo')
 
 

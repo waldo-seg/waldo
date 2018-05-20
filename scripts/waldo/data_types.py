@@ -31,7 +31,8 @@ def validate_image_with_mask(x, c):
         raise ValueError('dict type input required.')
 
     if 'img' not in x or 'mask' not in x or 'object_class' not in x:
-        raise ValueError('img, mask and object_class required in the dict input.')
+        raise ValueError(
+            'img, mask and object_class required in the dict input.')
 
     if not isinstance(x['img'], np.ndarray):
         raise ValueError('ndarray type img object required.')
@@ -141,8 +142,8 @@ def validate_image_with_objects(x, c):
 
     if n_colors != 1:
         if dims[2] != n_colors:
-            raise ValueError('first dimension of np.array should match with config num colors')
-
+            raise ValueError(
+                'first dimension of np.array should match with config num colors')
     return
 
 
@@ -225,21 +226,17 @@ def validate_combined_image(x, c):
 
     n_colors = c.num_colors
     n_classes = c.num_classes
-    n_offsets = c.num_offsets
+    n_offsets = len(c.offsets)
 
     dim = n_colors + 2 * (n_classes + n_offsets)
     if dims[0] != dim:
-        raise ValueError('first dimension of np.array should match with num_colors + 2 * (num_classes + num_offsets)')
+        raise ValueError(
+            'first dimension of np.array should match with num_colors + 2 * (num_classes + num_offsets)')
 
-    n_outputs = n_classes + n_offsets
-    x1 = x[n_colors:n_colors+n_outputs, :, :]
-    unique_val = np.unique(x1)
-    if not set(unique_val) <= set(range(0, 2)):
+    # random check
+    k = np.random.randint(n_colors, dims[0])
+    i = np.random.randint(0, dims[1])
+    j = np.random.randint(0, dims[2])
+    if not (x[k, i, j] == 0 or x[k, i, j] == 1):
         raise ValueError('unique values 0, 1 expected)')
-
-    x1 = x[n_colors + n_outputs:, :, :]
-    unique_val = np.unique(x1)
-    if not set(unique_val) <= set(range(0, 2)):
-        raise ValueError('unique values 0, 1 expected)')
-
     return

@@ -36,9 +36,10 @@ parser.add_argument('--print-freq', '-p', default=10, type=int,
                     help='print frequency (default: 10)')
 parser.add_argument('-b', '--batch-size', default=16, type=int,
                     help='mini-batch size (default: 16)')
-parser.add_argument('--train-image-size', defult=256, type=int,
-                    help='The size of the parts of training images that we train on (in order to' 
-                    ' form a fixed minibatch size). These are derived from the input images'
+parser.add_argument('--train-image-size', default=128, type=int,
+                    help='The size of the parts of training images that we'
+                    'train on (in order to form a fixed minibatch size).'
+                    'These are derived from the input images'
                     ' by padding and then random cropping.')
 parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
                     help='initial learning rate')
@@ -47,7 +48,7 @@ parser.add_argument('--nesterov', default=True,
                     type=bool, help='nesterov momentum')
 parser.add_argument('--weight-decay', '--wd', default=5e-4, type=float,
                     help='weight decay (default: 5e-4)')
-parser.add_argument('--train-dir', default='data/train_val/split0.9_seed0', type=str,
+parser.add_argument('--train-dir', default='data/train_val', type=str,
                     help='Directory of processed training and validation data')
 parser.add_argument('--test-dir', default='data/test', type=str,
                     help='Directory of processed test data')
@@ -90,16 +91,14 @@ def main():
         sys.exit('Cannot find the unet configuration file: {}'.format(
             args.unet_config))
     else:
-        # need c_config for validation
-        u_config.read(args.unet_config, c_config)
+        # need train_image_size for validation
+        u_config.read(args.unet_config, args.train_image_size)
         print('Using unet configuration from {}'.format(args.unet_config))
 
     offset_list = c_config.offsets
     print("offsets are: {}".format(offset_list))
 
     # model configurations from core config
-    image_width = args.train_image_size
-    image_height = args.train_image_size
     num_classes = c_config.num_classes
     num_colors = c_config.num_colors
     num_offsets = len(c_config.offsets)
@@ -112,19 +111,11 @@ def main():
     train_data = args.train_dir + '/' + 'train.pth.tar'
     val_data = args.train_dir + '/' + 'val.pth.tar'
 
-    s_trans = tsf.Compose([
-        tsf.ToPILImage(),
-        tsf.Resize((image_width, image_height)),
-        tsf.ToTensor(),
-    ])
-
-    trainset = Dataset_dsb2018(train_data, s_trans, offset_list,
-                               num_classes, image_height, image_width)
+    trainset = Dataset_dsb2018(train_data, c_config, args.train_image_size)
     trainloader = torch.utils.data.DataLoader(
         trainset, num_workers=1, batch_size=args.batch_size, shuffle=True)
 
-    valset = Dataset_dsb2018(val_data, s_trans, offset_list,
-                             num_classes, image_height, image_width)
+    valset = Dataset_dsb2018(val_data, c_config, args.train_image_size)
     valloader = torch.utils.data.DataLoader(
         valset, num_workers=1, batch_size=args.batch_size)
 
@@ -172,7 +163,6 @@ def main():
         is_best = val_loss < best_loss
         best_loss = min(val_loss, best_loss)
         save_checkpoint({
-            'offset_list': offset_list,
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
             'best_prec1': best_loss,
@@ -183,12 +173,7 @@ def main():
     outdir = '{}/imgs'.format(args.dir)
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    sample(model, valloader, outdir, u_config)
-
-    # # Load the best model and evaluate on test set
-    # checkpoint = torch.load('exp/%s/' %
-    #                         (args.name) + 'model_best.pth.tar')
-    # model.load_state_dict(checkpoint['state_dict'])
+    sample(model, valloader, outdir, c_config)
 
 
 def Train(trainloader, model, optimizer, epoch):
@@ -199,9 +184,9 @@ def Train(trainloader, model, optimizer, epoch):
     end = time.time()
     for i, (input, class_label, bound) in enumerate(trainloader):
         adjust_learning_rate(optimizer, epoch + 1)
-        input = torch.autograd.Variable(input.cuda())
-        bound = torch.autograd.Variable(bound.cuda(async=True))
-        class_label = torch.autograd.Variable(class_label.cuda(async=True))
+        input = input.cuda()
+        bound = bound.cuda(async=True)
+        class_label = class_label.cuda(async=True)
 
         optimizer.zero_grad()
         output = model(input)
@@ -269,43 +254,34 @@ def Validate(validateloader, model, epoch):
     return losses.avg
 
 
-def sample(model, dataloader, outdir, unet_config):
+def sample(model, dataloader, outdir, core_config):
     """Visualize some predicted masks on training data to get a better intuition
        about the performance.
     """
     datailer = iter(dataloader)
     img, classification, bound = datailer.next()
     torchvision.utils.save_image(img, '{0}/raw.png'.format(outdir))
-    for i in range(unet_config.num_offsets):
+    for i in range(len(core_config.offsets)):
         torchvision.utils.save_image(
             bound[:, i:i + 1, :, :], '{0}/bound_{1}.png'.format(outdir, i))
-    for i in range(unet_config.num_classes):
+    for i in range(core_config.num_classes):
         torchvision.utils.save_image(
             classification[:, i:i + 1, :, :], '{0}/class_{1}.png'.format(outdir, i))
-    img = torch.autograd.Variable(img).cuda()
+    img = torch.autograd.Variable(img)
+    if next(model.parameters()).is_cuda:
+        img = img.cuda()
     predictions = model(img)
     predictions = predictions.data
-    class_pred = predictions[:, :unet_config.num_classes, :, :]
-    bound_pred = predictions[:, unet_config.num_classes:, :, :]
-    for i in range(unet_config.num_offsets):
+    class_pred = predictions[:, :core_config.num_classes, :, :]
+    bound_pred = predictions[:, core_config.num_classes:, :, :]
+    for i in range(len(core_config.offsets)):
         torchvision.utils.save_image(
             bound_pred[:, i:i + 1, :, :], '{0}/bound_pred{1}.png'.format(outdir, i))
-    for i in range(unet_config.num_classes):
+    for i in range(core_config.num_classes):
         torchvision.utils.save_image(
             class_pred[:, i:i + 1, :, :], '{0}/class_pred{1}.png'.format(outdir, i))
 
-
-def generate_offsets(num_offsets=15):
-    offset_list = []
-    size_ratio = 1.4
-    angle = math.pi * 5 / 9  # 100 degrees: just over 90 degrees.
-
-    for n in range(num_offsets):
-        x = round(math.cos(n * angle) * math.pow(size_ratio, n))
-        y = round(math.sin(n * angle) * math.pow(size_ratio, n))
-        offset_list.append((x, y))
-
-    return offset_list
+    return img, class_pred, bound_pred
 
 
 def soft_dice_loss(inputs, targets):

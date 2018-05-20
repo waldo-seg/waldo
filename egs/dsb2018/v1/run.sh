@@ -5,19 +5,40 @@ set -e # exit on error
 
 stage=0
 
-# train/validate split
-train_prop=0.9
-seed=0
+. parse_options.sh  # e.g. this parses the --stage option if supplied.
+
 
 . ./cmd.sh ## You'll want to change cmd.sh to something that will work on your system.
            ## This relates to the queue.
 
-. parse_options.sh  # e.g. this parses the --stage option if supplied.
-
-
 local/check_dependencies.sh
 
+
+# train/validate split
+train_prop=0.9
+seed=0
 if [ $stage -le 0 ]; then
   # data preparation
   local/prepare_data.sh --train_prop $train_prop --seed $seed
+fi
+
+
+epochs=10
+depth=5
+dir=exp/unet_${depth}_${epochs}_sgd
+if [ $stage -le 1 ]; then
+  # training
+  local/run_unet.sh --epochs $epochs --depth $depth
+fi
+
+if [ $stage -le 2 ]; then
+    echo "doing segmentation...."
+  local/segment.py \
+    --dir $dir \
+    --train-dir data/train_val \
+    --train-image-size 128 \
+    --core-config $dir/configs/core.config \
+    --unet-config $dir/configs/unet.config \
+    $dir/model_best.pth.tar
+
 fi
