@@ -51,7 +51,7 @@ def _get_orientation(origin, p1, p2):
     return difference
 
 
-def _compute_hull(points):
+def compute_hull(points):
     """ Given input list of points, return a list of points that
         made up the convex hull.
         Returns
@@ -211,7 +211,7 @@ def get_mar(polygon):
     -------
     list((int, int)): 4 corner points of rectangle.
     """
-    hull_ordered = _compute_hull(list(polygon))
+    hull_ordered = compute_hull(list(polygon))
     hull_ordered = tuple(hull_ordered)
     min_rectangle = _bounding_area(0, hull_ordered)
     for i in range(1, len(hull_ordered) - 1):
@@ -224,3 +224,4 @@ def get_mar(polygon):
                                                            min_rectangle['rectangle_center'])
     points_list = _rectangle_corners(min_rectangle)
     return points_list
+
