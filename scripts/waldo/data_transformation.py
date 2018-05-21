@@ -22,7 +22,6 @@ def randomly_crop_combined_image(combined_image, config,
     n_channels, height, width = combined_image.shape
 
     if height < image_height or width < image_width:
-        #print('[{}, {}, {}, {}, {}]'.format(height, image_height, width, image_width, n_channels))
         cropped_image = np.zeros((n_channels, image_height, image_width))
         cropped_image[:, :height, :width] = combined_image
     else:
