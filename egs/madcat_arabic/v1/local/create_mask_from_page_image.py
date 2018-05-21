@@ -32,6 +32,7 @@ def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):
     im_arr = np.array(img)
 
     config = CoreConfig()
+    config.num_colors = 3
     image_with_objects = {
         'img': im_arr,
         'objects': objects
