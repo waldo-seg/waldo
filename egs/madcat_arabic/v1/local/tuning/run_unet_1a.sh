@@ -1,10 +1,10 @@
 #!/bin/bash
 stage=0
 
-num_colors=1
+num_colors=3
 num_classes=2
 padding=10
-train_image_size=512
+train_image_size=128
 
 depth=5
 epochs=10
@@ -44,9 +44,9 @@ if [ $stage -le 2 ]; then
   # training the network
   echo "training the network....."
   $cmd --gpu 1 --mem 2G $dir/train.log limit_num_gpus.sh local/train.py \
-       --train-dir data/train_val \
+       --train-dir data \
        --batch-size $batch_size \
-       --train-image-size 512 \
+       --train-image-size 128 \
        --epochs $epochs \
        --lr $lr \
        --core-config $dir/configs/core.config \

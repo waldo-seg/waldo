@@ -55,8 +55,8 @@ if __name__ == '__main__':
     import torchvision
     c_config = CoreConfig()
     c_config.read('exp/unet_5_10_sgd/configs/core.config')
-    trainset = Dataset_madcatar('data/train_val/train.pth.tar',
-                               c_config, 512)
+    trainset = Dataset_madcatar('data/train.pth.tar',
+                               c_config, 128)
     trainloader = DataLoader(
         trainset, num_workers=1, batch_size=16, shuffle=True)
     data_iter = iter(trainloader)

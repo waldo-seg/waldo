@@ -142,6 +142,8 @@ def validate_image_with_objects(x, c):
 
     if n_colors != 1:
         if dims[2] != n_colors:
+            print(n_colors)
+            print(dims[2])
             raise ValueError(
                 'first dimension of np.array should match with config num colors')
     return

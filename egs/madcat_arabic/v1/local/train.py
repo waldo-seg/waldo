@@ -18,12 +18,12 @@ import torchvision
 import random
 from torchvision import transforms as tsf
 from models.Unet import UNet
-from dataset import Dataset_dsb2018
+from dataset import Dataset_madcatar
 from waldo.core_config import CoreConfig
 from unet_config import UnetConfig
 
 
-parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
+parser = argparse.ArgumentParser(description='Pytorch MADCAT  Arabic setup')
 parser.add_argument('dir', type=str,
                     help='directory of output models and logs')
 parser.add_argument('--epochs', default=10, type=int,
@@ -48,9 +48,9 @@ parser.add_argument('--nesterov', default=True,
                     type=bool, help='nesterov momentum')
 parser.add_argument('--weight-decay', '--wd', default=5e-4, type=float,
                     help='weight decay (default: 5e-4)')
-parser.add_argument('--train-dir', default='data/train_val', type=str,
+parser.add_argument('--train-dir', default='data', type=str,
                     help='Directory of processed training and validation data')
-parser.add_argument('--test-dir', default='data/test', type=str,
+parser.add_argument('--test-dir', default='data', type=str,
                     help='Directory of processed test data')
 parser.add_argument('--tensorboard',
                     help='Log progress to TensorBoard', action='store_false')
@@ -68,10 +68,10 @@ def main():
     global args, best_loss
     args = parser.parse_args()
 
-    if args.tensorboard:
-        from tensorboard_logger import configure
-        print("Using tensorboard")
-        configure("%s" % (args.dir))
+    #if args.tensorboard:
+        #from tensorboard_logger import configure
+        #print("Using tensorboard")
+        #configure("%s" % (args.dir))
 
     # loading core configuration
     c_config = CoreConfig()
@@ -109,13 +109,13 @@ def main():
     depth = u_config.depth
 
     train_data = args.train_dir + '/' + 'train.pth.tar'
-    val_data = args.train_dir + '/' + 'val.pth.tar'
+    val_data = args.train_dir + '/' + 'dev.pth.tar'
 
-    trainset = Dataset_dsb2018(train_data, c_config, args.train_image_size)
+    trainset = Dataset_madcatar(train_data, c_config, args.train_image_size)
     trainloader = torch.utils.data.DataLoader(
         trainset, num_workers=1, batch_size=args.batch_size, shuffle=True)
 
-    valset = Dataset_dsb2018(val_data, c_config, args.train_image_size)
+    valset = Dataset_madcatar(val_data, c_config, args.train_image_size)
     valloader = torch.utils.data.DataLoader(
         valset, num_workers=1, batch_size=args.batch_size)
 
@@ -214,9 +214,9 @@ def Train(trainloader, model, optimizer, epoch):
                       loss=losses))
 
     # log to TensorBoard
-    if args.tensorboard:
-        from tensorboard_logger import log_value
-        log_value('train_loss', losses.avg, epoch)
+    #if args.tensorboard:
+    #    from tensorboard_logger import log_value
+    #    log_value('train_loss', losses.avg, epoch)
 
 
 def Validate(validateloader, model, epoch):
@@ -247,9 +247,9 @@ def Validate(validateloader, model, epoch):
                       epoch, i, len(validateloader), loss=losses))
 
     # log to TensorBoard
-    if args.tensorboard:
-        from tensorboard_logger import log_value
-        log_value('val_loss', losses.avg, epoch)
+    #if args.tensorboard:
+    #    from tensorboard_logger import log_value
+    #    log_value('val_loss', losses.avg, epoch)
 
     return losses.avg
 
@@ -299,9 +299,9 @@ def adjust_learning_rate(optimizer, epoch):
     lr = args.lr * ((0.2 ** int(epoch >= 60)) *
                     (0.2 ** int(epoch >= 100)))
     # log to TensorBoard
-    if args.tensorboard:
-        from tensorboard_logger import log_value
-        log_value('learning_rate', lr, epoch)
+    #if args.tensorboard:
+    #    from tensorboard_logger import log_value
+    #    log_value('learning_rate', lr, epoch)
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 

@@ -28,8 +28,8 @@ def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):
         """
 
     objects = _get_bounding_box(madcat_file_path)
-    im = Image.open(image_file_name)
-    im_arr = np.array(im)
+    img = Image.open(image_file_name).convert("RGB")
+    im_arr = np.array(img)
 
     config = CoreConfig()
     image_with_objects = {

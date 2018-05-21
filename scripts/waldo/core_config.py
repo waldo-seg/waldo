@@ -25,7 +25,7 @@ class CoreConfig:
         # num_colors is the number of channels in the input images: e.g. 1 for
         # black and white, 3 for color.  We'll convert color images to rgb
         # representation (if num_colors == 3).
-        self.num_colors = 1
+        self.num_colors = 3
 
         # 'offsets': a list of pairs.  For reference, this default offsets list
         # was produced by the following python code.

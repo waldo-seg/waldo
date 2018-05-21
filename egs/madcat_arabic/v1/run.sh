@@ -37,8 +37,8 @@ if [ $stage -le 2 ]; then
     echo "doing segmentation...."
   local/segment.py \
     --dir $dir \
-    --train-dir data/train_val \
-    --train-image-size 512 \
+    --train-dir data \
+    --train-image-size 128 \
     --core-config $dir/configs/core.config \
     --unet-config $dir/configs/unet.config \
     $dir/model_best.pth.tar
