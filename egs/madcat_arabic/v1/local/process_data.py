@@ -114,6 +114,8 @@ def main():
     splits_data = splits_handle.read().strip().split('\n')
 
     prev_base_name = ''
+    data = []
+    output_path = args.out_dir + '.pth.tar'
     for line in splits_data:
         base_name = os.path.splitext(os.path.splitext(line.split(' ')[0])[0])[0]
         if prev_base_name != base_name:
@@ -123,7 +125,8 @@ def main():
                 continue
             if madcat_file_path is not None:
                 y = get_mask_from_page_image(madcat_file_path, image_file_path, args.max_image_size)
-                print("TO DO")
+                data.append(y)
+    torch.save(data, output_path)
 
 if __name__ == '__main__':
     main()
