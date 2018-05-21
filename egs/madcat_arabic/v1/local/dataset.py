@@ -29,7 +29,7 @@ def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):
 
     objects = _get_bounding_box(madcat_file_path)
     im = Image.open(image_file_name)
-    im_arr = np.transpose(np.array(im))
+    im_arr = np.array(im)
 
     config = CoreConfig()
     image_with_objects = {
@@ -37,9 +37,9 @@ def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):
         'objects': objects
     }
 
-    im_width = im_arr.shape[0]
-    im_height = im_arr.shape[1]
-    
+    im_height = im_arr.shape[0]
+    im_width = im_arr.shape[1]
+
     validated_objects = []
     for original_object in image_with_objects['objects']:
         ordered_polygon_points = original_object['polygon']
