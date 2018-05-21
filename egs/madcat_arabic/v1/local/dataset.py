@@ -12,10 +12,10 @@
 """
 
 import xml.dom.minidom as minidom
-from waldo.scripts.waldo.data_manipulation import *
-from waldo.scripts.waldo.core_config import CoreConfig
-from waldo.scripts.waldo.mar_utils import compute_hull
-from waldo.scripts.waldo.data_transformation import scale_down_image_with_objects
+from waldo.data_manipulation import *
+from waldo.core_config import CoreConfig
+from waldo.mar_utils import compute_hull
+from waldo.data_transformation import scale_down_image_with_objects
 
 
 def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):
