@@ -93,7 +93,7 @@ def main():
 
     val_data = args.train_dir + '/' + 'dev.pth.tar'
 
-    testset = Dataset_dsb2018(val_data, c_config, args.train_image_size)
+    testset = Dataset_madcatar(val_data, c_config, args.train_image_size)
     print('Total samples in the test set: {0}'.format(len(testset)))
 
     dataloader = torch.utils.data.DataLoader(
@@ -112,7 +112,7 @@ def main():
     x['img'] = np.moveaxis(img[0].numpy(), 0, -1)
     x['mask'] = mask_pred.astype(int)
     x['object_class'] = object_class
-    visualize_mask(x, c_config)
+    #visualize_mask(x, c_config)
 
 
 if __name__ == '__main__':
