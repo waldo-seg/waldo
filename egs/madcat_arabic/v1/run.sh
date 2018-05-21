@@ -25,23 +25,23 @@ if [ $stage -le 0 ]; then
 fi
 
 
-#epochs=10
-#depth=5
-#dir=exp/unet_${depth}_${epochs}_sgd
-#if [ $stage -le 1 ]; then
-#  # training
-#  local/run_unet.sh --epochs $epochs --depth $depth
-#fi
-#
-#if [ $stage -le 2 ]; then
-#    echo "doing segmentation...."
-#  local/segment.py \
-#    --dir $dir \
-#    --train-dir data/train_val \
-#    --train-image-size 128 \
-#    --core-config $dir/configs/core.config \
-#    --unet-config $dir/configs/unet.config \
-#    $dir/model_best.pth.tar
-#
-#fi
+epochs=10
+depth=5
+dir=exp/unet_${depth}_${epochs}_sgd
+if [ $stage -le 1 ]; then
+  # training
+  local/run_unet.sh --epochs $epochs --depth $depth
+fi
+
+if [ $stage -le 2 ]; then
+    echo "doing segmentation...."
+  local/segment.py \
+    --dir $dir \
+    --train-dir data/train_val \
+    --train-image-size 128 \
+    --core-config $dir/configs/core.config \
+    --unet-config $dir/configs/unet.config \
+    $dir/model_best.pth.tar
+
+fi
 
