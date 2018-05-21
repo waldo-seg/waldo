@@ -1,10 +1,10 @@
 #!/bin/bash
 stage=0
 
-num_colors=3
+num_colors=1
 num_classes=2
 padding=10
-train_image_size=128
+train_image_size=512
 
 depth=5
 epochs=10
@@ -46,7 +46,7 @@ if [ $stage -le 2 ]; then
   $cmd --gpu 1 --mem 2G $dir/train.log limit_num_gpus.sh local/train.py \
        --train-dir data/train_val \
        --batch-size $batch_size \
-       --train-image-size 128 \
+       --train-image-size 512 \
        --epochs $epochs \
        --lr $lr \
        --core-config $dir/configs/core.config \
