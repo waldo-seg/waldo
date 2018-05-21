@@ -46,7 +46,7 @@ def gen_suggestion(dependency_list, config_case=None):
     if config_case == "root":
         suggestion += ". ./path.sh \n"
         if len(dependency_list_rest) > 0:
-            suggestion += "pip install {0} \n".format(" ".join(dependency_list_rest))
+            suggestion += "pip3 install {0} \n".format(" ".join(dependency_list_rest))
         for pkg in dependency_list_special:
             if pkg == "torch":
                 suggestion += "pip3 install http://download.pytorch.org/whl/cu90/torch-0.4.0-cp35-cp35m-linux_x86_64.whl \n"
@@ -57,7 +57,7 @@ def gen_suggestion(dependency_list, config_case=None):
     elif config_case == "user":
         suggestion += ". ./path.sh \n"
         if len(dependency_list_rest) > 0:
-            suggestion += "pip install --user {0} \n".format(" ".join(dependency_list_rest))
+            suggestion += "pip3 install --user {0} \n".format(" ".join(dependency_list_rest))
         for pkg in dependency_list_special:
             if pkg == "torch":
                 suggestion += "pip3 install --user http://download.pytorch.org/whl/cu90/torch-0.4.0-cp35-cp35m-linux_x86_64.whl \n"
@@ -135,7 +135,5 @@ if __name__ == '__main__':
             print("\n(3) If you would like to use miniconda3 as package manager: \n" \
                 + gen_suggestion(dependency_list, "conda"))
             
-            # print(". ./path.sh \n"
-            #       "pip install {0} ".format(dependencies_str))
             os._exit(1)
 
