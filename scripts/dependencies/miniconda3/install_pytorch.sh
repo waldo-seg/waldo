@@ -9,6 +9,8 @@ if [ ! -f path.sh ]; then
   exit 1
 fi
 
+. ./path.sh
+
 if ! which conda | grep miniconda3; then
   echo "$0: expected `which conda` to return a directory with miniconda3 in its path."
   echo " ... Check that miniconda3 is installed and that your path.sh is set up correctly."

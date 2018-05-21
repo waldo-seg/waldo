@@ -2,9 +2,12 @@
 
 # this script checks dependencies for the ICDAR 2015 dataset
 
-[ -f ./path.sh ] && . ./path.sh
-set +e
+# exit on error
+set -e
 
+# checks if python3 is installed
 scripts/dependencies/check_python3.sh
-scripts/dependencies/check_numpy.sh
-scripts/dependencies/check_pillow.sh
+
+# checks if all required packages are installed or not
+scripts/dependencies/check_packages.sh
+

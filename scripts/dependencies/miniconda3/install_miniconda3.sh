@@ -7,6 +7,8 @@
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh -b
 
+rm Miniconda3-latest-Linux-x86_64.sh
+
 # NOTE: if you install this elsewhere than in your home directory, you'll have
 # to edit your path.sh file to reflect that change.  Search in that file for
 # miniconda3 and you'll see.
