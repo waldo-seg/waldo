@@ -8,19 +8,19 @@ import random
 import numpy as np
 from models.Unet import UNet
 from train import sample
-from dataset import Dataset_dsb2018
+from dataset import Dataset_madcatar
 from waldo.segmenter import ObjectSegmenter
 from waldo.core_config import CoreConfig
 from waldo.data_visualization import visualize_mask
 from unet_config import UnetConfig
 
 
-parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
+parser = argparse.ArgumentParser(description='Pytorch MADCAT Arabic setup')
 parser.add_argument('model', type=str,
                     help='path to final model')
 parser.add_argument('--dir', default='exp/unet', type=str,
                     help='directory to store segmentation results')
-parser.add_argument('--train-dir', default='./data/val.pth.tar', type=str,
+parser.add_argument('--train-dir', default='./data/dev.pth.tar', type=str,
                     help='Path of processed validation data')
 parser.add_argument('--train-image-size', default=128, type=int,
                     help='The size of the parts of training images that we'
@@ -91,7 +91,7 @@ def main():
 
     model.eval()  # convert the model into evaluation mode
 
-    val_data = args.train_dir + '/' + 'val.pth.tar'
+    val_data = args.train_dir + '/' + 'dev.pth.tar'
 
     testset = Dataset_dsb2018(val_data, c_config, args.train_image_size)
     print('Total samples in the test set: {0}'.format(len(testset)))

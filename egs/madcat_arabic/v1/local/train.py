@@ -68,10 +68,10 @@ def main():
     global args, best_loss
     args = parser.parse_args()
 
-    #if args.tensorboard:
-        #from tensorboard_logger import configure
-        #print("Using tensorboard")
-        #configure("%s" % (args.dir))
+    if args.tensorboard:
+        from tensorboard_logger import configure
+        print("Using tensorboard")
+        configure("%s" % (args.dir))
 
     # loading core configuration
     c_config = CoreConfig()
@@ -214,9 +214,9 @@ def Train(trainloader, model, optimizer, epoch):
                       loss=losses))
 
     # log to TensorBoard
-    #if args.tensorboard:
-    #    from tensorboard_logger import log_value
-    #    log_value('train_loss', losses.avg, epoch)
+    if args.tensorboard:
+        from tensorboard_logger import log_value
+        log_value('train_loss', losses.avg, epoch)
 
 
 def Validate(validateloader, model, epoch):
@@ -247,9 +247,9 @@ def Validate(validateloader, model, epoch):
                       epoch, i, len(validateloader), loss=losses))
 
     # log to TensorBoard
-    #if args.tensorboard:
-    #    from tensorboard_logger import log_value
-    #    log_value('val_loss', losses.avg, epoch)
+    if args.tensorboard:
+        from tensorboard_logger import log_value
+        log_value('val_loss', losses.avg, epoch)
 
     return losses.avg
 
@@ -299,9 +299,9 @@ def adjust_learning_rate(optimizer, epoch):
     lr = args.lr * ((0.2 ** int(epoch >= 60)) *
                     (0.2 ** int(epoch >= 100)))
     # log to TensorBoard
-    #if args.tensorboard:
-    #    from tensorboard_logger import log_value
-    #    log_value('learning_rate', lr, epoch)
+    if args.tensorboard:
+        from tensorboard_logger import log_value
+        log_value('learning_rate', lr, epoch)
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
