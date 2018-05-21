@@ -10,7 +10,7 @@ import sys
 import argparse
 import os
 import torch
-from dataset import get_mask_from_page_image
+from create_mask_from_page_image import get_mask_from_page_image
 
 parser = argparse.ArgumentParser(description="Creates line images from page image",
                                  epilog="E.g.  " + sys.argv[0] + "  data/LDC2012T15"
