@@ -86,9 +86,7 @@ def gen_suggestion(dependency_list, config_case=None):
                 suggestion += "conda install pytorch torchvision cuda90 -c pytorch \n"
                 pytorch_installed = True
             if pkg == "tensorboard_logger":
-                suggestion += "source activate base \n"
                 suggestion += "pip install tensorboard_logger \n"
-                suggestion += "source deactivate \n"
 
     # branching should not arrive here
     else:
