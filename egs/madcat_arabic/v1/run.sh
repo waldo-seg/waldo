@@ -38,7 +38,7 @@ if [ $stage -le 2 ]; then
   local/segment.py \
     --dir $dir \
     --train-dir data/train_val \
-    --train-image-size 128 \
+    --train-image-size 512 \
     --core-config $dir/configs/core.config \
     --unet-config $dir/configs/unet.config \
     $dir/model_best.pth.tar
