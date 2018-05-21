@@ -139,6 +139,7 @@ class DatasetICDAR2015:
             image_with_mask = convert_to_mask(image_with_objects, self.core_config)
 
             data.append(image_with_mask)
+            lbl_fh.close()
 
         return data
 

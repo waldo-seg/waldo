@@ -91,14 +91,14 @@ def validate_compressed_image_with_mask(x, c):
     img = x['img']
     mask = x['mask']
 
-    if img.dtype != np.int8:
+    if img.dtype != np.uint8:
         raise ValueError('compressed image should be of type uint8')
     if len(x['object_class']) <= 256:
-        if mask.dtype != np.int8:
+        if mask.dtype != np.uint8:
             raise ValueError('compressed mask should be of type uint8 for'
                 ' fewer than 256 objects')
     else:
-        if mask.dtype != np.int16:
+        if mask.dtype != np.uint16:
             raise ValueError('compressed mask should be of type uint16 for'
                 ' greater than 256 objects')
 
