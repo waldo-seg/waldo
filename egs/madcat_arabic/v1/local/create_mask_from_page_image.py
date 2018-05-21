@@ -18,7 +18,7 @@ from waldo.mar_utils import compute_hull
 from waldo.data_transformation import scale_down_image_with_objects
 
 
-def get_mask_from_page_image(self, madcat_file_path, image_file_name, max_size):
+def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):
     """ Given a page image, extracts the page image mask from it.
         Input
         -----
@@ -62,7 +62,7 @@ def get_mask_from_page_image(self, madcat_file_path, image_file_name, max_size):
     return y
 
 
-def _get_bounding_box(self, madcat_file_path):
+def _get_bounding_box(madcat_file_path):
     """ Given word boxes of each line, return bounding box for each
      line in sorted order
     Input
@@ -91,7 +91,7 @@ def _get_bounding_box(self, madcat_file_path):
     return objects
 
 
-def _validate_and_update_point(self, pt0, im_width, im_height, pt1=(0, 0)):
+def _validate_and_update_point(pt0, im_width, im_height, pt1=(0, 0)):
     new_point = pt0
     if pt0[0] < 0:
         new_point = _get_pointx_inside_origin(pt0, pt1)
@@ -108,7 +108,7 @@ def _validate_and_update_point(self, pt0, im_width, im_height, pt1=(0, 0)):
     return new_point
 
 
-def _get_pointx_inside_origin(self, pt0, pt1):
+def _get_pointx_inside_origin(pt0, pt1):
     """ Given a point pt0, return an updated point that is
     inside orgin. It finds line equation and uses it to
     get updated point x value inside origin
@@ -120,7 +120,7 @@ def _get_pointx_inside_origin(self, pt0, pt1):
     # TODO
 
 
-def _get_pointx_inside_width(self, pt0, pt1, im_width):
+def _get_pointx_inside_width(pt0, pt1, im_width):
     """ Given a point pt0, return an updated point that is
     inside image width. It finds line equation and uses it to
     get updated point x value inside image width
@@ -132,7 +132,7 @@ def _get_pointx_inside_width(self, pt0, pt1, im_width):
     # TODO
 
 
-def _get_pointy_inside_origin(self, pt0, pt1):
+def _get_pointy_inside_origin(pt0, pt1):
     """ Given a point pt0, return an updated point that is
     inside orgin. It finds line equation and uses it to
     get updated point y value inside origin
@@ -144,7 +144,7 @@ def _get_pointy_inside_origin(self, pt0, pt1):
     # TODO
 
 
-def _get_pointy_inside_height(self, pt0, pt1, im_height):
+def _get_pointy_inside_height(pt0, pt1, im_height):
     """ Given a point pt0, return an updated point that is
     inside image height. It finds line equation and uses it to
     get updated point y value inside image height
