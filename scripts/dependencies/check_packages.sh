@@ -95,7 +95,7 @@ def gen_suggestion(dependency_list, config_case=None):
       print("config_case error in {0}".format(sys.argv[0]))
       os._exit(1)
 
-    return suggestion
+    return suggestion[:-1]
 
 
 if __name__ == '__main__':
