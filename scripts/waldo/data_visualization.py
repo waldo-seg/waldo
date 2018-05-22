@@ -1,6 +1,8 @@
 # Copyright      2018  Johns Hopkins University (author: Daniel Povey, Desh Raj, Adel Rahimi)
 
 # Apache 2.0
+import matplotlib
+matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +18,7 @@ def visualize_mask(x, c, transparency=0.3):
     mask, a config class c, and a float 0 < transparency < 1.  
     It changes the image in-place by overlaying the mask with transparency 
     described by the parameter.
+    x['img_with_mask'] = image with transparent mask overlay
     """
 
     def get_cmap(n, name='hsv'):
@@ -49,10 +52,9 @@ def visualize_mask(x, c, transparency=0.3):
     plt.savefig(buffer_, format = "png")
     buffer_.seek(0)
     image = Image.open(buffer_)
-    x['img'] = np.array(image)
+    x['img_with_mask'] = np.array(image)
     buffer_.close()
-
-    return
+    return x
 
 
 
