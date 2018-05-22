@@ -22,6 +22,7 @@ mkdir -p data/{train,test,dev}
 
 [ -f ./path.sh ] && . ./path.sh; # source the path.
 
+. ./scripts/parse_options.sh # e.g. this parses the --stage option if supplied.
 
 if [ -d $data_splits_dir ]; then
   echo "$0: Not downloading the data splits as it is already there."

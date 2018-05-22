@@ -43,7 +43,7 @@ fi
 if [ $stage -le 2 ]; then
   # training the network
   echo "training the network....."
-  $cmd --gpu 1 --mem 2G $dir/train.log limit_num_gpus.sh local/train.py \
+  $cmd --gpu 1 --mem 20G $dir/train.log limit_num_gpus.sh local/train.py \
        --train-dir data \
        --batch-size $batch_size \
        --train-image-size 128 \
