@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2018 Johns Hopkins University (author: Ashish Arora)
+# Copyright 2018 Johns Hopkins University (author: Yiwen Shao)
 # Apache 2.0
 
 """ This module will be used for creating text localization mask on page image.

@@ -14,6 +14,10 @@ train_split_url=http://www.openslr.org/resources/48/madcat.train.raw.lineid
 test_split_url=http://www.openslr.org/resources/48/madcat.test.raw.lineid
 dev_split_url=http://www.openslr.org/resources/48/madcat.dev.raw.lineid
 data_splits_dir=data/download/data_splits
+writing_condition1=/export/corpora/LDC/LDC2012T15/docs/writing_conditions.tab
+writing_condition2=/export/corpora/LDC/LDC2013T09/docs/writing_conditions.tab
+writing_condition3=/export/corpora/LDC/LDC2013T15/docs/writing_conditions.tab
+
 mkdir -p data/{train,test,dev}
 
 [ -f ./path.sh ] && . ./path.sh; # source the path.
@@ -38,7 +42,9 @@ echo "Date: $(date)."
 if [ $stage -le 0 ]; then
   for dataset in test dev train; do
   dataset_file=$data_splits_dir/madcat.$dataset.raw.lineid
-  local/process_data.py $download_dir1 $download_dir2 $download_dir3 $dataset_file data/$dataset
+  local/process_data.py $download_dir1 $download_dir2 $download_dir3 \
+      $dataset_file data/$dataset $writing_condition1 $writing_condition2 \
+      $writing_condition3
   done
 fi
 echo "Date: $(date)."
