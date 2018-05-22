@@ -9,5 +9,5 @@ set -e
 scripts/dependencies/check_python3.sh
 
 # checks if all required packages are installed or not
-scripts/dependencies/check_packages.sh
+scripts/dependencies/check_packages.py
 
