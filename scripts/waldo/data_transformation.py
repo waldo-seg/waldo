@@ -2,7 +2,6 @@
 
 
 # Apache 2.0
-import numpy as np
 from waldo.data_types import *
 from PIL import Image
 import numpy as np
@@ -23,7 +22,7 @@ def randomly_crop_combined_image(combined_image, config,
     n_channels, height, width = combined_image.shape
 
     if height < image_height or width < image_width:
-        cropped_image = np.zeros(n_channels, image_height, image_width)
+        cropped_image = np.zeros((n_channels, image_height, image_width))
         cropped_image[:, :height, :width] = combined_image
     else:
         top = np.random.randint(0, height - image_height)
@@ -51,7 +50,7 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
     if im_max_side < max_size:
         return image_with_objects
 
-    im = Image.fromarray(np.transpose(im_arr))
+    im = Image.fromarray(im_arr)
     sx = float(im.size[0])
     sy = float(im.size[1])
     scale = 0
@@ -65,7 +64,7 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
         ny = scale * sy
 
     resized_img = im.resize((int(nx), int(ny)))
-    resized_img_arr = np.transpose(np.array(resized_img))
+    resized_img_arr = np.array(resized_img)
 
     resized_objects = []
     for original_object in image_with_objects['objects']:
