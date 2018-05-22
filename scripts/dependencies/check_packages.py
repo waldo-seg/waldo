@@ -22,7 +22,6 @@ parser = argparse.ArgumentParser(description="Checks if all required packages"
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--requirements_path', type=str, 
                     action='append',
-                    # default="scripts/dependencies/requirements.txt",
                     help='Path of the downloaded requirements file')
 
 
@@ -43,13 +42,13 @@ def gen_suggestion_str(dependencies_list):
 
     # generate package installation suggestions
     # [note] default packages installation location:
-    # - user mode: ~/.local/lib/pythonX.Y/site-packages
-    # - root mode: /usr/local/lib/pythonX.Y/site-packages
+    # -- user mode: ~/.local/lib/pythonX.Y/site-packages
+    # -- root mode: /usr/local/lib/pythonX.Y/site-packages
     if len(dependencies_list_normal) > 0:
         suggestion += "pip3 install --user {0} \n".format(" ".join(dependencies_list_normal))
     for pkg in dependencies_list_special:
         if pkg == "torch":
-            suggestion += "pip3 install --user http://download.pytorch.org/whl/cu90/torch-0.4.0-cp35-cp35m-linux_x86_64.whl \n"
+            suggestion += "pip3 install --user http://download.pytorch.org/whl/cu91/torch-0.4.0-cp35-cp35m-linux_x86_64.whl \n" 
         if pkg == "torchvision":
             suggestion += "pip3 install --user torchvision \n"
 
@@ -60,11 +59,14 @@ if __name__ == '__main__':
     global args
     args = parser.parse_args()
 
+    GLOBAL_REQUIREMENTS = "scripts/dependencies/requirements.txt"
+    LOCAL_REQUIREMENTS = "requirements.txt"
     requirements_paths = []
-    requirements_paths.append("scripts/dependencies/requirements.txt") # global requirements
-    requirements_paths.append("requirements.txt") # local requirements
+    requirements_paths.append(GLOBAL_REQUIREMENTS) # global requirements
+    if os.path.isfile(LOCAL_REQUIREMENTS):
+        requirements_paths.append(LOCAL_REQUIREMENTS) # local requirements, optional
     if args.requirements_path is not None:
-        requirements_paths += args.requirements_path
+        requirements_paths += args.requirements_path # other specified requirements, optional
     requirements_paths = list(set(requirements_paths))
 
     dependencies_list = []
@@ -84,8 +86,8 @@ if __name__ == '__main__':
         print("{0}: All requirements are met".format(sys.argv[0]))
         sys.exit()
     else:
-        dependencies_list.sort()
-        dependencies_list = list(set(dependencies_list)) # Simple deduplication. No considering same package with different version requirements
+        # dependencies_list.sort()
+        # dependencies_list = list(set(dependencies_list)) # Simple deduplication. No considering same package with different version requirements
         dependencies_str = " ".join(dependencies_list)
         print("{0}: Not all the required python packages are installed. \n".format(sys.argv[0])
             + "Packages required: {0} \n".format(dependencies_str)

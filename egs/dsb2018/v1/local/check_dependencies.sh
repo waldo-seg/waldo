@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
+# exit on error
+set -e
 
-set -e  # exit on error
+# checks if python3 is installed
+scripts/dependencies/check_python3.sh
 
-scripts/dependencies/check_pytorch.sh
-
-scripts/dependencies/check_packages.sh
+# checks if all required packages are installed or not
+scripts/dependencies/check_packages.py
 

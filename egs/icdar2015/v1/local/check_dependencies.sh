@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# this script checks dependencies for the ICDAR 2015 dataset
-
 # exit on error
 set -e
 
