@@ -44,13 +44,12 @@ def DataProcess(input_path, output_dir, channels, mode='train', train_prop=0.9):
         train_ids = train_all_ids[:num_train]
         val_ids = train_all_ids[num_train:]
 
-        train_saver = DataSaver(output_dir + '/' + 'train')
+        train_saver = DataSaver(os.path.join(output_dir, 'train'))
 
         print('Getting train images and masks ... ')
         sys.stdout.flush()
         for n, id_ in enumerate(train_ids):
             train_item = {}
-            train_item['name'] = id_
             path = input_path + '/' + id_
             img = np.array(Image.open(path + '/images/' + id_ +
                                       '.png'))[:, :, :channels]
@@ -71,14 +70,15 @@ def DataProcess(input_path, output_dir, channels, mode='train', train_prop=0.9):
             object_class = np.ones(object_id)
             object_class[0] = 0
             train_item['object_class'] = object_class.tolist()
-            train_saver.write_image(train_item['name'], train_item)
+            train_saver.write_image(id_, train_item)
+        # write all ids to a file named 'image_ids.txt'
+        train_saver.write_index()
 
-        val_saver = DataSaver(output_dir + '/' + 'val')
+        val_saver = DataSaver(os.path.join(output_dir, 'val'))
         print('Getting validation images and masks ... ')
         sys.stdout.flush()
         for n, id_ in enumerate(val_ids):
             val_item = {}
-            val_item['name'] = id_
             path = input_path + '/' + id_
             img = np.array(Image.open(path + '/images/' +
                                       id_ + '.png'))[:, :, :channels]
@@ -98,8 +98,9 @@ def DataProcess(input_path, output_dir, channels, mode='train', train_prop=0.9):
             object_class = np.ones(object_id)
             object_class[0] = 0
             val_item['object_class'] = object_class.tolist()
-            val_saver.write_image(val_item['name'], val_item)
+            val_saver.write_image(id_, val_item)
 
+        val_saver.write_index()
         print('Done with training and validation set!')
 
     else:
@@ -124,14 +125,13 @@ if __name__ == '__main__':
     global args
     args = parser.parse_args()
 
-    train_val_dir = args.outdir + '/train_val'
-    train_ids_file = "{0}/train/image_ids.txt".format(train_val_dir)
-    val_ids_file = "{0}/val/image_ids.txt".format(train_val_dir)
+    train_ids_file = "{0}/train/image_ids.txt".format(args.outdir)
+    val_ids_file = "{0}/val/image_ids.txt".format(args.outdir)
     if not (os.path.exists(train_ids_file) and
             os.path.exists(val_ids_file)):
         random.seed(args.seed)
         DataProcess(args.train_input,
-                    train_val_dir,
+                    args.outdir,
                     args.img_channels, mode='train',
                     train_prop=args.train_prop)
 
