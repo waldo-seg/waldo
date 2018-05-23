@@ -18,7 +18,7 @@ import torchvision
 import random
 from torchvision import transforms as tsf
 from models.Unet import UNet
-from dataset import Dataset_dsb2018
+from waldo.data_io import WaldoDataset
 from waldo.core_config import CoreConfig
 from unet_config import UnetConfig
 
@@ -48,7 +48,7 @@ parser.add_argument('--nesterov', default=True,
                     type=bool, help='nesterov momentum')
 parser.add_argument('--weight-decay', '--wd', default=5e-4, type=float,
                     help='weight decay (default: 5e-4)')
-parser.add_argument('--train-dir', default='data/train_val', type=str,
+parser.add_argument('--train-dir', default='data', type=str,
                     help='Directory of processed training and validation data')
 parser.add_argument('--test-dir', default='data/test', type=str,
                     help='Directory of processed test data')
@@ -108,16 +108,16 @@ def main():
     merge_mode = u_config.merge_mode
     depth = u_config.depth
 
-    train_data = args.train_dir + '/' + 'train.pth.tar'
-    val_data = args.train_dir + '/' + 'val.pth.tar'
+    train_data = args.train_dir + '/train'
+    val_data = args.train_dir + '/val'
 
-    trainset = Dataset_dsb2018(train_data, c_config, args.train_image_size)
+    trainset = WaldoDataset(train_data, c_config, args.train_image_size)
     trainloader = torch.utils.data.DataLoader(
-        trainset, num_workers=1, batch_size=args.batch_size, shuffle=True)
+        trainset, num_workers=4, batch_size=args.batch_size, shuffle=True)
 
-    valset = Dataset_dsb2018(val_data, c_config, args.train_image_size)
+    valset = WaldoDataset(val_data, c_config, args.train_image_size)
     valloader = torch.utils.data.DataLoader(
-        valset, num_workers=1, batch_size=args.batch_size)
+        valset, num_workers=4, batch_size=args.batch_size)
 
     NUM_TRAIN = len(trainset)
     NUM_VAL = len(valset)
