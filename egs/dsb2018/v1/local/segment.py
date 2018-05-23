@@ -8,16 +8,16 @@ import random
 import numpy as np
 from models.Unet import UNet
 from train import sample
-from dataset import Dataset_dsb2018
 from waldo.segmenter import ObjectSegmenter
 from waldo.core_config import CoreConfig
 from waldo.data_visualization import visualize_mask
+from waldo.data_io import WaldoDataset
 from unet_config import UnetConfig
 
 
 parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
-parser.add_argument('test_data', default='data/val.pth.tar', type=str,
-                    help='Path to the processed validation data.')
+parser.add_argument('test_data', default='./data', type=str,
+                    help='Path to processed validation data')
 parser.add_argument('dir', type=str,
                     help='Directory to store segmentation results. '
                     'It is assumed that <dir> is a sub-directory of '
@@ -31,6 +31,7 @@ parser.add_argument('--train-image-size', default=128, type=int,
                     ' by padding and then random cropping.')
 random.seed(0)
 np.random.seed(0)
+
 
 def main():
     global args
@@ -80,7 +81,7 @@ def main():
 
     model.eval()  # convert the model into evaluation mode
 
-    testset = Dataset_dsb2018(args.test_data, core_config, args.train_image_size)
+    testset = WaldoDataset(args.test_data, core_config, args.train_image_size)
     print('Total samples in the test set: {0}'.format(len(testset)))
 
     dataloader = torch.utils.data.DataLoader(
@@ -89,7 +90,8 @@ def main():
     segment_dir = '{}/segment'.format(args.dir)
     if not os.path.exists(segment_dir):
         os.makedirs(segment_dir)
-    img, class_pred, adj_pred = sample(model, dataloader, segment_dir, core_config)
+    img, class_pred, adj_pred = sample(
+        model, dataloader, segment_dir, core_config)
 
     seg = ObjectSegmenter(class_pred[0].detach().numpy(),
                           adj_pred[0].detach().numpy(),

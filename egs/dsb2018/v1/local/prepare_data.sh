@@ -58,7 +58,8 @@ train_prop=0.9
 seed=0
 . parse_options.sh
 
-mkdir -p data/train_val
+mkdir -p data/train
+mkdir -p data/val
 mkdir -p data/test
 
 local/process_data.py --train-input $train_dir --test-input $test_dir --outdir data --train-prop $train_prop --img-channels 3 --seed $seed
