@@ -157,7 +157,7 @@ class AdjacencyRecord:
         self.class_delta_logprob = None
         self.merged_class = None
         self.merge_priority = None
-        self.update_merge_priority()
+        self.update_merge_priority(segmenter)
 
 
     def compute_obj_merge_logprob(self, segmenter):
@@ -196,10 +196,10 @@ class AdjacencyRecord:
             self.class_delta_logprob = merged_class_joint_logprob - \
                             self.obj1.class_logprob() - self.obj2.class_logprob()
 
-    def update_merge_priority(self):
+    def update_merge_priority(self, segmenter):
         self.compute_class_delta_logprob()
-        den = max(len(self.obj1.pixels), len(self.obj2.pixels))
-        self.merge_priority = (self.obj_merge_logprob / 40.0 +
+        den = len(self.obj1.pixels) * len(self.obj2.pixels)
+        self.merge_priority = (self.obj_merge_logprob / (1.0 * len(segmenter.offsets)) +
                                self.class_delta_logprob) / den
 
     def obj_pair(self):
@@ -423,7 +423,7 @@ class ObjectSegmenter:
                     print("Not merging {:0.2f} != {:0.2f}\n".format(
                         merge_priority, arec.merge_priority), file=sys.stderr)
                 continue
-            arec.update_merge_priority()
+            arec.update_merge_priority(self)
             if arec.merge_priority >= merge_priority:
                 if self.verbose >= 1:
                     print("Merging...{:0.2f} >= {:0.2f}\n".format(
@@ -527,12 +527,12 @@ class ObjectSegmenter:
                 this_arec.merge_priority = -1.0  # make sure it is practically deleted from the queue
                 self.adjacency_records[that_arec.obj_pair()] = that_arec
                 obj3.adjacency_list[that_arec.obj_pair()] = that_arec
-                that_arec.update_merge_priority()
+                that_arec.update_merge_priority(self)
                 if that_arec.merge_priority >= 0:
                     heappush(self.queue, (-that_arec.merge_priority, that_arec))
             else:
                 obj1.adjacency_list[this_arec.obj_pair()] = this_arec
-                this_arec.update_merge_priority()
+                this_arec.update_merge_priority(self)
                 if this_arec.merge_priority >= 0:
                     heappush(self.queue, (-this_arec.merge_priority, this_arec))
         if self.verbose >= 1:

@@ -30,7 +30,7 @@ parser.add_argument('--train-image-size', default=128, type=int,
                     'These are derived from the input images'
                     ' by padding and then random cropping.')
 random.seed(0)
-
+np.random.seed(0)
 
 def main():
     global args
