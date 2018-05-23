@@ -1,2 +1,2 @@
-numpy
-Pillow
+# This file contains dependencies for this individual experiment.
+# For common dependencies shared by all experiments, please refer to: ./scripts/dependencies/requirement.txt 

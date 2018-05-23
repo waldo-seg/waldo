@@ -1,5 +1,2 @@
-numpy
-tensorboard_logger
-torch>=0.4.0
-Pillow
-torchvision>=0.2.1
+# This file contains dependencies for this individual experiment.
+# For common dependencies shared by all experiments, please refer to: ./scripts/dependencies/requirement.txt 
