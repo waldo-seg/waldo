@@ -108,16 +108,16 @@ def main():
     merge_mode = u_config.merge_mode
     depth = u_config.depth
 
-    train_data = args.train_dir + '/' + 'train.pth.tar'
-    val_data = args.train_dir + '/' + 'val.pth.tar'
+    train_data = args.train_dir + '/train'
+    val_data = args.train_dir + '/val'
 
     trainset = Dataset_dsb2018(train_data, c_config, args.train_image_size)
     trainloader = torch.utils.data.DataLoader(
-        trainset, num_workers=1, batch_size=args.batch_size, shuffle=True)
+        trainset, num_workers=4, batch_size=args.batch_size, shuffle=True)
 
     valset = Dataset_dsb2018(val_data, c_config, args.train_image_size)
     valloader = torch.utils.data.DataLoader(
-        valset, num_workers=1, batch_size=args.batch_size)
+        valset, num_workers=4, batch_size=args.batch_size)
 
     NUM_TRAIN = len(trainset)
     NUM_VAL = len(valset)

@@ -13,6 +13,7 @@ import random
 import torch
 import numpy as np
 from PIL import Image
+from waldo.data_io import DataSaver
 
 parser = argparse.ArgumentParser(
     description='DSB2018 Data Process with Pytorch')
@@ -31,7 +32,7 @@ parser.add_argument('--img-channels', default=3, type=int,
                     help='Number of channels for input images')
 
 
-def DataProcess(input_path, channels, mode='train', train_prop=0.9):
+def DataProcess(input_path, output_dir, channels, mode='train', train_prop=0.9):
     if mode == 'train':
         # Get train IDs
         train_all_ids = next(os.walk(input_path))[1]
@@ -43,8 +44,7 @@ def DataProcess(input_path, channels, mode='train', train_prop=0.9):
         train_ids = train_all_ids[:num_train]
         val_ids = train_all_ids[num_train:]
 
-        train = []
-        val = []
+        train_saver = DataSaver(output_dir + '/' + 'train')
 
         print('Getting train images and masks ... ')
         sys.stdout.flush()
@@ -71,8 +71,9 @@ def DataProcess(input_path, channels, mode='train', train_prop=0.9):
             object_class = np.ones(object_id)
             object_class[0] = 0
             train_item['object_class'] = object_class.tolist()
-            train.append(train_item)
+            train_saver.write_image(train_item['name'], train_item)
 
+        val_saver = DataSaver(output_dir + '/' + 'val')
         print('Getting validation images and masks ... ')
         sys.stdout.flush()
         for n, id_ in enumerate(val_ids):
@@ -97,10 +98,9 @@ def DataProcess(input_path, channels, mode='train', train_prop=0.9):
             object_class = np.ones(object_id)
             object_class[0] = 0
             val_item['object_class'] = object_class.tolist()
-            val.append(val_item)
+            val_saver.write_image(val_item['name'], val_item)
 
         print('Done with training and validation set!')
-        return train, val
 
     else:
         # Get test images
@@ -118,32 +118,29 @@ def DataProcess(input_path, channels, mode='train', train_prop=0.9):
             test.append(test_item)
 
         print('Done with test set!')
-        return test
 
 
 if __name__ == '__main__':
     global args
     args = parser.parse_args()
 
-    train_output = "{0}/train_val/train.pth.tar".format(
-        args.outdir, args.train_prop, args.seed)
-    val_output = "{0}/train_val/val.pth.tar".format(
-        args.outdir, args.train_prop, args.seed)
-    if not (os.path.exists(train_output) and
-            os.path.exists(val_output)):
+    train_val_dir = args.outdir + '/train_val'
+    train_ids_file = "{0}/train/image_ids.txt".format(train_val_dir)
+    val_ids_file = "{0}/val/image_ids.txt".format(train_val_dir)
+    if not (os.path.exists(train_ids_file) and
+            os.path.exists(val_ids_file)):
         random.seed(args.seed)
-        train, val = DataProcess(args.train_input,
-                                 args.img_channels, mode='train',
-                                 train_prop=args.train_prop)
+        DataProcess(args.train_input,
+                    train_val_dir,
+                    args.img_channels, mode='train',
+                    train_prop=args.train_prop)
 
-        torch.save(train, train_output)
-        torch.save(val, val_output)
     else:
         print('Not processing training and validation data as it is already there.')
 
-    test_output = "{0}/test/test.pth.tar".format(args.outdir)
-    if not (os.path.exists(test_output)):
-        test = DataProcess(args.test_input, args.img_channels, mode='test')
-        torch.save(test, test_output)
-    else:
-        print('Not processing test data as it is already there.')
+    # test_output = "{0}/test/test.pth.tar".format(args.outdir)
+    # if not (os.path.exists(test_output)):
+    #     test = DataProcess(args.test_input, args.img_channels, mode='test')
+    #     torch.save(test, test_output)
+    # else:
+    #     print('Not processing test data as it is already there.')
