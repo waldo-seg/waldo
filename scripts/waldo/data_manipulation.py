@@ -66,11 +66,11 @@ def compress_image_with_mask(x, c):
     validate_image_with_mask(x, c)
 
     y = dict()
-    y['img'] = x['img'].astype(np.int8)
+    y['img'] = x['img'].astype(np.uint8)
     if len(x['object_class']) <= 256:
-        y['mask'] = x['mask'].astype(np.int8)
+        y['mask'] = x['mask'].astype(np.uint8)
     else:
-        y['mask'] = x['mask'].astype(np.int16)
+        y['mask'] = x['mask'].astype(np.uint16)
     y['object_class'] = x['object_class']
 
     validate_compressed_image_with_mask(y, c)
