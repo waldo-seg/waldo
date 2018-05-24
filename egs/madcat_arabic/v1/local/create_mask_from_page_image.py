@@ -15,7 +15,8 @@ import xml.dom.minidom as minidom
 from waldo.data_manipulation import *
 from waldo.core_config import CoreConfig
 from waldo.mar_utils import compute_hull
-from waldo.data_transformation import scale_down_image_with_objects
+from waldo.data_transformation import scale_down_image_with_objects, 
+                                      make_squre_image_with_padding
 
 
 def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):
@@ -59,7 +60,16 @@ def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):
 
     scaled_image_with_objects = scale_down_image_with_objects(validated_image_with_objects, config,
                                                               max_size)
-    y = convert_to_mask(scaled_image_with_objects, config)
+
+    img_padded = make_squre_image_with_padding(scaled_image_with_objects['img'], config)
+
+    padded_image_with_objects = {
+        'img': img_padded,
+        'objects': validated_objects
+    }
+
+    y = convert_to_mask(padded_image_with_objects, config)
+
     return y
 
 

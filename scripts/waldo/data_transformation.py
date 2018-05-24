@@ -89,3 +89,34 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
 
     return resized_image_with_objects
 
+
+def make_squre_image_with_padding(im_arr, config):
+    """
+    This function pads an image to make it squre, if both height and width are
+    different, (Otherwise it leaves it the same size).
+    It returns the padded image; but note, if it does not have
+    to pad the image, it just returns the input variable
+    'image', it does not make a deep copy.
+    """
+
+    sx = int(im_arr.shape[0])
+    sy = int(im_arr.shape[1])
+
+    if sy == sx:
+        return im_arr
+
+    if sy > sx:
+        diff = sy-sx
+        if config.num_colors == 1:
+            im_arr_pad  = np.pad(im_arr, [(0, diff), (0, 0)], mode='constant')
+        else:
+            im_arr_pad = np.pad(im_arr, [(0, diff), (0, 0), (0,0)], mode='constant')
+    else:
+        diff = sx - sy
+        if config.num_colors == 1:
+            im_arr_pad = np.pad(im_arr, [(0, 0), (0, diff)], mode='constant')
+        else:
+            im_arr_pad = np.pad(im_arr, [(0, 0), (0, diff), (0, 0)], mode='constant')
+
+    return im_arr_pad
+
