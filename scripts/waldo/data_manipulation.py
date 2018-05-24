@@ -133,6 +133,7 @@ def convert_to_combined_image(x, c):
     """
     validate_config(c)
     validate_image_with_mask(x, c)
+    # x['img'] is of size (height, width, color), switch it to (color, height, width)
     im = np.moveaxis(x['img'], -1, 0)
     im = im.astype('float32') / 256.0
     mask = x['mask']
@@ -156,7 +157,7 @@ def convert_to_combined_image(x, c):
         y[c.num_colors + num_outputs + n, :, :] = 1 - class_feature
 
     for k, (i, j) in enumerate(c.offsets):
-        rolled_mask = np.roll(np.roll(mask, -i, axis=1), -j, axis=0)
+        rolled_mask = np.roll(np.roll(mask, -i, axis=0), -j, axis=1)
         offset_feature = (rolled_mask == mask).astype('float32')
         y[c.num_colors + c.num_classes + k] = offset_feature
         y[c.num_colors + num_outputs + c.num_classes + k] = 1 - offset_feature

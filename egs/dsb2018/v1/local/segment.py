@@ -98,10 +98,11 @@ def main():
                           num_classes, offset_list)
     mask_pred, object_class = seg.run_segmentation()
     x = {}
+    # from (color, height, width) to (height, width, color)
     x['img'] = np.moveaxis(img[0].numpy(), 0, -1)
     x['mask'] = mask_pred.astype(int)
     x['object_class'] = object_class
-    # visualize_mask(x, core_config)
+    visualize_mask(x, core_config)
 
 
 if __name__ == '__main__':
