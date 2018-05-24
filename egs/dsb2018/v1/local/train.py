@@ -228,23 +228,23 @@ def Validate(validateloader, model, epoch):
 
     for i, (input, class_label, bound) in enumerate(validateloader):
 
-        input = torch.autograd.Variable(input.cuda())
-        bound = torch.autograd.Variable(bound.cuda(async=True))
-        class_label = torch.autograd.Variable(
-            class_label.cuda(async=True))
-        output = model(input)
+        with torch.no_grad():
+            input = input.cuda()
+            bound = bound.cuda(async=True)
+            class_label = class_label.cuda(async=True)
+            output = model(input)
 
-        # TODO. Treat class label and bound label equally by now
-        target = torch.cat((class_label, bound), 1)
-        loss_fn = torch.nn.BCELoss()
-        loss = loss_fn(output, target)
+            # TODO. Treat class label and bound label equally by now
+            target = torch.cat((class_label, bound), 1)
+            loss_fn = torch.nn.BCELoss()
+            loss = loss_fn(output, target)
 
-        losses.update(loss.item(), args.batch_size)
+            losses.update(loss.item(), args.batch_size)
 
-        if i % args.print_freq == 0:
-            print('Val: [{0}][{1}/{2}]\t'
-                  'Val Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
-                      epoch, i, len(validateloader), loss=losses))
+            if i % args.print_freq == 0:
+                print('Val: [{0}][{1}/{2}]\t'
+                      'Val Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
+                          epoch, i, len(validateloader), loss=losses))
 
     # log to TensorBoard
     if args.tensorboard:
@@ -258,8 +258,8 @@ def sample(model, dataloader, outdir, core_config):
     """Visualize some predicted masks on training data to get a better intuition
        about the performance.
     """
-    datailer = iter(dataloader)
-    img, classification, bound = datailer.next()
+    data_iter = iter(dataloader)
+    img, classification, bound = data_iter.next()
     torchvision.utils.save_image(img, '{0}/raw.png'.format(outdir))
     for i in range(len(core_config.offsets)):
         torchvision.utils.save_image(
@@ -267,11 +267,11 @@ def sample(model, dataloader, outdir, core_config):
     for i in range(core_config.num_classes):
         torchvision.utils.save_image(
             classification[:, i:i + 1, :, :], '{0}/class_{1}.png'.format(outdir, i))
-    img = torch.autograd.Variable(img)
     if next(model.parameters()).is_cuda:
         img = img.cuda()
-    predictions = model(img)
-    predictions = predictions.data
+    with torch.no_grad():
+        predictions = model(img)
+    predictions = predictions.detach()
     class_pred = predictions[:, :core_config.num_classes, :, :]
     bound_pred = predictions[:, core_config.num_classes:, :, :]
     for i in range(len(core_config.offsets)):
