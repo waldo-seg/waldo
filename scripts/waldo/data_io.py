@@ -99,12 +99,12 @@ class WaldoDataset(Dataset):
             combined_img, self.c_cfg, self.size, self.size)
 
         img = torch.from_numpy(
-            cropped_img[:n_colors, :, :]).type(torch.FloatTensor)
+            cropped_img[:n_colors, :, :])
         class_label = torch.from_numpy(
-            cropped_img[n_colors:n_colors + n_classes, :, :]).type(torch.FloatTensor)
+            cropped_img[n_colors:n_colors + n_classes, :, :])
         bound = torch.from_numpy(
             cropped_img[n_colors + n_classes:n_colors +
-                        n_classes + n_offsets, :, :]).type(torch.FloatTensor)
+                        n_classes + n_offsets, :, :])
 
         return img, class_label, bound
 
