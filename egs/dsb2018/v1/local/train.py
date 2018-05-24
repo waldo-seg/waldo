@@ -281,7 +281,8 @@ def sample(model, dataloader, outdir, core_config):
         torchvision.utils.save_image(
             class_pred[:, i:i + 1, :, :], '{0}/class_pred{1}.png'.format(outdir, i))
 
-    return img, class_pred, bound_pred
+    # return ground truth for debugging reason
+    return img, classification, bound
 
 
 def soft_dice_loss(inputs, targets):

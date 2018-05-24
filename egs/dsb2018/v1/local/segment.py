@@ -10,7 +10,7 @@ from models.Unet import UNet
 from train import sample
 from waldo.segmenter import ObjectSegmenter
 from waldo.core_config import CoreConfig
-from waldo.data_visualization import visualize_mask
+#from waldo.data_visualization import visualize_mask
 from waldo.data_io import WaldoDataset
 from unet_config import UnetConfig
 

@@ -18,6 +18,7 @@ import warnings
 import resource
 import scipy.misc
 
+
 class ObjPair:
     """
     This class is used to make an unordered pair from 2 Objects.
@@ -86,12 +87,13 @@ class Object:
     def compute_sameness_logprob(self, segmenter):
         """ This is only used for debugging purposes. """
         self.sameness_logprob = 0
+        eps = sys.float_info.epsilon
         for i, o in enumerate(segmenter.offsets):
             for p1 in self.pixels:
                 p2 = (p1[0] + o[0], p1[1] + o[1])
                 if p2 in self.pixels:
                     same_prob = segmenter.get_sameness_prob(p1, i)
-                    self.sameness_logprob += np.log(same_prob)
+                    self.sameness_logprob += np.log(same_prob + eps)
 
     def __hash__(self):
         return hash(self.id)
@@ -146,7 +148,6 @@ class AdjacencyRecord:
               out class_delta_log_prob.
     """
 
-
     def __init__(self, obj1, obj2, segmenter):
         self.obj1 = obj1
         self.obj2 = obj2
@@ -159,10 +160,10 @@ class AdjacencyRecord:
         self.merge_priority = None
         self.update_merge_priority(segmenter)
 
-
     def compute_obj_merge_logprob(self, segmenter):
         logprob = 0
         adjacent = False
+        eps = sys.float_info.epsilon
         self.differentness_logprob = 0
         self.sameness_logprob = 0
         for o, i in zip(segmenter.offsets, range(len(segmenter.offsets))):
@@ -171,20 +172,21 @@ class AdjacencyRecord:
                 if p2 in self.obj2.pixels:
                     adjacent = True
                     same_prob = segmenter.get_sameness_prob(p1, i)
-                    self.differentness_logprob += np.log(1.0 - same_prob)
-                    self.sameness_logprob += np.log(same_prob)
-                    logprob += np.log(same_prob) - np.log(1.0 - same_prob)
+                    self.differentness_logprob += np.log(1.0 - same_prob + eps)
+                    self.sameness_logprob += np.log(same_prob + eps)
+                    logprob += np.log(same_prob + eps) - \
+                        np.log(1.0 - same_prob + eps)
 
             for p1 in self.obj2.pixels:
                 p2 = (p1[0] + o[0], p1[1] + o[1])
                 if p2 in self.obj1.pixels:
                     adjacent = True
                     same_prob = segmenter.get_sameness_prob(p1, i)
-                    self.differentness_logprob += np.log(1.0 - same_prob)
-                    self.sameness_logprob += np.log(same_prob)
-                    logprob += np.log(same_prob) - np.log(1.0 - same_prob)
+                    self.differentness_logprob += np.log(1.0 - same_prob + eps)
+                    self.sameness_logprob += np.log(same_prob + eps)
+                    logprob += np.log(same_prob + eps) - \
+                        np.log(1.0 - same_prob + eps)
         self.obj_merge_logprob = logprob if adjacent else None
-
 
     def compute_class_delta_logprob(self):
         if self.obj1.object_class == self.obj2.object_class:
@@ -194,7 +196,7 @@ class AdjacencyRecord:
             self.merged_class = np.argmax(joint_class_logprobs)
             merged_class_joint_logprob = joint_class_logprobs[self.merged_class]
             self.class_delta_logprob = merged_class_joint_logprob - \
-                            self.obj1.class_logprob() - self.obj2.class_logprob()
+                self.obj1.class_logprob() - self.obj2.class_logprob()
 
     def update_merge_priority(self, segmenter):
         self.compute_class_delta_logprob()
@@ -204,7 +206,6 @@ class AdjacencyRecord:
 
     def obj_pair(self):
         return ObjPair(self.obj1, self.obj2)
-
 
     def print(self):
         print("Objects in arec {}:".format(self))
@@ -271,8 +272,9 @@ class ObjectSegmenter:
                             heappush(self.queue, (-arec.merge_priority, arec))
 
     def get_class_logprob(self, pixel, class_index):
+        eps = sys.float_info.epsilon
         assert class_index < self.num_classes
-        return np.log(self.class_probs[class_index, pixel[0], pixel[1]])
+        return np.log(self.class_probs[class_index, pixel[0], pixel[1]] + eps)
 
     def get_sameness_prob(self, pixel, offset_index):
         assert offset_index < len(self.offsets)
@@ -290,7 +292,8 @@ class ObjectSegmenter:
         print("Top 10 biggest objs (#pixels): {}".format(pixperobj[:10]))
         adjlistsize = sorted([len(obj.adjacency_list)
                               for obj in self.objects.values()], reverse=True)
-        print("Top 10 biggest objs (adj_list size): {}".format(adjlistsize[:10]))
+        print("Top 10 biggest objs (adj_list size): {}".format(
+            adjlistsize[:10]))
 
     def compute_total_logprob(self):
         tot_class_logprob = 0
@@ -302,7 +305,6 @@ class ObjectSegmenter:
         for arec in self.adjacency_records.values():
             tot_differentness_logprob += arec.differentness_logprob
         return tot_class_logprob + tot_differentness_logprob + tot_sameness_logprob
-
 
     def visualize(self, iter):
         img = np.zeros((self.img_height, self.img_width))
@@ -369,7 +371,6 @@ class ObjectSegmenter:
 
         assert tot_obj_adj_records == 2 * len(self.adjacency_records)
 
-
     def run_segmentation(self):
         """ This is the top-level function that performs the optimization.
             This is the overview:
@@ -429,7 +430,8 @@ class ObjectSegmenter:
                     print("Merging...{:0.2f} >= {:0.2f}\n".format(
                         arec.merge_priority, merge_priority), file=sys.stderr)
                 self.merge(arec)
-                if self.do_debugging and np.random.random() > 0.999: self.debug()
+                if self.do_debugging and np.random.random() > 0.999:
+                    self.debug()
             elif arec.merge_priority >= 0.0:
                 if self.verbose >= 1:
                     print("Pushing with new mp: {:0.2f}\n".format(
@@ -445,7 +447,6 @@ class ObjectSegmenter:
         self.show_stats()
         self.visualize('final')
         return self.output_mask()
-
 
     def merge(self, arec):
         """ This is the most nontrivial aspect of the algorithm: how to merge objects.
@@ -483,7 +484,8 @@ class ObjectSegmenter:
         if len(obj2.pixels) > len(obj1.pixels):
             obj1, obj2 = obj2, obj1
 
-        assert np.abs(arec.obj_merge_logprob - (arec.sameness_logprob - arec.differentness_logprob)) < 0.001
+        assert np.abs(arec.obj_merge_logprob -
+                      (arec.sameness_logprob - arec.differentness_logprob)) < 0.001
 
         if self.do_debugging:
             old_logprob = arec.obj_merge_logprob
@@ -524,7 +526,8 @@ class ObjectSegmenter:
                 that_arec.obj_merge_logprob += this_arec.obj_merge_logprob
                 that_arec.differentness_logprob += this_arec.differentness_logprob
                 that_arec.sameness_logprob += this_arec.sameness_logprob
-                this_arec.merge_priority = -1.0  # make sure it is practically deleted from the queue
+                # make sure it is practically deleted from the queue
+                this_arec.merge_priority = -1.0
                 self.adjacency_records[that_arec.obj_pair()] = that_arec
                 obj3.adjacency_list[that_arec.obj_pair()] = that_arec
                 that_arec.update_merge_priority(self)
