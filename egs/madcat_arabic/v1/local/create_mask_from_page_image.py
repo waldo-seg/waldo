@@ -16,7 +16,7 @@ from waldo.data_manipulation import *
 from waldo.core_config import CoreConfig
 from waldo.mar_utils import compute_hull
 from waldo.data_transformation import scale_down_image_with_objects, 
-                                      make_squre_image_with_padding
+                                      make_square_image_with_padding
 
 
 def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):

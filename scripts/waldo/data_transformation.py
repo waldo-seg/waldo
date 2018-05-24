@@ -90,7 +90,7 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
     return resized_image_with_objects
 
 
-def make_squre_image_with_padding(im_arr, config):
+def make_square_image_with_padding(im_arr, config):
     """
     This function pads an image to make it squre, if both height and width are
     different, (Otherwise it leaves it the same size).
