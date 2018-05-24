@@ -99,20 +99,20 @@ def make_square_image_with_padding(im_arr, config):
     'image', it does not make a deep copy.
     """
 
-    sx = int(im_arr.shape[0])
-    sy = int(im_arr.shape[1])
+    height = int(im_arr.shape[0])
+    width = int(im_arr.shape[1])
 
-    if sy == sx:
+    if width == height:
         return im_arr
 
-    if sy > sx:
-        diff = sy-sx
+    if width > height:
+        diff = width-height
         if config.num_colors == 1:
             im_arr_pad  = np.pad(im_arr, [(0, diff), (0, 0)], mode='constant')
         else:
             im_arr_pad = np.pad(im_arr, [(0, diff), (0, 0), (0,0)], mode='constant')
     else:
-        diff = sx - sy
+        diff = height - width
         if config.num_colors == 1:
             im_arr_pad = np.pad(im_arr, [(0, 0), (0, diff)], mode='constant')
         else:
