@@ -36,15 +36,13 @@ if [ $stage -le 1 ]; then
   local/run_unet.sh --epochs $epochs --depth $depth
 fi
 
+
 if [ $stage -le 2 ]; then
     echo "doing segmentation...."
   local/segment.py \
-    --dir $dir \
-    --train-dir data \
-    --train-image-size 128 \
-    --core-config $dir/configs/core.config \
-    --unet-config $dir/configs/unet.config \
-    $dir/model_best.pth.tar
+    --train-image-size 512 \
+    --model model_best.pth.tar \
+    data/dev \
+    $dir
 
 fi
-

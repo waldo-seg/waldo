@@ -18,12 +18,12 @@ import torchvision
 import random
 from torchvision import transforms as tsf
 from models.Unet import UNet
-from dataset import Dataset_madcatar
+from waldo.data_io import WaldoDataset
 from waldo.core_config import CoreConfig
 from unet_config import UnetConfig
 
 
-parser = argparse.ArgumentParser(description='Pytorch MADCAT  Arabic setup')
+parser = argparse.ArgumentParser(description='Pytorch MADCAT  Arabic')
 parser.add_argument('dir', type=str,
                     help='directory of output models and logs')
 parser.add_argument('--epochs', default=10, type=int,
@@ -50,7 +50,7 @@ parser.add_argument('--weight-decay', '--wd', default=5e-4, type=float,
                     help='weight decay (default: 5e-4)')
 parser.add_argument('--train-dir', default='data', type=str,
                     help='Directory of processed training and validation data')
-parser.add_argument('--test-dir', default='data', type=str,
+parser.add_argument('--test-dir', default='data/test', type=str,
                     help='Directory of processed test data')
 parser.add_argument('--tensorboard',
                     help='Log progress to TensorBoard', action='store_false')
@@ -108,16 +108,16 @@ def main():
     merge_mode = u_config.merge_mode
     depth = u_config.depth
 
-    train_data = args.train_dir + '/' + 'train.pth.tar'
-    val_data = args.train_dir + '/' + 'dev.pth.tar'
+    train_data = args.train_dir + '/train'
+    val_data = args.train_dir + '/dev'
 
-    trainset = Dataset_madcatar(train_data, c_config, args.train_image_size)
+    trainset = WaldoDataset(train_data, c_config, args.train_image_size)
     trainloader = torch.utils.data.DataLoader(
-        trainset, num_workers=1, batch_size=args.batch_size, shuffle=True)
+        trainset, num_workers=4, batch_size=args.batch_size, shuffle=True)
 
-    valset = Dataset_madcatar(val_data, c_config, args.train_image_size)
+    valset = WaldoDataset(val_data, c_config, args.train_image_size)
     valloader = torch.utils.data.DataLoader(
-        valset, num_workers=1, batch_size=args.batch_size)
+        valset, num_workers=4, batch_size=args.batch_size)
 
     NUM_TRAIN = len(trainset)
     NUM_VAL = len(valset)
@@ -228,23 +228,23 @@ def Validate(validateloader, model, epoch):
 
     for i, (input, class_label, bound) in enumerate(validateloader):
 
-        input = torch.autograd.Variable(input.cuda())
-        bound = torch.autograd.Variable(bound.cuda(async=True))
-        class_label = torch.autograd.Variable(
-            class_label.cuda(async=True))
-        output = model(input)
+        with torch.no_grad():
+            input = input.cuda()
+            bound = bound.cuda(async=True)
+            class_label = class_label.cuda(async=True)
+            output = model(input)
 
-        # TODO. Treat class label and bound label equally by now
-        target = torch.cat((class_label, bound), 1)
-        loss_fn = torch.nn.BCELoss()
-        loss = loss_fn(output, target)
+            # TODO. Treat class label and bound label equally by now
+            target = torch.cat((class_label, bound), 1)
+            loss_fn = torch.nn.BCELoss()
+            loss = loss_fn(output, target)
 
-        losses.update(loss.item(), args.batch_size)
+            losses.update(loss.item(), args.batch_size)
 
-        if i % args.print_freq == 0:
-            print('Val: [{0}][{1}/{2}]\t'
-                  'Val Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
-                      epoch, i, len(validateloader), loss=losses))
+            if i % args.print_freq == 0:
+                print('Val: [{0}][{1}/{2}]\t'
+                      'Val Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
+                          epoch, i, len(validateloader), loss=losses))
 
     # log to TensorBoard
     if args.tensorboard:
@@ -258,8 +258,8 @@ def sample(model, dataloader, outdir, core_config):
     """Visualize some predicted masks on training data to get a better intuition
        about the performance.
     """
-    datailer = iter(dataloader)
-    img, classification, bound = datailer.next()
+    data_iter = iter(dataloader)
+    img, classification, bound = data_iter.next()
     torchvision.utils.save_image(img, '{0}/raw.png'.format(outdir))
     for i in range(len(core_config.offsets)):
         torchvision.utils.save_image(
@@ -267,11 +267,11 @@ def sample(model, dataloader, outdir, core_config):
     for i in range(core_config.num_classes):
         torchvision.utils.save_image(
             classification[:, i:i + 1, :, :], '{0}/class_{1}.png'.format(outdir, i))
-    img = torch.autograd.Variable(img)
     if next(model.parameters()).is_cuda:
         img = img.cuda()
-    predictions = model(img)
-    predictions = predictions.data
+    with torch.no_grad():
+        predictions = model(img)
+    predictions = predictions.detach()
     class_pred = predictions[:, :core_config.num_classes, :, :]
     bound_pred = predictions[:, core_config.num_classes:, :, :]
     for i in range(len(core_config.offsets)):

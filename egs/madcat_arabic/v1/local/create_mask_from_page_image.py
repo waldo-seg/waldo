@@ -15,7 +15,7 @@ import xml.dom.minidom as minidom
 from waldo.data_manipulation import *
 from waldo.core_config import CoreConfig
 from waldo.mar_utils import compute_hull
-from waldo.data_transformation import scale_down_image_with_objects, 
+from waldo.data_transformation import scale_down_image_with_objects, \
                                       make_square_image_with_padding
 
 
