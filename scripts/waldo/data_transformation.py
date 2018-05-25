@@ -108,15 +108,15 @@ def make_square_image_with_padding(im_arr, config):
     if width > height:
         diff = width-height
         if config.num_colors == 1:
-            im_arr_pad  = np.pad(im_arr, [(0, diff), (0, 0)], mode='constant')
+            im_arr_pad  = np.pad(im_arr, [(0, diff), (0, 0)], mode='constant', constant_values=255)
         else:
-            im_arr_pad = np.pad(im_arr, [(0, diff), (0, 0), (0,0)], mode='constant')
+            im_arr_pad = np.pad(im_arr, [(0, diff), (0, 0), (0,0)], mode='constant', constant_values=255)
     else:
         diff = height - width
         if config.num_colors == 1:
-            im_arr_pad = np.pad(im_arr, [(0, 0), (0, diff)], mode='constant')
+            im_arr_pad = np.pad(im_arr, [(0, 0), (0, diff)], mode='constant', constant_values=255)
         else:
-            im_arr_pad = np.pad(im_arr, [(0, 0), (0, diff), (0, 0)], mode='constant')
+            im_arr_pad = np.pad(im_arr, [(0, 0), (0, diff), (0, 0)], mode='constant', constant_values=255)
 
     return im_arr_pad
 

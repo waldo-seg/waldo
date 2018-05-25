@@ -1,9 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
-from collections import OrderedDict
-from torch.nn import init
 import numpy as np
 
 
@@ -236,7 +233,8 @@ if __name__ == "__main__":
     """
     print("test")
     model = UNet(3, 2, depth=5, merge_mode='concat')
-    x = Variable(torch.FloatTensor(np.random.random((1, 3, 128, 128))))
+    x = torch.FloatTensor(np.random.random((1, 3, 128, 128)))
     out = model(x)
     loss = torch.sum(out)
+    loss.backward()
 
