@@ -113,7 +113,6 @@ class AdjacencyRecord:
     """
     This class implements an adjacency record with functions for computing object merge
     log-probs and class merge log-probs.
-
     Attributes:
         obj1, obj2:    The two objects to which it refers
         object_merge_log_prob:    This is the change in log-probability from merging these two objects,
@@ -388,7 +387,6 @@ class ObjectSegmenter:
                   we got it from the queue), go ahead and merge the objects.
                 - Otherwise if arec.merge_priority >=0 then re-insert "arec" into the
                   queue with its newly computed merge priority.
-
         """
         print("Starting segmentation...")
         n = 0
@@ -467,7 +465,6 @@ class ObjectSegmenter:
                 unordered pair), then add this_arec.object_merge_log_prob to that
                 adjacency record's object_merge_log_prob.  Otherwise, add this_arec
                 to object1.adjacency_list.
-
             - For each adjacency record that is directly touched during the
               process above:
               - Recompute its class_delta_log_prob, merged_class and
@@ -539,3 +536,4 @@ class ObjectSegmenter:
             print("Deleting {} being merged to {} according "
                   "to {}".format(obj2, obj1, arec), file=sys.stderr)
         del self.objects[obj2.id]
+

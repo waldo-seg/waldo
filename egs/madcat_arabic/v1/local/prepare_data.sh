@@ -19,6 +19,7 @@ writing_condition2=/export/corpora/LDC/LDC2013T09/docs/writing_conditions.tab
 writing_condition3=/export/corpora/LDC/LDC2013T15/docs/writing_conditions.tab
 
 mkdir -p data/{train,test,dev}
+mkdir -p data/{train,test,dev}/{img,mask,object_class}
 
 [ -f ./path.sh ] && . ./path.sh; # source the path.
 
