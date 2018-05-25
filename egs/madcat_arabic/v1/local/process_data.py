@@ -34,7 +34,7 @@ parser.add_argument('writing_condition2', type=str,
                     help='Path to the downloaded (and extracted) writing conditions file 2')
 parser.add_argument('writing_condition3', type=str,
                     help='Path to the downloaded (and extracted) writing conditions file 3')
-parser.add_argument('--max-image-size', type=int, default=512,
+parser.add_argument('--max-image-size', type=int, default=256,
                     help='scales down an image if the length of its largest'
                          ' side is greater than max_size')
 args = parser.parse_args()
