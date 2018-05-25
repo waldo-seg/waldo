@@ -40,7 +40,7 @@ fi
 if [ $stage -le 2 ]; then
     echo "doing segmentation...."
   local/segment.py \
-    --train-image-size 512 \
+    --train-image-size 128 \
     --model model_best.pth.tar \
     data/dev \
     $dir
