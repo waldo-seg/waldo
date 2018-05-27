@@ -86,7 +86,7 @@ def parse_writing_conditions(writing_conditions):
 
 def check_writing_condition(wc_dict, base_name):
     """ Given writing condition dictionary, checks if a page image is writing
-        in a specifed writing condition.
+        in a specified writing condition.
         It is used to create subset of dataset based on writing condition.
     Returns
     (bool): True if writing condition matches.
@@ -99,17 +99,22 @@ def check_writing_condition(wc_dict, base_name):
     return True
 
 
-def main():
+def get_file_list():
+    """ Given writing condition and data splits, it returns file list
+    that will be processed. writing conditions helps in creating subset
+    of dataset from full dataset.
+    Returns
+    []: list of files to be processed.
+    """
 
     wc_dict1 = parse_writing_conditions(args.writing_condition1)
     wc_dict2 = parse_writing_conditions(args.writing_condition2)
     wc_dict3 = parse_writing_conditions(args.writing_condition3)
-
     splits_handle = open(args.data_splits, 'r')
     splits_data = splits_handle.read().strip().split('\n')
 
+    file_list = list()
     prev_base_name = ''
-    data_saver = DataSaver(args.out_dir)
     for line in splits_data:
         base_name = os.path.splitext(os.path.splitext(line.split(' ')[0])[0])[0]
         if prev_base_name != base_name:
@@ -117,10 +122,19 @@ def main():
             madcat_file_path, image_file_path, wc_dict = check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3)
             if wc_dict is None or not check_writing_condition(wc_dict, base_name):
                 continue
-            if madcat_file_path is not None:
-                y = get_mask_from_page_image(madcat_file_path, image_file_path, args.max_image_size)
-                data_saver.write_image(base_name, y)
+            file_list.append((madcat_file_path, image_file_path, base_name))
+
+    return file_list
+
+
+def main():
+    file_list = get_file_list()
+    data_saver = DataSaver(args.out_dir)
+    for file_name in file_list:
+        y = get_mask_from_page_image(file_name[0], file_name[1], args.max_image_size)
+        data_saver.write_image(file_name[2], y)
     data_saver.write_index()
+
 
 if __name__ == '__main__':
     main()

@@ -6,9 +6,9 @@ from scoring_utils import get_score
 
 parser = argparse.ArgumentParser(
     description='scoring script for text localization')
-parser.add_argument('--hypothesis', default='exp/unet_5_10_sgd/segment/', type=str,
+parser.add_argument('hypothesis', type=str,
                     help='hypothesis directory of test data')
-parser.add_argument('--reference', default='data/test', type=str,
+parser.add_argument('reference', type=str,
                     help='reference directory of test data')
 args = parser.parse_args()
 
