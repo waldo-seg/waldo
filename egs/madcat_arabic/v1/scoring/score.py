@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import os
 from scoring_utils import get_score
