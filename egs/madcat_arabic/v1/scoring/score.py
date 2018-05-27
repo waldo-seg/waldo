@@ -1,6 +1,6 @@
 import argparse
 import os
-from waldo.egs.madcat_arabic.v1.local.scoring.scoring_utils import get_score
+from scoring_utils import get_score
 
 parser = argparse.ArgumentParser(
     description='scoring script for text localization')
