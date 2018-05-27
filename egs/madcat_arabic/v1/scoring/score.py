@@ -4,9 +4,9 @@ from scoring_utils import get_score
 
 parser = argparse.ArgumentParser(
     description='scoring script for text localization')
-parser.add_argument('--hypothesis', default='/Users/ashisharora/google_Drive/madcat_arabic/scoring/hyp', type=str,
+parser.add_argument('--hypothesis', default='exp/unet_5_10_sgd/segment/', type=str,
                     help='hypothesis directory of test data')
-parser.add_argument('--reference', default='/Users/ashisharora/google_Drive/madcat_arabic/scoring/ref', type=str,
+parser.add_argument('--reference', default='data/test', type=str,
                     help='reference directory of test data')
 args = parser.parse_args()
 

@@ -7,6 +7,8 @@ def _evaluate_data(ref_file, hyp_file):
     hyp_pols = []
     ref_pol_points = []
     hyp_pol_points = []
+
+    # get all polygons present in the image
     point_list = _get_pointlist(ref_file)
     for n in range(len(point_list)):
         points = point_list[n]
@@ -14,6 +16,7 @@ def _evaluate_data(ref_file, hyp_file):
         ref_pols.append(ref_polygon)
         ref_pol_points.append(points)
 
+    # get all polygons present in the image
     point_list = _get_pointlist(hyp_file)
     for n in range(len(point_list)):
         points = point_list[n]
@@ -21,6 +24,7 @@ def _evaluate_data(ref_file, hyp_file):
         hyp_pols.append(hyp_polygon)
         hyp_pol_points.append(points)
 
+    # compute iou value
     iou_mat = np.zeros([len(ref_pols), len(hyp_pols)])
     ref_rect_mat = np.zeros(len(ref_pols), np.int8)
     hyp_rect_mat = np.zeros(len(hyp_pols), np.int8)
@@ -30,6 +34,7 @@ def _evaluate_data(ref_file, hyp_file):
             polygon_hyp = hyp_pols[hyp_index]
             iou_mat[ref_index, hyp_index] = _get_intersection_over_union(polygon_hyp, polygon_ref)
 
+    # update score if iou value above threshold
     hyp_matched = 0
     pairs = []
     for ref_index in range(len(ref_pols)):
@@ -41,6 +46,7 @@ def _evaluate_data(ref_file, hyp_file):
                     hyp_matched += 1
                     pairs.append({'reference_data': ref_index, 'det': hyp_index})
 
+    # compute precision and recall value
     num_ref = len(ref_pols)
     num_hyp = len(hyp_pols)
     if num_ref == 0:
