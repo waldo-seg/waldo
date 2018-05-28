@@ -223,18 +223,19 @@ class AdjacencyRecord:
 
 class ObjectSegmenter:
     def __init__(self, nnet_class_probs, nnet_sameness_probs, num_classes, offsets):
-        self.class_probs = nnet_class_probs
-        self.sameness_probs = nnet_sameness_probs
+        epsilon = sys.float_info.epsilon
+        self.class_probs = nnet_class_probs.clip(epsilon, 1.0 - epsilon)
+        self.sameness_probs = nnet_sameness_probs.clip(epsilon, 1.0 - epsilon)
         self.num_classes = num_classes
         self.offsets = offsets  # should be a list of tuples
         # the pixels here are python tuples (x,y) not numpy arrays
         self.pixel2obj = {}
-        class_dim, img_width, img_height = self.class_probs.shape
-        offset_dim, img_width, img_height = self.sameness_probs.shape
+        class_dim, self.img_height, self.img_width = self.class_probs.shape
+        offset_dim, img_height, img_width = self.sameness_probs.shape
         assert class_dim == self.num_classes
         assert offset_dim == len(self.offsets)
-        self.img_width = img_width
-        self.img_height = img_height
+        assert self.img_height == img_height
+        assert self.img_width == img_width
 
         self.objects = {}
         self.adjacency_records = {}
@@ -259,8 +260,8 @@ class ObjectSegmenter:
             for col in range(self.img_width):
                 obj1 = self.pixel2obj[(row, col)]
                 for (i, j) in self.offsets:
-                    if (0 <= row + i < self.img_width and
-                            0 <= col + j < self.img_height):
+                    if (0 <= row + i < self.img_height and
+                            0 <= col + j < self.img_width):
                         obj2 = self.pixel2obj[(row + i, col + j)]
                         arec = AdjacencyRecord(obj1, obj2, self)
                         self.adjacency_records[arec.obj_pair()] = arec
@@ -536,4 +537,3 @@ class ObjectSegmenter:
             print("Deleting {} being merged to {} according "
                   "to {}".format(obj2, obj1, arec), file=sys.stderr)
         del self.objects[obj2.id]
-
