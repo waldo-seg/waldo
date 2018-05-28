@@ -17,18 +17,18 @@ lr=0.01
 . ./scripts/parse_options.sh
 
 
-dir=exp/unet_${depth}_${epochs}_sgd
+dir=exp/unet_${depth}_${epochs}_noff4
 
 
 if [ $stage -le 1 ]; then
   mkdir -p $dir/configs
   echo "$0: creating core configuration and unet configuration"
-  
+
   cat <<EOF > $dir/configs/core.config
   num_classes $num_classes
   num_colors $num_colors
   padding $padding
-  offsets 1 0  0 1  -2 -1  1 -2  3 2  -4 3  -4 -7  10 -4  3 15  -21 0
+  offsets 1 0  0 1  -2 -1  1 -2
 EOF
 
   cat <<EOF > $dir/configs/unet.config
