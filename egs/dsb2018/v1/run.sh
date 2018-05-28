@@ -37,6 +37,6 @@ if [ $stage -le 2 ]; then
     --train-image-size 128 \
     --model model_best.pth.tar \
     data/val \
-    $dir
+    $dir/segment_val
 
 fi

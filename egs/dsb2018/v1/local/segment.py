@@ -32,12 +32,11 @@ parser.add_argument('--train-image-size', default=128, type=int,
                     ' by padding and then random cropping.')
 parser.add_argument('--object-merge-factor', type=float, default=None,
                     help='Scale for object merge scores in the segmentaion '
-                    'algorithm. Smaller values (factor < 1.0) will lead to fewer '
-                    'merges (more final objects). If not set, it will be set to '
+                    'algorithm. If not set, it will be set to '
                     '1.0 / num_offsets by default.')
 parser.add_argument('--same-different-bias', type=float, default=0.0,
                     help='Bias for same/different probs in the segmentation '
-                    'algorithm. More negative values --> fewer merges.')
+                    'algorithm.')
 random.seed(0)
 np.random.seed(0)
 
