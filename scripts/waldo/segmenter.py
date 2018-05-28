@@ -17,7 +17,11 @@ import numpy as np
 import warnings
 import resource
 import scipy.misc
+from collections import namedtuple
 
+SegmenterOptions = namedtuple('SegmenterOptions',
+                              ['same_different_bias',
+                               'object_merge_factor'])
 class ObjPair:
     """
     This class is used to make an unordered pair from 2 Objects.
@@ -170,18 +174,22 @@ class AdjacencyRecord:
                 if p2 in self.obj2.pixels:
                     adjacent = True
                     same_prob = segmenter.get_sameness_prob(p1, i)
-                    self.differentness_logprob += np.log(1.0 - same_prob)
-                    self.sameness_logprob += np.log(same_prob)
-                    logprob += np.log(same_prob) - np.log(1.0 - same_prob)
+                    log_same_prob = np.log(same_prob)
+                    log_different_prob = np.log(1.0 - same_prob)
+                    self.differentness_logprob += log_different_prob
+                    self.sameness_logprob += log_same_prob
+                    logprob += log_same_prob - log_different_prob
 
             for p1 in self.obj2.pixels:
                 p2 = (p1[0] + o[0], p1[1] + o[1])
                 if p2 in self.obj1.pixels:
                     adjacent = True
                     same_prob = segmenter.get_sameness_prob(p1, i)
-                    self.differentness_logprob += np.log(1.0 - same_prob)
-                    self.sameness_logprob += np.log(same_prob)
-                    logprob += np.log(same_prob) - np.log(1.0 - same_prob)
+                    log_same_prob = np.log(same_prob)
+                    log_different_prob = np.log(1.0 - same_prob)
+                    self.differentness_logprob += log_different_prob
+                    self.sameness_logprob += log_same_prob
+                    logprob += log_same_prob - log_different_prob
         self.obj_merge_logprob = logprob if adjacent else None
 
 
@@ -198,7 +206,7 @@ class AdjacencyRecord:
     def update_merge_priority(self, segmenter):
         self.compute_class_delta_logprob()
         den = len(self.obj1.pixels) * len(self.obj2.pixels)
-        self.merge_priority = (self.obj_merge_logprob / (1.0 * len(segmenter.offsets)) +
+        self.merge_priority = (self.obj_merge_logprob * segmenter.opts.object_merge_factor +
                                self.class_delta_logprob) / den
 
     def obj_pair(self):
@@ -222,25 +230,40 @@ class AdjacencyRecord:
 
 
 class ObjectSegmenter:
-    def __init__(self, nnet_class_probs, nnet_sameness_probs, num_classes, offsets):
-        self.class_probs = nnet_class_probs
-        self.sameness_probs = nnet_sameness_probs
+    def __init__(self, nnet_class_probs, nnet_sameness_probs, num_classes,
+                 offsets, opts = None):
+        self.opts = opts
+        if self.opts is None:
+            self.opts = self.default_options()
+        print(self.opts)
+        epsilon = sys.float_info.epsilon
+        self.class_probs = nnet_class_probs.clip(epsilon, 1.0 - epsilon)
+        self.sameness_probs = nnet_sameness_probs.clip(epsilon, 1.0 - epsilon)
+        if self.opts.same_different_bias != 0.0:
+            sameness_probs_biased_logit = (np.log(self.sameness_probs) -
+                                           np.log(1.0 - self.sameness_probs) +
+                                           self.opts.same_different_bias)
+            self.sameness_probs = 1.0 / (1.0 + np.exp(-sameness_probs_biased_logit))
         self.num_classes = num_classes
         self.offsets = offsets  # should be a list of tuples
         # the pixels here are python tuples (x,y) not numpy arrays
         self.pixel2obj = {}
-        class_dim, img_width, img_height = self.class_probs.shape
-        offset_dim, img_width, img_height = self.sameness_probs.shape
+        class_dim, self.img_height, self.img_width = self.class_probs.shape
+        offset_dim, img_height, img_width = self.sameness_probs.shape
         assert class_dim == self.num_classes
         assert offset_dim == len(self.offsets)
-        self.img_width = img_width
-        self.img_height = img_height
+        assert self.img_height == img_height
+        assert self.img_width == img_width
 
         self.objects = {}
         self.adjacency_records = {}
         self.queue = []   # Python's heapq
         self.init_objects_and_adjacency_records()
         self.show_stats()
+
+    def default_options(self):
+        return SegmenterOptions(same_different_bias = 0.0,
+                                object_merge_factor = 1.0)
 
     def init_objects_and_adjacency_records(self):
         print("Initializing the segmenter...")
@@ -259,8 +282,8 @@ class ObjectSegmenter:
             for col in range(self.img_width):
                 obj1 = self.pixel2obj[(row, col)]
                 for (i, j) in self.offsets:
-                    if (0 <= row + i < self.img_width and
-                            0 <= col + j < self.img_height):
+                    if (0 <= row + i < self.img_height and
+                            0 <= col + j < self.img_width):
                         obj2 = self.pixel2obj[(row + i, col + j)]
                         arec = AdjacencyRecord(obj1, obj2, self)
                         self.adjacency_records[arec.obj_pair()] = arec
@@ -300,7 +323,8 @@ class ObjectSegmenter:
             tot_sameness_logprob += obj.sameness_logprob
         for arec in self.adjacency_records.values():
             tot_differentness_logprob += arec.differentness_logprob
-        return tot_class_logprob + tot_differentness_logprob + tot_sameness_logprob
+        return tot_class_logprob + (tot_differentness_logprob +
+                                    tot_sameness_logprob) * self.opts.object_merge_factor
 
 
     def visualize(self, iter):
@@ -536,4 +560,3 @@ class ObjectSegmenter:
             print("Deleting {} being merged to {} according "
                   "to {}".format(obj2, obj1, arec), file=sys.stderr)
         del self.objects[obj2.id]
-

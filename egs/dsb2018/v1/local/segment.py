@@ -6,9 +6,10 @@ import os
 import sys
 import random
 import numpy as np
+import scipy.misc
 from models.Unet import UNet
 from train import sample
-from waldo.segmenter import ObjectSegmenter
+from waldo.segmenter import ObjectSegmenter, SegmenterOptions
 from waldo.core_config import CoreConfig
 from waldo.data_visualization import visualize_mask
 from waldo.data_io import WaldoDataset
@@ -29,6 +30,13 @@ parser.add_argument('--train-image-size', default=128, type=int,
                     'train on (in order to form a fixed minibatch size).'
                     'These are derived from the input images'
                     ' by padding and then random cropping.')
+parser.add_argument('--object-merge-factor', type=float, default=None,
+                    help='Scale for object merge scores in the segmentaion '
+                    'algorithm. If not set, it will be set to '
+                    '1.0 / num_offsets by default.')
+parser.add_argument('--same-different-bias', type=float, default=0.0,
+                    help='Bias for same/different probs in the segmentation '
+                    'algorithm.')
 random.seed(0)
 np.random.seed(0)
 
@@ -38,8 +46,9 @@ def main():
     args = parser.parse_args()
     args.batch_size = 1  # only segment one image for experiment
 
-    core_config_path = os.path.join(args.dir, 'configs/core.config')
-    unet_config_path = os.path.join(args.dir, 'configs/unet.config')
+    model_dir = os.path.dirname(args.dir)
+    core_config_path = os.path.join(model_dir, 'configs/core.config')
+    unet_config_path = os.path.join(model_dir, 'configs/unet.config')
 
     core_config = CoreConfig()
     core_config.read(core_config_path)
@@ -69,7 +78,7 @@ def main():
                  up_mode=up_mode,
                  merge_mode=merge_mode)
 
-    model_path = os.path.join(args.dir, args.model)
+    model_path = os.path.join(model_dir, args.model)
     if os.path.isfile(model_path):
         print("=> loading checkpoint '{}'".format(model_path))
         checkpoint = torch.load(model_path,
@@ -87,15 +96,19 @@ def main():
     dataloader = torch.utils.data.DataLoader(
         testset, num_workers=1, batch_size=args.batch_size)
 
-    segment_dir = '{}/segment'.format(args.dir)
+    segment_dir = args.dir
     if not os.path.exists(segment_dir):
         os.makedirs(segment_dir)
     img, class_pred, adj_pred = sample(
         model, dataloader, segment_dir, core_config)
 
+    if args.object_merge_factor is None:
+        args.object_merge_factor = 1.0 / len(offset_list)
+    segmenter_opts = SegmenterOptions(same_different_bias = args.same_different_bias,
+                                      object_merge_factor = args.object_merge_factor)
     seg = ObjectSegmenter(class_pred[0].detach().numpy(),
                           adj_pred[0].detach().numpy(),
-                          num_classes, offset_list)
+                          num_classes, offset_list, segmenter_opts)
     mask_pred, object_class = seg.run_segmentation()
     x = {}
     # from (color, height, width) to (height, width, color)
@@ -103,6 +116,7 @@ def main():
     x['mask'] = mask_pred.astype(int)
     x['object_class'] = object_class
     visualize_mask(x, core_config)
+    scipy.misc.imsave('{}/final.png'.format(segment_dir), x['img_with_mask'])
 
 
 if __name__ == '__main__':
