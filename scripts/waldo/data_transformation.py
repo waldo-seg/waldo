@@ -63,7 +63,7 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
         scale = (1.0 * nx) / sx
         ny = scale * sy
 
-    resized_img = im.resize((int(nx), int(ny)))
+    resized_img = im.resize((int(nx), int(ny)), img.ANTIALIAS)
     resized_img_arr = np.array(resized_img)
 
     resized_objects = []
