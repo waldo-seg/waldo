@@ -11,13 +11,13 @@ epochs=10
 start_filters=64
 batch_size=16
 lr=0.01
+dir=exp/unet_1a
 
 . ./cmd.sh
 . ./path.sh
 . ./scripts/parse_options.sh
 
 
-dir=exp/unet_1a
 
 
 if [ $stage -le 1 ]; then
@@ -28,7 +28,7 @@ if [ $stage -le 1 ]; then
   num_classes $num_classes
   num_colors $num_colors
   padding $padding
-  offsets 1 0  0 1  -2 -1  1 -2
+  offsets 1 0  0 1  -2 -1  1 -2 
 EOF
 
   cat <<EOF > $dir/configs/unet.config
