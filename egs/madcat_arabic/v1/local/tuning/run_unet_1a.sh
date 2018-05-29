@@ -17,18 +17,18 @@ lr=0.01
 . ./scripts/parse_options.sh
 
 
-dir=exp/unet_1a
+dir=exp/unet_${depth}_${epochs}_sgd
 
 
 if [ $stage -le 1 ]; then
   mkdir -p $dir/configs
-  echo "$0: Creating core configuration and unet configuration"
-
+  echo "$0: creating core configuration and unet configuration"
+  
   cat <<EOF > $dir/configs/core.config
   num_classes $num_classes
   num_colors $num_colors
   padding $padding
-  offsets 1 0  0 1  -2 -1  1 -2
+  offsets 1 0  0 1  -2 -1  1 -2  3 2  -4 3  -4 -7  10 -4  3 15  -21 0
 EOF
 
   cat <<EOF > $dir/configs/unet.config
@@ -41,8 +41,9 @@ fi
 
 
 if [ $stage -le 2 ]; then
-  echo "$0: Training the network....."
-  $cmd --gpu 1 --mem 2G $dir/train.log limit_num_gpus.sh local/train.py \
+  # training the network
+  echo "training the network....."
+  $cmd --gpu 1 --mem 20G $dir/train.log limit_num_gpus.sh local/train.py \
        --train-dir data \
        --batch-size $batch_size \
        --train-image-size 128 \
@@ -52,3 +53,4 @@ if [ $stage -le 2 ]; then
        --unet-config $dir/configs/unet.config \
        $dir
 fi
+

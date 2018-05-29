@@ -23,7 +23,7 @@ from waldo.core_config import CoreConfig
 from unet_config import UnetConfig
 
 
-parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
+parser = argparse.ArgumentParser(description='Pytorch MADCAT  Arabic')
 parser.add_argument('dir', type=str,
                     help='directory of output models and logs')
 parser.add_argument('--epochs', default=10, type=int,
@@ -109,7 +109,7 @@ def main():
     depth = u_config.depth
 
     train_data = args.train_dir + '/train'
-    val_data = args.train_dir + '/val'
+    val_data = args.train_dir + '/dev'
 
     trainset = WaldoDataset(train_data, c_config, args.train_image_size)
     trainloader = torch.utils.data.DataLoader(
@@ -339,3 +339,4 @@ class AverageMeter(object):
 
 if __name__ == '__main__':
     main()
+

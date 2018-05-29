@@ -78,7 +78,6 @@ def compress_image_with_mask(x, c):
     return y
 
 
-
 def convert_polygon_to_points(polygon):
     """  This function accepts an object representing a polygon as a list of
        points in clockwise or anticlockwise order, and returns the list of
@@ -134,15 +133,16 @@ def convert_to_combined_image(x, c):
     """
     validate_config(c)
     validate_image_with_mask(x, c)
+    # x['img'] is of size (height, width, color), switch it to (color, height, width)
     im = np.moveaxis(x['img'], -1, 0)
-    im = im.astype(float) / 256.0
+    im = im.astype('float32') / 256.0
     mask = x['mask']
     _, height, width = im.shape
     object_class = x['object_class']
     num_outputs = c.num_classes + len(c.offsets)
     num_all_features = c.num_colors + 2 * num_outputs
     y = np.ndarray(
-        shape=(num_all_features, height, width))
+        shape=(num_all_features, height, width), dtype='float32')
 
     y[:c.num_colors, :, :] = im
 
@@ -152,13 +152,13 @@ def convert_to_combined_image(x, c):
     class_mask = np.array([[obj_to_class(pixel)
                             for pixel in row] for row in mask])
     for n in range(c.num_classes):
-        class_feature = (class_mask == n).astype('float')
+        class_feature = (class_mask == n).astype('float32')
         y[c.num_colors + n, :, :] = class_feature
         y[c.num_colors + num_outputs + n, :, :] = 1 - class_feature
 
     for k, (i, j) in enumerate(c.offsets):
-        rolled_mask = np.roll(np.roll(mask, i, axis=1), j, axis=0)
-        offset_feature = (rolled_mask == mask).astype('float')
+        rolled_mask = np.roll(np.roll(mask, -i, axis=0), -j, axis=1)
+        offset_feature = (rolled_mask == mask).astype('float32')
         y[c.num_colors + c.num_classes + k] = offset_feature
         y[c.num_colors + num_outputs + c.num_classes + k] = 1 - offset_feature
 
