@@ -50,7 +50,7 @@ if [ $stage -le 0 ]; then
         $writing_condition3
     done
   else
-    echo "file found"
+    echo "Not processing data since it is already processed"
   fi
 fi
 echo "Date: $(date)."
