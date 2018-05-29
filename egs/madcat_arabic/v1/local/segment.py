@@ -10,10 +10,11 @@ from models.Unet import UNet
 from train import sample
 from waldo.segmenter import ObjectSegmenter
 from waldo.core_config import CoreConfig
-#from waldo.data_visualization import visualize_mask
+from waldo.data_visualization import visualize_mask
 from waldo.data_io import WaldoDataset
 from unet_config import UnetConfig
-
+import scipy
+from scipy import misc
 
 parser = argparse.ArgumentParser(description='Pytorch MADCAT Arabic setup')
 parser.add_argument('test_data', default='./data', type=str,
@@ -102,7 +103,8 @@ def main():
     x['img'] = np.moveaxis(img[0].numpy(), 0, -1)
     x['mask'] = mask_pred.astype(int)
     x['object_class'] = object_class
-    #visualize_mask(x, core_config)
+    z = visualize_mask(x, core_config)
+    misc.imsave("final_mask.png",z['img_with_mask'])
 
 
 if __name__ == '__main__':

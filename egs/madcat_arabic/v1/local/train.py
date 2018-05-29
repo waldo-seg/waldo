@@ -259,6 +259,9 @@ def sample(model, dataloader, outdir, core_config):
        about the performance.
     """
     data_iter = iter(dataloader)
+    data_iter.next()
+    data_iter.next()
+    data_iter.next()
     img, classification, bound = data_iter.next()
     torchvision.utils.save_image(img, '{0}/raw.png'.format(outdir))
     for i in range(len(core_config.offsets)):
