@@ -3,6 +3,8 @@
 import argparse
 import os
 from scoring_utils import get_score
+from glob import glob
+import numpy as np
 
 parser = argparse.ArgumentParser(
     description='scoring script for text localization')
@@ -14,13 +16,21 @@ args = parser.parse_args()
 
 
 def main():
-    reference_handle = open(os.path.join(args.reference, '1.txt'), 'r')
-    ref_file = reference_handle.read().strip().split('\n')
+    iou_threshold = 0.5
+    precision = 0
+    count = 0
 
-    hypothesis_handle = open(os.path.join(args.hypothesis, '1.txt'), 'r')
-    hyp_file = hypothesis_handle.read().strip().split('\n')
+    for img_ref_path, img_hyp_path in zip(glob(args.reference+"*.png"), glob(args.hypothesis+"*.png")):
 
-    print(get_score(ref_file, hyp_file))
+        ref_arr = np.load(img_ref_path)
+        hyp_arr = np.load(img_hyp_path)
+        score = get_score(ref_arr, hyp_arr, iou_threshold)
+        precision += score['precision']
+        count += 1
+
+    precision /= count
+
+    print("Total Precision: {}".format(precision))
 
 
 if __name__ == '__main__':
