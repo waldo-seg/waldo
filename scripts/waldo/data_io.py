@@ -5,19 +5,24 @@
 import os
 import torch
 import numpy as np
+from skimage.transform import resize
 from torch.utils.data import Dataset
 from waldo.data_manipulation import convert_to_combined_image
 from waldo.data_transformation import randomly_crop_combined_image
 
 
 class DataSaver:
-    def __init__(self, dir):
+    def __init__(self, dir, train=True):
         self.dir = dir
-        self.suffixes = ['img', 'mask', 'object_class']
+        if train:
+            self.suffixes = ['img', 'mask', 'object_class']
+        else:
+            self.suffixes = ['img']
         if not os.path.exists(self.dir):
             os.makedirs(self.dir)
-            for suffix in self.suffixes:
-                subdir = os.path.join(self.dir, suffix)
+        for suffix in self.suffixes:
+            subdir = os.path.join(self.dir, suffix)
+            if not os.path.exists(subdir):
                 os.makedirs(subdir)
         self.ids = []
 
@@ -107,6 +112,54 @@ class WaldoDataset(Dataset):
                         n_classes + n_offsets, :, :])
 
         return img, class_label, bound
+
+    def __len__(self):
+        return len(self.ids)
+
+
+class WaldoTestset(Dataset):
+    def __init__(self, dir, scale_size, cache=True):
+        self.dir = dir
+        self.scale_size = scale_size
+        self.original_sizes = []
+        self.cache = cache
+        self.data = []
+        with open(self.dir + '/' + 'image_ids.txt', 'r') as ids_file:
+            self.ids = ids_file.readlines()
+        self.ids = [id.strip() for id in self.ids]
+        self.cache = cache
+        if self.cache:
+            for id in self.ids:
+                img_array = self.__load_data(id)
+                h, w, c = img_array.shape
+                self.original_sizes.append((h, w))
+                scaled_img = resize(
+                    img_array, (self.scale_size, self.scale_size),
+                    preserve_range=True, mode='reflect')
+                self.data.append(scaled_img)
+
+    def __load_data(self, id):
+        path = os.path.join(self.dir, 'img')
+        filename = path + '/' + id + '.img.npy'
+        return np.load(filename)
+
+    def __getitem__(self, index):
+        id = self.ids[index]
+        if self.cache:
+            img = self.data[index]
+            size = self.original_sizes[index]
+        else:
+            img = self.__load_data(id)
+            h, w, c = img.shape
+            size = (h, w)
+            img = resize(img, (self.scale_size, self.scale_size),
+                         preserve_range=True)
+
+        # convert image value range from (0, 255) unit8 to (0, 1) float
+        img = np.moveaxis(img, -1, 0)
+        img_float = img.astype('float32') / 256.0
+        img_tensor = torch.from_numpy(img_float)
+        return img_tensor, size, id
 
     def __len__(self):
         return len(self.ids)

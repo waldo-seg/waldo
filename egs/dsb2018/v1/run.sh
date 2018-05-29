@@ -23,12 +23,12 @@ if [ $stage -le 0 ]; then
 fi
 
 
-epochs=10
+epochs=120
 depth=5
 dir=exp/unet_${depth}_${epochs}_sgd
 if [ $stage -le 1 ]; then
   # training
-  local/run_unet.sh --epochs $epochs --depth $depth
+  local/run_unet.sh --dir $dir --epochs $epochs --depth $depth
 fi
 
 if [ $stage -le 2 ]; then
@@ -36,7 +36,8 @@ if [ $stage -le 2 ]; then
   local/segment.py \
     --train-image-size 128 \
     --model model_best.pth.tar \
-    data/val \
-    $dir/segment_val
+    --test-data data/stage1_test \
+    --dir $dir/segment
+    --csv 'sub-dsbowl2018.csv'
 
 fi
