@@ -43,14 +43,14 @@ fi
 echo "Date: $(date)."
 if [ $stage -le 0 ]; then
     for dataset in test dev train; do
-    if [ ! -f data/$dataset/image_ids.txt ] || $overwrite; then
-      dataset_file=$data_splits_dir/madcat.$dataset.raw.lineid
-      local/process_data.py $download_dir1 $download_dir2 $download_dir3 \
-        $dataset_file data/$dataset $writing_condition1 $writing_condition2 \
-        $writing_condition3   
-    else
-      echo "Not processing data since it is already processed"
-    fi
+      if [ ! -f data/$dataset/image_ids.txt ] || $overwrite; then
+        dataset_file=$data_splits_dir/madcat.$dataset.raw.lineid
+        local/process_data.py $download_dir1 $download_dir2 $download_dir3 \
+          $dataset_file data/$dataset $writing_condition1 $writing_condition2 \
+          $writing_condition3   
+      else
+        echo "Not processing data since it is already processed"
+      fi
     done
 fi
 echo "Date: $(date)."
