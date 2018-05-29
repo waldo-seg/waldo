@@ -72,6 +72,8 @@ fi
 ### Process data and save it to pytorch path file
 train_prop=0.9
 seed=0
+num_classes=2
+num_colors=3
 . parse_options.sh
 
 mkdir -p data/train
@@ -79,4 +81,10 @@ mkdir -p data/val
 mkdir -p data/stage1_test
 mkdir -p data/stage2_test_final
 
-local/process_data.py --indir $dl_dir --outdir data --train-prop $train_prop --img-channels 3 --seed $seed
+cat <<EOF > data/core.config
+num_classes $num_classes
+num_colors $num_colors
+EOF
+
+local/process_data.py --indir $dl_dir --outdir data \
+		      --train-prop $train_prop --cfg data/core.config --seed $seed

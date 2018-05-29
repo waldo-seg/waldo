@@ -10,7 +10,6 @@ import os
 import sys
 import argparse
 import random
-import torch
 import numpy as np
 from PIL import Image
 from waldo.data_io import DataSaver
@@ -28,11 +27,12 @@ parser.add_argument('--seed', default=0, type=int,
 parser.add_argument('--train-prop', default=0.9, type=float,
                     help='Propotion of training data after spliting'
                     'the traing input into training and validation data.')
-parser.add_argument('--img-channels', default=3, type=int,
-                    help='Number of channels for input images')
+parser.add_argument('--cfg', default='data/core.config', type=str,
+                    help='core config file for preparing data')
 
 
-def DataProcess(input_dir, output_dir, split_name, channels, train_prop=0.9):
+def DataProcess(input_dir, output_dir, split_name, cfg, train_prop=0.9):
+    channels = cfg
     split_dir = os.path.join(input_dir, split_name)
     if split_name == 'train':
         # Get train IDs
@@ -45,7 +45,7 @@ def DataProcess(input_dir, output_dir, split_name, channels, train_prop=0.9):
         train_ids = train_all_ids[:num_train]
         val_ids = train_all_ids[num_train:]
 
-        train_saver = DataSaver(os.path.join(output_dir, 'train'))
+        train_saver = DataSaver(os.path.join(output_dir, 'train'), cfg)
 
         print('Getting train images and masks ... ')
         sys.stdout.flush()
@@ -135,6 +135,8 @@ def DataProcess(input_dir, output_dir, split_name, channels, train_prop=0.9):
 if __name__ == '__main__':
     global args
     args = parser.parse_args()
+    cfg = CoreConfig()
+    cfg.read(args.cfg)
 
     split_names = ['train', 'stage1_test', 'stage2_test_final']
     for split in split_names:
@@ -142,6 +144,6 @@ if __name__ == '__main__':
         if not (os.path.exists(ids_file)):
             random.seed(args.seed)
             DataProcess(args.indir, args.outdir, split,
-                        args.img_channels, train_prop=args.train_prop)
+                        cfg, train_prop=args.train_prop)
         else:
             print('Not processing {} data as it is already there.'.format(split))

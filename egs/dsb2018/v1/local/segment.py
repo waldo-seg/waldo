@@ -18,9 +18,9 @@ from unet_config import UnetConfig
 
 
 parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
-parser.add_argument('--test-data', default='data/stage1_test', type=str,
+parser.add_argument('--test-data', type=str, required=True,
                     help='Path to test images to be segmented')
-parser.add_argument('--dir', type=str,
+parser.add_argument('--dir', type=str, required=True,
                     help='Directory to store segmentation results. '
                     'It is assumed that <dir> is a sub-directory of '
                     'the model directory.')

@@ -37,7 +37,7 @@ if [ $stage -le 2 ]; then
     --train-image-size 128 \
     --model model_best.pth.tar \
     --test-data data/stage1_test \
-    --dir $dir/segment
-    --csv 'sub-dsbowl2018.csv'
+    --dir $dir/segment \
+    --csv sub-dsbowl2018.csv
 
 fi

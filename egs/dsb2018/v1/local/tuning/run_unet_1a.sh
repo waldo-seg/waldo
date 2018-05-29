@@ -11,7 +11,7 @@ epochs=10
 start_filters=64
 batch_size=16
 lr=0.01
-dir=
+dir=exp/unet_1a
 
 . ./cmd.sh
 . ./path.sh

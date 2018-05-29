@@ -7,13 +7,14 @@ import torch
 import numpy as np
 from skimage.transform import resize
 from torch.utils.data import Dataset
-from waldo.data_manipulation import convert_to_combined_image
+from waldo.data_manipulation import convert_to_combined_image, compress_image_with_mask
 from waldo.data_transformation import randomly_crop_combined_image
 
 
 class DataSaver:
-    def __init__(self, dir, train=True):
+    def __init__(self, dir, cfg, train=True):
         self.dir = dir
+        self.cfg = cfg
         if train:
             self.suffixes = ['img', 'mask', 'object_class']
         else:
@@ -28,10 +29,13 @@ class DataSaver:
 
     def write_image(self, name, image_with_mask):
         """ This function accepts a image_with_mask object and its name, and saves
-            its img, mask and object_class as a numpy array under the given directory (
-            i.e. dir/numpy_arrays/name.suffix.npy)
+            its img, mask and object_class as a numpy array under the given directory
+            (i.e. dir/numpy_arrays/name.suffix.npy)
         """
         self.__validate_name(name)
+        if self.train:
+            image_with_mask = compress_image_with_mask(
+                image_with_mask, self.cfg)
 
         for suffix in self.suffixes:
             path = os.path.join(self.dir, suffix)
@@ -63,12 +67,14 @@ class DataSaver:
 
 
 class WaldoDataset(Dataset):
-    def __init__(self, dir, c_cfg, size, cache=True):
+    def __init__(self, dir, c_cfg, size, cache=True, mask=False, crop=True):
         self.c_cfg = c_cfg
         self.size = size
         self.dir = dir
         self.cache = cache
         self.data = []
+        self.mask = mask
+        self.crop = crop
         with open(self.dir + '/' + 'image_ids.txt', 'r') as ids_file:
             self.ids = ids_file.readlines()
         self.ids = [id.strip() for id in self.ids]
@@ -91,6 +97,14 @@ class WaldoDataset(Dataset):
         return image_with_mask
 
     def __getitem__(self, index):
+        """ This function is called when we use iter (e.g. dataloader) to load data from
+            the dataset.
+            It returns:
+                img: image
+                class_label: feature maps regarding classification
+                bound: feature maps regarding sameness
+                image_with_mask['mask'] (with mask=True): ground truth of segmentation on image 
+        """
         if self.cache:
             image_with_mask = self.data[index]
         else:
@@ -100,18 +114,22 @@ class WaldoDataset(Dataset):
         n_classes = self.c_cfg.num_classes
         n_offsets = len(self.c_cfg.offsets)
         n_colors = self.c_cfg.num_colors
-        cropped_img = randomly_crop_combined_image(
-            combined_img, self.c_cfg, self.size, self.size)
+        if self.crop:
+            combined_img = randomly_crop_combined_image(
+                combined_img, self.c_cfg, self.size, self.size)
 
         img = torch.from_numpy(
-            cropped_img[:n_colors, :, :])
+            combined_img[:n_colors, :, :])
         class_label = torch.from_numpy(
-            cropped_img[n_colors:n_colors + n_classes, :, :])
+            combined_img[n_colors:n_colors + n_classes, :, :])
         bound = torch.from_numpy(
-            cropped_img[n_colors + n_classes:n_colors +
-                        n_classes + n_offsets, :, :])
+            combined_img[n_colors + n_classes:n_colors +
+                         n_classes + n_offsets, :, :])
 
-        return img, class_label, bound
+        if self.mask:
+            return img, class_label, bound, image_with_mask['mask']
+        else:
+            return img, class_label, bound
 
     def __len__(self):
         return len(self.ids)
@@ -144,6 +162,13 @@ class WaldoTestset(Dataset):
         return np.load(filename)
 
     def __getitem__(self, index):
+        """ This function is called when we use iter (e.g. dataloader) to load data from
+            the dataset. 
+            It returns:
+               img_tensor: resized image
+               size: image original size for future recovering reason
+               id: image ID
+        """
         id = self.ids[index]
         if self.cache:
             img = self.data[index]

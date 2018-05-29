@@ -97,7 +97,7 @@ def make_square_image_with_padding(im_arr, num_colors):
     different, (Otherwise it leaves it the same size).
     It returns the padded image; but note, if it does not have
     to pad the image, it just returns the input variable
-    'image', it does not make a deep copy.
+    'image', it does not make a deep copy. Note: it only pads on the right or bottom side.
     """
 
     assert num_colors == 1 or num_colors == 3
