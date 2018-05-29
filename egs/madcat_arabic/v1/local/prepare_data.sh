@@ -42,7 +42,7 @@ fi
 
 echo "Date: $(date)."
 if [ $stage -le 0 ]; then
-  if [ "$overwrite" = false ] && [ ! -f data/train/image_ids.txt ]; then
+  if ! "$overwrite" = false && [ ! -f data/train/image_ids.txt ]; then
     for dataset in test dev train; do
     dataset_file=$data_splits_dir/madcat.$dataset.raw.lineid
     local/process_data.py $download_dir1 $download_dir2 $download_dir3 \
