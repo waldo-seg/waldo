@@ -11,13 +11,13 @@ epochs=10
 start_filters=64
 batch_size=16
 lr=0.01
+dir=exp/unet_1a
 
 . ./cmd.sh
 . ./path.sh
 . ./scripts/parse_options.sh
 
 
-dir=exp/unet_${depth}_${epochs}_sgd
 
 
 if [ $stage -le 1 ]; then

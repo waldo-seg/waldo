@@ -33,7 +33,7 @@ depth=5
 dir=exp/unet_${depth}_${epochs}_sgd
 if [ $stage -le 1 ]; then
   # training
-  local/run_unet.sh --epochs $epochs --depth $depth
+  local/run_unet.sh --dir $dir --epochs $epochs --depth $depth
 fi
 
 
@@ -43,5 +43,5 @@ if [ $stage -le 2 ]; then
     --train-image-size 128 \
     --model model_best.pth.tar \
     data/dev \
-    $dir/segment_val
+    $dir/segment
 fi
