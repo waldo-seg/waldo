@@ -42,6 +42,6 @@ if [ $stage -le 2 ]; then
   local/segment.py \
     --train-image-size 128 \
     --model model_best.pth.tar \
-    data/dev \
-    $dir/segment
+    --test-data data/dev \
+    --dir $dir/segment
 fi

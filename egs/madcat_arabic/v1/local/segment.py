@@ -8,17 +8,19 @@ import random
 import numpy as np
 import scipy.misc
 from models.Unet import UNet
-from train import sample
 from waldo.segmenter import ObjectSegmenter, SegmenterOptions
 from waldo.core_config import CoreConfig
 from waldo.data_visualization import visualize_mask
 from waldo.data_io import WaldoDataset
 from unet_config import UnetConfig
+import scipy
+from skimage.transform import resize
+from waldo.data_io import WaldoTestset
 
 parser = argparse.ArgumentParser(description='Pytorch MADCAT Arabic setup')
-parser.add_argument('test_data', default='./data', type=str,
-                    help='Path to processed validation data')
-parser.add_argument('dir', type=str,
+parser.add_argument('--test-data', type=str, required=True,
+                    help='Path to test images to be segmented')
+parser.add_argument('--dir', type=str, required=True,
                     help='Directory to store segmentation results. '
                     'It is assumed that <dir> is a sub-directory of '
                     'the model directory.')
@@ -87,9 +89,7 @@ def main():
     else:
         print("=> no checkpoint found at '{}'".format(model_path))
 
-    model.eval()  # convert the model into evaluation mode
-
-    testset = WaldoDataset(args.test_data, core_config, args.train_image_size)
+    testset = WaldoTestset(args.test_data, args.train_image_size)
     print('Total samples in the test set: {0}'.format(len(testset)))
 
     dataloader = torch.utils.data.DataLoader(
@@ -98,26 +98,54 @@ def main():
     segment_dir = args.dir
     if not os.path.exists(segment_dir):
         os.makedirs(segment_dir)
-    img, class_pred, adj_pred = sample(
-        model, dataloader, segment_dir, core_config)
 
-    if args.object_merge_factor is None:
-        args.object_merge_factor = 1.0 / len(offset_list)
-    segmenter_opts = SegmenterOptions(same_different_bias = args.same_different_bias,
-                                      object_merge_factor = args.object_merge_factor)
+    segment(dataloader, segment_dir, model, core_config)
 
 
-    seg = ObjectSegmenter(class_pred[0].detach().numpy(),
-                          adj_pred[0].detach().numpy(),
-                          num_classes, offset_list, segmenter_opts)
-    mask_pred, object_class = seg.run_segmentation()
-    x = {}
-    # from (color, height, width) to (height, width, color)
-    x['img'] = np.moveaxis(img[0].numpy(), 0, -1)
-    x['mask'] = mask_pred.astype(int)
-    x['object_class'] = object_class
-    z = visualize_mask(x, core_config)
-    scipy.misc.imsave('{}/final.png'.format(segment_dir), z['img_with_mask'])
+def segment(dataloader, segment_dir, model, core_config):
+    model.eval()  # convert the model into evaluation mode
+    img_dir = os.path.join(segment_dir, 'img')
+    if not os.path.exists(img_dir):
+        os.makedirs(img_dir)
+    exist_ids = next(os.walk(img_dir))[2]
+
+    num_classes = core_config.num_classes
+    offset_list = core_config.offsets
+
+    for i, (img, size, id) in enumerate(dataloader):
+        id = id[0]  # tuple to str
+        if id + '.png' in exist_ids:
+            continue
+        original_height, original_width = size[0].item(), size[1].item()
+        with torch.no_grad():
+            output = model(img)
+            # class_pred = (output[:, :num_classes, :, :] + 0.001) * 0.999
+            # adj_pred = (output[:, num_classes:, :, :] + 0.001) * 0.999
+            class_pred = output[:, :num_classes, :, :]
+            adj_pred = output[:, num_classes:, :, :]
+
+        if args.object_merge_factor is None:
+            args.object_merge_factor = 1.0 / len(offset_list)
+            segmenter_opts = SegmenterOptions(same_different_bias=args.same_different_bias,
+                                              object_merge_factor=args.object_merge_factor)
+        seg = ObjectSegmenter(class_pred[0].detach().numpy(),
+                              adj_pred[0].detach().numpy(),
+                              num_classes, offset_list,
+                              segmenter_opts)
+        mask_pred, object_class = seg.run_segmentation()
+        mask_pred = resize(mask_pred, (original_height, original_width),
+                           order=0, preserve_range=True).astype(int)
+
+        image_with_mask = {}
+        img = np.moveaxis(img[0].detach().numpy(), 0, -1)
+        img = resize(img, (original_height, original_width),
+                     preserve_range=True)
+        image_with_mask['img'] = img
+        image_with_mask['mask'] = mask_pred
+        image_with_mask['object_class'] = object_class
+        visual_mask = visualize_mask(image_with_mask, core_config)[
+            'img_with_mask']
+        scipy.misc.imsave('{}/{}.png'.format(img_dir, id), visual_mask)
 
 
 if __name__ == '__main__':
