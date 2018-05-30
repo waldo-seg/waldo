@@ -41,3 +41,11 @@ if [ $stage -le 2 ]; then
     --csv sub-dsbowl2018.csv
 
 fi
+
+if [ $stage -le 3 ]; then
+  echo "doing evaluation..."
+  local/scoring.py \
+    --ground-truth data/download/stage1_solution.csv \
+    --predict $dir/segment/sub-dsbowl2018.csv \
+    --result $dir/segment/result.txt
+fi
