@@ -15,6 +15,7 @@ class DataSaver:
     def __init__(self, dir, cfg, train=True):
         self.dir = dir
         self.cfg = cfg
+        self.train = train
         if train:
             self.suffixes = ['img', 'mask', 'object_class']
         else:

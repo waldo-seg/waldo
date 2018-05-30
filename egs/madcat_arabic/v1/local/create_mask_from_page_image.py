@@ -61,7 +61,7 @@ def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):
     scaled_image_with_objects = scale_down_image_with_objects(validated_image_with_objects, config,
                                                               max_size)
 
-    img_padded = make_square_image_with_padding(scaled_image_with_objects['img'], config)
+    img_padded = make_square_image_with_padding(scaled_image_with_objects['img'], 3, 255)
 
     padded_image_with_objects = {
         'img': img_padded,

@@ -12,6 +12,7 @@ import os
 import torch
 from create_mask_from_page_image import get_mask_from_page_image
 from waldo.data_io import DataSaver
+from waldo.core_config import CoreConfig
 
 parser = argparse.ArgumentParser(description="Creates line images from page image",
                                  epilog="E.g.  " + sys.argv[0] + "  data/LDC2012T15"
@@ -129,7 +130,9 @@ def get_file_list():
 
 def main():
     file_list = get_file_list()
-    data_saver = DataSaver(args.out_dir)
+    config = CoreConfig()
+    config.num_colors = 3
+    data_saver = DataSaver(args.out_dir, config)
     for file_name in file_list:
         y = get_mask_from_page_image(file_name[0], file_name[1], args.max_image_size)
         data_saver.write_image(file_name[2], y)
