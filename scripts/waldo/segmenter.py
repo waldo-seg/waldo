@@ -561,4 +561,3 @@ class ObjectSegmenter:
             print("Deleting {} being merged to {} according "
                   "to {}".format(obj2, obj1, arec), file=sys.stderr)
         del self.objects[obj2.id]
-
