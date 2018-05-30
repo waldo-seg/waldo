@@ -200,8 +200,7 @@ def make_submission(segment_dir, csvname):
                 image_id = id.split('.')[0]
                 for line in rlefile:
                     line = line.strip()
-                    pixels = line.split(' ')
-                    csv_writer.writerow([image_id] + pixels)
+                    csv_writer.writerow([image_id] + [line])
 
     print('Saved to {}'.format(csv_path))
 
