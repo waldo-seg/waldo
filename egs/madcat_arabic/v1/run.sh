@@ -28,19 +28,20 @@ if [ $stage -le 0 ]; then
 fi
 
 
-epochs=10
-depth=5
+epochs=20
+depth=6
 dir=exp/unet_${depth}_${epochs}_sgd
 if [ $stage -le 1 ]; then
   # training
-  local/run_unet.sh --dir $dir --epochs $epochs --depth $depth
+  local/run_unet.sh --dir $dir --epochs $epochs --depth $depth \
+    --train_image_size 256 --batch_size 8
 fi
 
 
 if [ $stage -le 2 ]; then
     echo "doing segmentation...."
   local/segment.py \
-    --train-image-size 128 \
+    --train-image-size 256 \
     --model model_best.pth.tar \
     --test-data data/dev \
     --dir $dir/segment
