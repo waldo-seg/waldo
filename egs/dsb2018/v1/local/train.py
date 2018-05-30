@@ -50,8 +50,6 @@ parser.add_argument('--weight-decay', '--wd', default=5e-4, type=float,
                     help='weight decay (default: 5e-4)')
 parser.add_argument('--train-dir', default='data', type=str,
                     help='Directory of processed training and validation data')
-parser.add_argument('--test-dir', default='data/test', type=str,
-                    help='Directory of processed test data')
 parser.add_argument('--tensorboard',
                     help='Log progress to TensorBoard', action='store_false')
 parser.add_argument('--core-config', default='', type=str,
@@ -295,7 +293,7 @@ def soft_dice_loss(inputs, targets):
 
 
 def adjust_learning_rate(optimizer, epoch):
-    """Sets the learning rate to the initial LR divided by 5 at 60th, 120th and 160th epochs"""
+    """Sets the learning rate to the initial LR divided by 5 at 60th and 100th epochs"""
     lr = args.lr * ((0.2 ** int(epoch >= 60)) *
                     (0.2 ** int(epoch >= 100)))
     # log to TensorBoard

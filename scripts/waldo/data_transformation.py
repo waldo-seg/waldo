@@ -21,9 +21,10 @@ def randomly_crop_combined_image(combined_image, config,
 
     n_channels, height, width = combined_image.shape
 
-    if height < image_height or width < image_width:
-        cropped_image = np.zeros((n_channels, image_height, image_width))
-        cropped_image[:, :height, :width] = combined_image
+    # it has been made a square image and we only consider one side
+    if height <= image_height:
+        cropped_image = np.pad(
+            combined_image, ((0, 0), (0, image_height - height), (0, image_width - width)), 'constant')
     else:
         top = np.random.randint(0, height - image_height)
         left = np.random.randint(0, width - image_width)
@@ -90,15 +91,16 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
     return resized_image_with_objects
 
 
-def make_square_image_with_padding(im_arr, config):
+def make_square_image_with_padding(im_arr, num_colors):
     """
     This function pads an image to make it squre, if both height and width are
     different, (Otherwise it leaves it the same size).
     It returns the padded image; but note, if it does not have
     to pad the image, it just returns the input variable
-    'image', it does not make a deep copy.
+    'image', it does not make a deep copy. Note: it only pads on the right or bottom side.
     """
 
+    assert num_colors == 1 or num_colors == 3
     height = int(im_arr.shape[0])
     width = int(im_arr.shape[1])
 
@@ -106,17 +108,20 @@ def make_square_image_with_padding(im_arr, config):
         return im_arr
 
     if width > height:
-        diff = width-height
-        if config.num_colors == 1:
-            im_arr_pad  = np.pad(im_arr, [(0, diff), (0, 0)], mode='constant', constant_values=255)
+        diff = width - height
+        if num_colors == 1:
+            im_arr_pad = np.pad(
+                im_arr, [(0, diff), (0, 0)], mode='constant')
         else:
-            im_arr_pad = np.pad(im_arr, [(0, diff), (0, 0), (0,0)], mode='constant', constant_values=255)
+            im_arr_pad = np.pad(
+                im_arr, [(0, diff), (0, 0), (0, 0)], mode='constant')
     else:
         diff = height - width
-        if config.num_colors == 1:
-            im_arr_pad = np.pad(im_arr, [(0, 0), (0, diff)], mode='constant', constant_values=255)
+        if num_colors == 1:
+            im_arr_pad = np.pad(
+                im_arr, [(0, 0), (0, diff)], mode='constant')
         else:
-            im_arr_pad = np.pad(im_arr, [(0, 0), (0, diff), (0, 0)], mode='constant', constant_values=255)
+            im_arr_pad = np.pad(
+                im_arr, [(0, 0), (0, diff), (0, 0)], mode='constant')
 
     return im_arr_pad
-
