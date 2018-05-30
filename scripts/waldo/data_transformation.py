@@ -64,7 +64,7 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
         scale = (1.0 * nx) / sx
         ny = scale * sy
 
-    resized_img = im.resize((int(nx), int(ny)), img.ANTIALIAS)
+    resized_img = im.resize((int(nx), int(ny)), Image.ANTIALIAS)
     resized_img_arr = np.array(resized_img)
 
     resized_objects = []
@@ -91,7 +91,7 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
     return resized_image_with_objects
 
 
-def make_square_image_with_padding(im_arr, num_colors):
+def make_square_image_with_padding(im_arr, num_colors, pad_value=0):
     """
     This function pads an image to make it squre, if both height and width are
     different, (Otherwise it leaves it the same size).
@@ -111,17 +111,17 @@ def make_square_image_with_padding(im_arr, num_colors):
         diff = width - height
         if num_colors == 1:
             im_arr_pad = np.pad(
-                im_arr, [(0, diff), (0, 0)], mode='constant')
+                im_arr, [(0, diff), (0, 0)], mode='constant', constant_values=pad_value)
         else:
             im_arr_pad = np.pad(
-                im_arr, [(0, diff), (0, 0), (0, 0)], mode='constant')
+                im_arr, [(0, diff), (0, 0), (0, 0)], mode='constant', constant_values=pad_value)
     else:
         diff = height - width
         if num_colors == 1:
             im_arr_pad = np.pad(
-                im_arr, [(0, 0), (0, diff)], mode='constant')
+                im_arr, [(0, 0), (0, diff)], mode='constant', constant_values=pad_value)
         else:
             im_arr_pad = np.pad(
-                im_arr, [(0, 0), (0, diff), (0, 0)], mode='constant')
+                im_arr, [(0, 0), (0, diff), (0, 0)], mode='constant', constant_values=pad_value)
 
     return im_arr_pad
