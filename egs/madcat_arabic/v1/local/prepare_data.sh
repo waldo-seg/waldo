@@ -17,7 +17,7 @@ data_splits_dir=data/download/data_splits
 writing_condition1=/export/corpora/LDC/LDC2012T15/docs/writing_conditions.tab
 writing_condition2=/export/corpora/LDC/LDC2013T09/docs/writing_conditions.tab
 writing_condition3=/export/corpora/LDC/LDC2013T15/docs/writing_conditions.tab
-overwrite=true
+overwrite=false
 mkdir -p data/{train,test,dev}
 mkdir -p data/{train,test,dev}/{img,mask,object_class}
 
