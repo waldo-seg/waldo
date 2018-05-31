@@ -102,7 +102,7 @@ def main():
         os.makedirs(segment_dir)
 
     segment(dataloader, segment_dir, model, core_config)
-
+    make_submission(segment_dir, args.csv)
 
 def segment(dataloader, segment_dir, model, core_config):
     model.eval()  # convert the model into evaluation mode
