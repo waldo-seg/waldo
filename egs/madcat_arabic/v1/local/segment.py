@@ -11,7 +11,6 @@ from models.Unet import UNet
 from waldo.segmenter import ObjectSegmenter, SegmenterOptions
 from waldo.core_config import CoreConfig
 from waldo.data_visualization import visualize_mask
-from waldo.data_io import WaldoDataset
 from unet_config import UnetConfig
 import scipy
 from skimage.transform import resize
@@ -138,8 +137,8 @@ def segment(dataloader, segment_dir, model, core_config):
 
         image_with_mask = {}
         img = np.moveaxis(img[0].detach().numpy(), 0, -1)
-        img = resize(img, (original_height, original_width),
-                     preserve_range=True)
+        #img = resize(img, (original_height, original_width),
+        #             preserve_range=True)
         image_with_mask['img'] = img
         image_with_mask['mask'] = mask_pred
         image_with_mask['object_class'] = object_class

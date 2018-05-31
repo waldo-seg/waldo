@@ -109,11 +109,11 @@ def main():
     train_data = args.train_dir + '/train'
     val_data = args.train_dir + '/dev'
 
-    trainset = WaldoDataset(train_data, c_config, args.train_image_size)
+    trainset = WaldoDataset(train_data, c_config, args.train_image_size, crop=False)
     trainloader = torch.utils.data.DataLoader(
         trainset, num_workers=4, batch_size=args.batch_size, shuffle=True)
 
-    valset = WaldoDataset(val_data, c_config, args.train_image_size)
+    valset = WaldoDataset(val_data, c_config, args.train_image_size, crop=False)
     valloader = torch.utils.data.DataLoader(
         valset, num_workers=4, batch_size=args.batch_size)
 
