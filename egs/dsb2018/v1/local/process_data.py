@@ -138,7 +138,7 @@ if __name__ == '__main__':
     cfg = CoreConfig()
     cfg.read(args.cfg)
 
-    split_names = ['stage1_train', 'stage1_test', 'stage2_test_final']
+    split_names = ['train', 'stage1_test', 'stage2_test_final']
     for split in split_names:
         ids_file = "{0}/{1}/image_ids.txt".format(args.outdir, split)
         if not (os.path.exists(ids_file)):

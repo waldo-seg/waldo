@@ -108,8 +108,8 @@ def compute_iou(gt_rle, pred_rle):
 
 def statistical_hypothesis_testing(iou_matrix, threshold):
     """
-    This function accepts a iou_matrix and a threshold, and returns the precision of it.
-    The precision is calculated as:
+    This function accepts a iou_matrix and a threshold, and returns the score of it.
+    The score is calculated as:
     TP / (TP + FP + FN)
     """
     tp = 0  # true positive
@@ -122,8 +122,8 @@ def statistical_hypothesis_testing(iou_matrix, threshold):
     # find the max iou for each object in the ground truth mask
     max_iou_of_gt = iou_matrix.max(axis=0)
     fn = sum(max_iou_of_gt < threshold)
-    prec = float(tp / (tp + fp + fn))
-    return prec
+    score = float(tp / (tp + fp + fn))
+    return score
 
 
 if __name__ == '__main__':
