@@ -147,6 +147,31 @@ def segment(dataloader, segment_dir, model, core_config):
         scipy.misc.imsave('{}/{}.png'.format(img_dir, id), visual_mask)
 
 
+def rle_encoding(x):
+    """ This function accepts a binary mask x of size (height, width) and 
+        return its run-length encoding. run-length encoding will encode the
+        binary mask as pairs of values that each pair contains a start position
+        and its run length. Note that the pixels in a 2-dim mask are one-indexed,
+        from top to bottom, then left to right. It follows the requirement
+        from dsb2018 : "https://www.kaggle.com/c/data-science-bowl-2018#evaluation"  
+        e.g. if x = [0 0 0 
+                     1 1 1 
+                     0 1 1 ], it will return [2 1 5 2 8 2]
+    """
+    dots = np.where(x.T.flatten() == 1)[0]
+    run_lengths = []
+    prev = -2
+    for b in dots:
+        if (b > prev + 1):
+            run_lengths.extend((b + 1, 0))
+        run_lengths[-1] += 1
+        prev = b
+    return run_lengths
+
+
+def mask_to_rles(x):
+    for i in range(1, x.max() + 1):
+        yield rle_encoding((x == i).astype(int))
 if __name__ == '__main__':
     main()
 
