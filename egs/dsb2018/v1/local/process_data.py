@@ -34,7 +34,8 @@ parser.add_argument('--cfg', default='data/core.config', type=str,
 def DataProcess(input_dir, output_dir, split_name, cfg, train_prop=0.9):
     channels = cfg.num_colors
     split_dir = os.path.join(input_dir, split_name)
-    if split_name == 'stage1_train':
+    if split_name == 'train':
+        split_dir = os.path.join(input_dir, 'stage1_train')
         # Get train IDs
         train_all_ids = next(os.walk(split_dir))[1]
         # split the training set into train and validation set
