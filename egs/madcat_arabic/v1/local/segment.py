@@ -113,6 +113,8 @@ def segment(dataloader, segment_dir, model, core_config):
         os.makedirs(rle_dir)
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
+    if not os.path.exists(mask_dir):
+        os.makedirs(mask_dir)
     exist_ids = next(os.walk(img_dir))[2]
 
     num_classes = core_config.num_classes
@@ -152,6 +154,7 @@ def segment(dataloader, segment_dir, model, core_config):
         visual_mask = visualize_mask(image_with_mask, core_config)[
             'img_with_mask']
         scipy.misc.imsave('{}/{}.png'.format(img_dir, id), visual_mask)
+        #scipy.misc.imsave('{}/{}.png'.format(mask_dir, id), mask_pred)
         filename = mask_dir + '/' + id + '.' + 'mask' + '.npy'
         np.save(filename, mask_pred)
         rles = list(mask_to_rles(mask_pred))
@@ -164,14 +167,14 @@ def segment(dataloader, segment_dir, model, core_config):
 
 
 def rle_encoding(x):
-    """ This function accepts a binary mask x of size (height, width) and 
+    """ This function accepts a binary mask x of size (height, width) and
         return its run-length encoding. run-length encoding will encode the
         binary mask as pairs of values that each pair contains a start position
         and its run length. Note that the pixels in a 2-dim mask are one-indexed,
         from top to bottom, then left to right. It follows the requirement
-        from dsb2018 : "https://www.kaggle.com/c/data-science-bowl-2018#evaluation"  
-        e.g. if x = [0 0 0 
-                     1 1 1 
+        from dsb2018 : "https://www.kaggle.com/c/data-science-bowl-2018#evaluation"
+        e.g. if x = [0 0 0
+                     1 1 1
                      0 1 1 ], it will return [2 1 5 2 8 2]
     """
     dots = np.where(x.T.flatten() == 1)[0]
