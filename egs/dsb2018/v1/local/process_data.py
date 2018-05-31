@@ -34,7 +34,8 @@ parser.add_argument('--cfg', default='data/core.config', type=str,
 def DataProcess(input_dir, output_dir, split_name, cfg, train_prop=0.9):
     channels = cfg.num_colors
     split_dir = os.path.join(input_dir, split_name)
-    if split_name == 'stage1_train':
+    if split_name == 'train':
+        split_dir = os.path.join(input_dir, 'stage1_train')
         # Get train IDs
         train_all_ids = next(os.walk(split_dir))[1]
         # split the training set into train and validation set
@@ -138,7 +139,7 @@ if __name__ == '__main__':
     cfg = CoreConfig()
     cfg.read(args.cfg)
 
-    split_names = ['stage1_train', 'stage1_test', 'stage2_test_final']
+    split_names = ['train', 'stage1_test', 'stage2_test_final']
     for split in split_names:
         ids_file = "{0}/{1}/image_ids.txt".format(args.outdir, split)
         if not (os.path.exists(ids_file)):

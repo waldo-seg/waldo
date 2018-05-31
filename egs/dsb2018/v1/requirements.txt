@@ -2,3 +2,4 @@
 # For common dependencies shared by all experiments, please refer to: ./scripts/dependencies/requirement.txt 
 
 kaggle
+scikit-image
