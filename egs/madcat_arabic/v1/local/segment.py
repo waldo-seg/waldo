@@ -108,6 +108,7 @@ def segment(dataloader, segment_dir, model, core_config):
     model.eval()  # convert the model into evaluation mode
     img_dir = os.path.join(segment_dir, 'img')
     rle_dir = os.path.join(segment_dir, 'rle')
+    mask_dir = os.path.join(segment_dir, 'mask_pred')
     if not os.path.exists(rle_dir):
         os.makedirs(rle_dir)
     if not os.path.exists(img_dir):
@@ -138,8 +139,8 @@ def segment(dataloader, segment_dir, model, core_config):
                               num_classes, offset_list,
                               segmenter_opts)
         mask_pred, object_class = seg.run_segmentation()
-        mask_pred = resize(mask_pred, (original_height, original_width),
-                           order=0, preserve_range=True).astype(int)
+        #mask_pred = resize(mask_pred, (original_height, original_width),
+        #                   order=0, preserve_range=True).astype(int)
 
         image_with_mask = {}
         img = np.moveaxis(img[0].detach().numpy(), 0, -1)
@@ -151,6 +152,8 @@ def segment(dataloader, segment_dir, model, core_config):
         visual_mask = visualize_mask(image_with_mask, core_config)[
             'img_with_mask']
         scipy.misc.imsave('{}/{}.png'.format(img_dir, id), visual_mask)
+        filename = mask_dir + '/' + id + '.' + 'mask' + '.npy'
+        np.save(filename, mask_pred)
         rles = list(mask_to_rles(mask_pred))
         segment_rle_file = '{}/{}.rle'.format(rle_dir, id)
         with open(segment_rle_file, 'w') as fh:
