@@ -13,6 +13,7 @@ from waldo.core_config import CoreConfig
 from waldo.data_visualization import visualize_mask
 from unet_config import UnetConfig
 import scipy
+import csv
 from skimage.transform import resize
 from waldo.data_io import WaldoTestset
 
@@ -37,6 +38,8 @@ parser.add_argument('--object-merge-factor', type=float, default=None,
 parser.add_argument('--same-different-bias', type=float, default=0.0,
                     help='Bias for same/different probs in the segmentation '
                     'algorithm.')
+parser.add_argument('--csv', type=str, default='sub-dsbowl2018.csv',
+                    help='Csv filename as the final submission file')
 random.seed(0)
 np.random.seed(0)
 
@@ -104,6 +107,9 @@ def main():
 def segment(dataloader, segment_dir, model, core_config):
     model.eval()  # convert the model into evaluation mode
     img_dir = os.path.join(segment_dir, 'img')
+    rle_dir = os.path.join(segment_dir, 'rle')
+    if not os.path.exists(rle_dir):
+        os.makedirs(rle_dir)
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
     exist_ids = next(os.walk(img_dir))[2]
@@ -145,6 +151,13 @@ def segment(dataloader, segment_dir, model, core_config):
         visual_mask = visualize_mask(image_with_mask, core_config)[
             'img_with_mask']
         scipy.misc.imsave('{}/{}.png'.format(img_dir, id), visual_mask)
+        rles = list(mask_to_rles(mask_pred))
+        segment_rle_file = '{}/{}.rle'.format(rle_dir, id)
+        with open(segment_rle_file, 'w') as fh:
+            for obj in rles:
+                obj_str = ' '.join(str(n) for n in obj)
+                fh.write(obj_str)
+                fh.write('\n')
 
 
 def rle_encoding(x):
@@ -172,6 +185,24 @@ def rle_encoding(x):
 def mask_to_rles(x):
     for i in range(1, x.max() + 1):
         yield rle_encoding((x == i).astype(int))
+
+def make_submission(segment_dir, csvname):
+    rle_dir = os.path.join(segment_dir, 'rle')
+    ids = next(os.walk(rle_dir))[2]
+    csv_path = os.path.join(segment_dir, csvname)
+    with open(csv_path, 'w') as csvfile:
+        csv_writer = csv.writer(csvfile)
+        csv_writer.writerow(['ImageId', 'EncodedPixels'])
+        for id in ids:
+            with open(os.path.join(rle_dir, id), 'r') as rlefile:
+                image_id = id.split('.')[0]
+                for line in rlefile:
+                    line = line.strip()
+                    csv_writer.writerow([image_id] + [line])
+
+    print('Saved to {}'.format(csv_path))
+
+
 if __name__ == '__main__':
     main()
 
