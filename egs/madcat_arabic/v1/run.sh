@@ -21,28 +21,43 @@ local/check_dependencies.sh
 
 
 if [ $stage -le 0 ]; then
-  # data preparation
+  echo "Preparing data. Date: $(date)."
   local/prepare_data.sh --download_dir1 $download_dir1 --download_dir2 $download_dir2 \
       --download_dir3 $download_dir3 --writing_condition1 $writing_condition1 \
       --writing_condition2 $writing_condition2 --writing_condition3 $writing_condition3
 fi
 
 
-epochs=20
+epochs=40
 depth=6
-dir=exp/unet_${depth}_${epochs}_sgd
+lr=0.0005
+dir=exp/unet_${depth}_${epochs}_${lr}
+
 if [ $stage -le 1 ]; then
-  # training
+  echo "Training network Date: $(date)."
   local/run_unet.sh --dir $dir --epochs $epochs --depth $depth \
-    --train_image_size 256 --batch_size 8
+    --train_image_size 256 --lr $lr --batch_size 8
 fi
 
-
+logdir=$dir/segment/log
+nj=10
 if [ $stage -le 2 ]; then
-    echo "doing segmentation...."
-  local/segment.py \
-    --train-image-size 256 \
-    --model model_best.pth.tar \
-    --test-data data/dev \
-    --dir $dir/segment
+  echo "doing segmentation.... Date: $(date)."
+  $cmd JOB=1:$nj $logdir/segment.JOB.log local/segment.py \
+       --train-image-size 256 \
+       --model model_best.pth.tar \
+       --test-data data/test \
+       --dir $dir/segment \
+       --job JOB --num-jobs $nj
+
 fi
+
+if [ $stage -le 3 ]; then
+  echo "getting score... Date: $(date)."
+  scoring/score.py \
+    --reference data/test/mask \
+    --hypothesis $dir/segment/mask_pred \
+    --result $dir/segment/result.txt
+fi
+
+echo "Date: $(date)."
