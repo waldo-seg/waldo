@@ -32,19 +32,24 @@ epochs=40
 depth=6
 lr=0.0005
 dir=exp/unet_${depth}_${epochs}_${lr}
+
 if [ $stage -le 1 ]; then
   echo "Training network Date: $(date)."
   local/run_unet.sh --dir $dir --epochs $epochs --depth $depth \
     --train_image_size 256 --lr $lr --batch_size 8
 fi
 
+logdir=$dir/segment/log
+nj=10
 if [ $stage -le 2 ]; then
   echo "doing segmentation.... Date: $(date)."
-  local/segment.py \
-    --train-image-size 256 \
-    --model model_best.pth.tar \
-    --test-data data/test \
-    --dir $dir/segment
+  $cmd JOB=1:$nj $logdir/segment.JOB.log local/segment.py \
+       --train-image-size 256 \
+       --model model_best.pth.tar \
+       --test-data data/test \
+       --dir $dir/segment \
+       --job JOB --num-jobs $nj
+
 fi
 
 if [ $stage -le 3 ]; then

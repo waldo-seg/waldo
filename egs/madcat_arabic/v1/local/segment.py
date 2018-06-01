@@ -40,6 +40,9 @@ parser.add_argument('--same-different-bias', type=float, default=0.0,
                     'algorithm.')
 parser.add_argument('--csv', type=str, default='sub-dsbowl2018.csv',
                     help='Csv filename as the final submission file')
+parser.add_argument('--job', type=int, default=0, help='job id')
+parser.add_argument('--num-jobs', type=int, default=1,
+                    help='number of parallel jobs')
 random.seed(0)
 np.random.seed(0)
 
@@ -91,7 +94,8 @@ def main():
     else:
         print("=> no checkpoint found at '{}'".format(model_path))
 
-    testset = WaldoTestset(args.test_data, args.train_image_size)
+    testset = WaldoTestset(args.test_data, args.train_image_size,
+                           job=args.job, num_jobs=args.num_jobs)
     print('Total samples in the test set: {0}'.format(len(testset)))
 
     dataloader = torch.utils.data.DataLoader(
