@@ -137,15 +137,22 @@ class WaldoDataset(Dataset):
 
 
 class WaldoTestset(Dataset):
-    def __init__(self, dir, scale_size, cache=True):
+    def __init__(self, dir, scale_size, job=0, num_jobs=1, cache=True):
         self.dir = dir
         self.scale_size = scale_size
         self.original_sizes = []
         self.cache = cache
+        assert job <= num_jobs
+        self.job = job
+        self.num_jobs = num_jobs
         self.data = []
         with open(self.dir + '/' + 'image_ids.txt', 'r') as ids_file:
             self.ids = ids_file.readlines()
         self.ids = [id.strip() for id in self.ids]
+        # split the data if there are multiple jobs (threads)
+        if self.job > 0:
+            id_array = np.array(self.ids)
+            self.ids = np.array_split(id_array, self.num_jobs)[self.job - 1]
         self.cache = cache
         if self.cache:
             for id in self.ids:
@@ -164,7 +171,7 @@ class WaldoTestset(Dataset):
 
     def __getitem__(self, index):
         """ This function is called when we use iter (e.g. dataloader) to load data from
-            the dataset. 
+            the dataset.
             It returns:
                img_tensor: resized image
                size: image original size for future recovering reason
