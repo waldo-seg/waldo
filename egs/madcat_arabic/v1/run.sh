@@ -33,14 +33,12 @@ depth=6
 lr=0.0005
 dir=exp/unet_${depth}_${epochs}_${lr}
 if [ $stage -le 1 ]; then
-  #exit 0;
   echo "Training network Date: $(date)."
   local/run_unet.sh --dir $dir --epochs $epochs --depth $depth \
     --train_image_size 256 --lr $lr --batch_size 8
 fi
 
 if [ $stage -le 2 ]; then
-  #exit 0;
   echo "doing segmentation.... Date: $(date)."
   local/segment.py \
     --train-image-size 256 \
@@ -50,32 +48,11 @@ if [ $stage -le 2 ]; then
 fi
 
 if [ $stage -le 3 ]; then
-  #exit 0;
   echo "getting score... Date: $(date)."
   scoring/score.py \
     --reference data/test/mask \
     --hypothesis $dir/segment/mask_pred \
     --result $dir/segment/result.txt
-  #exit
 fi
-
-#echo "Date: $(date)."
-#
-#if [ $stage -le 4 ]; then
-#  echo "Date: $(date)."
-#  echo "converting mask to rle format..."
-#  local/convert_to_rle.py \
-#    --indir data/test/mask \
-#    --outdir data/test
-#fi
-
-#if [ $stage -le 5 ]; then
-#  echo "Date: $(date)."
-#  echo "doing evaluation..."
-#  local/scoring.py \
-#    --ground-truth data/test/sub-dsbowl2018.csv \
-#    --predict $dir/segment/sub-dsbowl2018.csv \
-#    --result $dir/segment/result_rle.txt
-#fi
 
 echo "Date: $(date)."

@@ -413,7 +413,7 @@ class ObjectSegmenter:
         """
         print("Starting segmentation...")
         n = 0
-        N = 10000000  # max iters -- for experimentation
+        N = 1000000  # max iters -- for experimentation
         target_objs = 0  # for experimentation
         self.verbose = 0
         self.do_debugging = False

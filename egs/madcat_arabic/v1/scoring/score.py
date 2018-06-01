@@ -35,7 +35,7 @@ def get_mean_avg_score(threshold_list):
             ref_arr = np.load(img_ref_path)
             hyp_arr = np.load(img_hyp_path)
             image_id = os.path.basename(img_ref_path).split('.mask.npy')[0]
-            recall = get_score(ref_arr, hyp_arr, threshold)['recall']
+            recall = get_score(ref_arr, hyp_arr, threshold)['precision']
             mean_recall += recall
             if image_id not in stat_dict.keys():
                 stat_dict[image_id] = dict()
