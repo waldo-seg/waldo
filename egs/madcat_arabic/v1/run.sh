@@ -21,28 +21,61 @@ local/check_dependencies.sh
 
 
 if [ $stage -le 0 ]; then
-  # data preparation
+  echo "Preparing data. Date: $(date)."
   local/prepare_data.sh --download_dir1 $download_dir1 --download_dir2 $download_dir2 \
       --download_dir3 $download_dir3 --writing_condition1 $writing_condition1 \
       --writing_condition2 $writing_condition2 --writing_condition3 $writing_condition3
 fi
 
 
-epochs=20
+epochs=40
 depth=6
-dir=exp/unet_${depth}_${epochs}_sgd
+lr=0.0005
+dir=exp/unet_${depth}_${epochs}_${lr}
 if [ $stage -le 1 ]; then
-  # training
+  #exit 0;
+  echo "Training network Date: $(date)."
   local/run_unet.sh --dir $dir --epochs $epochs --depth $depth \
-    --train_image_size 256 --batch_size 8
+    --train_image_size 256 --lr $lr --batch_size 8
 fi
 
-
 if [ $stage -le 2 ]; then
-    echo "doing segmentation...."
+  #exit 0;
+  echo "doing segmentation.... Date: $(date)."
   local/segment.py \
     --train-image-size 256 \
     --model model_best.pth.tar \
-    --test-data data/dev \
+    --test-data data/test \
     --dir $dir/segment
 fi
+
+if [ $stage -le 3 ]; then
+  #exit 0;
+  echo "getting score... Date: $(date)."
+  scoring/score.py \
+    --reference data/test/mask \
+    --hypothesis $dir/segment/mask_pred \
+    --result $dir/segment/result.txt
+  #exit
+fi
+
+#echo "Date: $(date)."
+#
+#if [ $stage -le 4 ]; then
+#  echo "Date: $(date)."
+#  echo "converting mask to rle format..."
+#  local/convert_to_rle.py \
+#    --indir data/test/mask \
+#    --outdir data/test
+#fi
+
+#if [ $stage -le 5 ]; then
+#  echo "Date: $(date)."
+#  echo "doing evaluation..."
+#  local/scoring.py \
+#    --ground-truth data/test/sub-dsbowl2018.csv \
+#    --predict $dir/segment/sub-dsbowl2018.csv \
+#    --result $dir/segment/result_rle.txt
+#fi
+
+echo "Date: $(date)."
