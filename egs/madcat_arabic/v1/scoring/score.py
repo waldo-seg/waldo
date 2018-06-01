@@ -20,27 +20,25 @@ args = parser.parse_args()
 def main():
     mean_ar = 0
     stat_dict = {}
-    img_count = 0
-    for img_ref_path, img_hyp_path in zip(glob(args.reference+"/*.mask.npy"),
-                                        glob(args.hypothesis+"/*.mask.npy")):
-        img_count += 1
-        ref_arr = np.load(img_ref_path)
-        hyp_arr = np.load(img_hyp_path)
-        image_id = os.path.basename(img_ref_path).split('.mask.npy')[0]
-        thresholds = np.arange(0.50, 1.0, 0.05)
-        average_recall = 0
-        for threshold in thresholds:
+    thresholds = np.arange(0.50, 1.0, 0.05)
+    for threshold in thresholds:
+        mean_recall = 0
+        img_count = 0
+        for img_ref_path, img_hyp_path in zip(glob(args.reference+"/*.mask.npy"),
+                                            glob(args.hypothesis+"/*.mask.npy")):
+            img_count += 1
+            ref_arr = np.load(img_ref_path)
+            hyp_arr = np.load(img_hyp_path)
+            image_id = os.path.basename(img_ref_path).split('.mask.npy')[0]
             recall = get_score(ref_arr, hyp_arr, threshold)['recall']
-            average_recall += recall
-            if image_id in stat_dict.keys():
-                stat_dict[image_id][threshold] = recall
-            else:
+            mean_recall += recall
+            if image_id not in stat_dict.keys():
                 stat_dict[image_id] = dict()
-                stat_dict[image_id][threshold] = recall
-        average_recall /= len(thresholds)
-        stat_dict[image_id]['Average Recall'] = average_recall
-        mean_ar += average_recall
-    mean_ar /= img_count
+            stat_dict[image_id][threshold] = recall
+        mean_recall /= img_count
+        print("For threshold: {} Mean recall: {}".format(threshold, mean_recall))
+        mean_ar += mean_recall
+    mean_ar /= len(thresholds)
     print("Mean average recall: {}".format(mean_ar))
     with open(args.result, 'w') as fh:
         fh.write('Mean Average Recall: {}\n'.format(mean_ar))
