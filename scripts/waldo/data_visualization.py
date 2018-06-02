@@ -32,8 +32,9 @@ def visualize_mask(x, c, transparency=0.3):
         """Given a BW mask, number of objects, and a LinearSegmentedColormap object, 
         returns a RGB mask.
         """
-        color_mask = np.array([cmap(i) for i in mask])
-        return np.array(color_mask)
+        shuffled_n = np.random.permutation(np.array([i for i in range(n)]))
+        color_mask = np.array([cmap(shuffled_n[i]) for i in mask])
+        return color_mask
 
 
 
