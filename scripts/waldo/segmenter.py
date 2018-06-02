@@ -18,7 +18,7 @@ import warnings
 import resource
 import scipy.misc
 from collections import namedtuple
-
+from random import shuffle
 
 SegmenterOptions = namedtuple('SegmenterOptions',
                               ['same_different_bias',
@@ -205,7 +205,7 @@ class AdjacencyRecord:
 
     def update_merge_priority(self, segmenter):
         self.compute_class_delta_logprob()
-        den = len(self.obj1.pixels) * len(self.obj2.pixels)
+        den = min(len(self.obj1.pixels), len(self.obj2.pixels))
         self.merge_priority = (self.obj_merge_logprob * segmenter.opts.object_merge_factor +
                                self.class_delta_logprob) / den
 
@@ -340,12 +340,14 @@ class ObjectSegmenter:
 
     def output_mask(self):
         mask = np.zeros((self.img_height, self.img_width), dtype=int)
-        k = 1
+        k = 0
+        obj_ids = list(range(1, len(self.objects) + 1))
+        shuffle(obj_ids)
         object_class = []
         for obj in self.objects.values():
             object_class.append(obj.object_class)
             for p in obj.pixels:
-                mask[p] = k
+                mask[p] = obj_ids[k]
             k += 1
         return mask, object_class
 
@@ -413,7 +415,7 @@ class ObjectSegmenter:
         """
         print("Starting segmentation...")
         n = 0
-        N = 1000000  # max iters -- for experimentation
+        N = 10000000  # max iters -- for experimentation
         target_objs = 0  # for experimentation
         self.verbose = 0
         self.do_debugging = False
@@ -425,7 +427,7 @@ class ObjectSegmenter:
                 self.verbose = 1
             if n > 100:
                 self.verbose = 0
-            if n % 5000 == 0:
+            if n % 50000 == 0:
                 print("At iteration {}:  max mem: {:0.2f} GB".format(
                     n, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024))
                 self.show_stats()

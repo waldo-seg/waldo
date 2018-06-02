@@ -52,6 +52,15 @@ if [ $stage -le 2 ]; then
 
 fi
 
+#if [ $stage -le 2 ]; then
+#  echo "doing segmentation.... Date: $(date)."
+#  local/segment.py \
+#    --train-image-size 256 \
+#    --model model_best.pth.tar \
+#    --test-data data/test \
+#    --dir $dir/segment
+#fi
+
 if [ $stage -le 3 ]; then
   echo "getting score... Date: $(date)."
   scoring/score.py \
@@ -59,5 +68,4 @@ if [ $stage -le 3 ]; then
     --hypothesis $dir/segment/mask_pred \
     --result $dir/segment/result.txt
 fi
-
 echo "Date: $(date)."
