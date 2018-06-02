@@ -39,27 +39,27 @@ if [ $stage -le 1 ]; then
     --train_image_size 256 --lr $lr --batch_size 8
 fi
 
-logdir=$dir/segment/log
-nj=10
-if [ $stage -le 2 ]; then
-  echo "doing segmentation.... Date: $(date)."
-  $cmd JOB=1:$nj $logdir/segment.JOB.log local/segment.py \
-       --train-image-size 256 \
-       --model model_best.pth.tar \
-       --test-data data/test \
-       --dir $dir/segment \
-       --job JOB --num-jobs $nj
-
-fi
-
+#logdir=$dir/segment/log
+#nj=32
 #if [ $stage -le 2 ]; then
 #  echo "doing segmentation.... Date: $(date)."
-#  local/segment.py \
-#    --train-image-size 256 \
-#    --model model_best.pth.tar \
-#    --test-data data/test \
-#    --dir $dir/segment
+#  $cmd JOB=1:$nj $logdir/segment.JOB.log local/segment.py \
+#       --train-image-size 256 \
+#       --model model_best.pth.tar \
+#       --test-data data/test \
+#       --dir $dir/segment \
+#       --job JOB --num-jobs $nj
+#
 #fi
+
+if [ $stage -le 2 ]; then
+  echo "doing segmentation.... Date: $(date)."
+  local/segment.py \
+    --train-image-size 256 \
+    --model model_best.pth.tar \
+    --test-data data/test \
+    --dir $dir/segment
+fi
 
 if [ $stage -le 3 ]; then
   echo "getting score... Date: $(date)."

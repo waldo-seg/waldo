@@ -97,6 +97,7 @@ def main():
     #testset = WaldoTestset(args.test_data, args.train_image_size)
     testset = WaldoTestset(args.test_data, args.train_image_size,
                            job=args.job, num_jobs=args.num_jobs)
+    #print("job number: {}".format(args.job))
     print('Total samples in the test set: {0}'.format(len(testset)))
 
     dataloader = torch.utils.data.DataLoader(
