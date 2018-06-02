@@ -8,31 +8,67 @@ import numpy as np
 
 parser = argparse.ArgumentParser(
     description='scoring script for text localization')
-parser.add_argument('hypothesis', type=str,
-                    help='hypothesis directory of test data')
-parser.add_argument('reference', type=str,
-                    help='reference directory of test data')
+parser.add_argument('--reference', type=str, required=True,
+                    help='reference directory of test data, contains np array')
+parser.add_argument('--hypothesis', type=str, required=True,
+                    help='hypothesis directory of test data, contains np array')
+parser.add_argument('--result', type=str, required=True,
+                    help='the file to store final statistical results')
 args = parser.parse_args()
 
 
 def main():
-    iou_threshold = 0.5
-    precision = 0
-    count = 0
+    threshold_list = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+    mean_ap, mean_ar, stat_dict = get_mean_avg_score(threshold_list)
+    write_stats_to_file(mean_ap, mean_ar, stat_dict)
 
-    for img_ref_path, img_hyp_path in zip(glob(args.reference+"*.png"), glob(args.hypothesis+"*.png")):
 
-        ref_arr = np.load(img_ref_path)
-        hyp_arr = np.load(img_hyp_path)
-        score = get_score(ref_arr, hyp_arr, iou_threshold)
-        precision += score['precision']
-        count += 1
+def get_mean_avg_score(threshold_list):
+    mean_ar = 0
+    mean_ap = 0
+    stat_dict = {}
+    for threshold in threshold_list:
+        mean_recall = 0
+        mean_precision = 0
+        img_count = 0
+        for img_ref_path, img_hyp_path in zip(glob(args.reference + "/*.mask.npy"),
+                                              glob(args.hypothesis + "/*.mask.npy")):
+            img_count += 1
+            ref_arr = np.load(img_ref_path)
+            hyp_arr = np.load(img_hyp_path)
+            image_id = os.path.basename(img_ref_path).split('.mask.npy')[0]
+            score = get_score(ref_arr, hyp_arr, threshold)
+            precision = score['precision']
+            recall = score['recall']
+            mean_precision += precision
+            mean_recall += recall
+            precision_recall = str(precision) +"  " + str(recall)
+            if image_id not in stat_dict.keys():
+                stat_dict[image_id] = dict()
+            stat_dict[image_id][threshold] = precision_recall
+        mean_precision /= img_count
+        mean_recall /= img_count
+        print("For threshold: {} Mean precision: {}".format(threshold, mean_precision))
+        print("For threshold: {} Mean recall: {}".format(threshold, mean_recall))
+        mean_ap += mean_precision
+        mean_ar += mean_recall
+    mean_ap /= len(threshold_list)
+    mean_ar /= len(threshold_list)
+    print("Mean average precision: {}".format(mean_ap))
+    print("Mean average recall: {}".format(mean_ar))
+    return mean_ap, mean_ar, stat_dict
 
-    precision /= count
 
-    print("Total Precision: {}".format(precision))
+def write_stats_to_file(mean_ap, mean_ar, stat_dict):
+    with open(args.result, 'w') as fh:
+        fh.write('Mean Average Precision: {}\n'.format(mean_ap))
+        fh.write('Mean Average Recall: {}\n'.format(mean_ar))
+        fh.write('ImageID\tThreshold\tRecall\n')
+        for image_id in stat_dict.keys():
+            for threshold in stat_dict[image_id].keys():
+                recall = stat_dict[image_id][threshold]
+                fh.write('{}\t{}\t{}\n'.format(image_id, threshold, recall))
 
 
 if __name__ == '__main__':
       main()
-
