@@ -137,7 +137,7 @@ class WaldoDataset(Dataset):
 
 
 class WaldoTestset(Dataset):
-    def __init__(self, dir, scale_size, job=0, num_jobs=1, cache=True):
+    def __init__(self, dir, scale_size=0, job=0, num_jobs=1, cache=True):
         self.dir = dir
         self.scale_size = scale_size
         self.original_sizes = []
@@ -159,11 +159,13 @@ class WaldoTestset(Dataset):
                 img_array = self.__load_data(id)
                 h, w, c = img_array.shape
                 self.original_sizes.append((h, w))
-                self.data.append(img_array)
-                #scaled_img = resize(
-                #    img_array, (self.scale_size, self.scale_size),
-                #    preserve_range=True, mode='reflect')
-                #self.data.append(scaled_img)
+                if self.scale_size == 0:
+                    self.data.append(img_array)
+                else:
+                    scaled_img = resize(
+                        img_array, (self.scale_size, self.scale_size),
+                        preserve_range=True, mode='reflect')
+                    self.data.append(scaled_img)
 
     def __load_data(self, id):
         path = os.path.join(self.dir, 'img')
@@ -186,8 +188,9 @@ class WaldoTestset(Dataset):
             img = self.__load_data(id)
             h, w, c = img.shape
             size = (h, w)
-            #img = resize(img, (self.scale_size, self.scale_size),
-            #             preserve_range=True)
+            if self.scale_size != 0:
+                img = resize(img, (self.scale_size, self.scale_size),
+                             preserve_range=True)
 
         # convert image value range from (0, 255) unit8 to (0, 1) float
         img = np.moveaxis(img, -1, 0)
