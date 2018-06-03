@@ -35,14 +35,13 @@ class DatasetICDAR2015:
 
     
 
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, cfg):
         """Constructor for the class.
         Validates the path to ICDAR 2015 data.
         """
         self.data_dir=""
         
-        self.core_config = CoreConfig()
-        self.core_config.num_colors = 3
+        self.core_config = cfg
 
         if not self._validate_path(data_dir):
             raise ValueError("The path is invalid. Either of the following"
@@ -71,6 +70,20 @@ class DatasetICDAR2015:
         }
 
         return data
+
+
+    def get_image_ids(self):
+        """Returns a list of file names of train data and test data in a dictionary format
+        """
+        train_ids = os.listdir(self.tr_img_dir)
+        test_ids = os.listdir(self.te_img_dir)
+
+        ids = {
+            'train':train_ids,
+            'test':test_ids
+        }
+
+        return ids
 
 
     def _check_images_and_labels(self, image_dir, label_dir):
@@ -122,8 +135,8 @@ class DatasetICDAR2015:
         data = []
 
         for img,lbl in zip(glob(img_dir+"/*.jpg"),glob(lbl_dir+"/*.txt")):
-            im = Image.open(img)
-            im_arr = np.array(im)
+            im = np.array(Image.open(img))
+            im = make_square_image_with_padding(im, self.core_config.num_colors)
             lbl_fh = open(lbl,encoding='utf-8')
 
             objects = self._get_objects(lbl_fh)
@@ -131,7 +144,7 @@ class DatasetICDAR2015:
             object_class = self._get_object_classes(sorted_objects)
             
             image_with_objects = {
-                'img':im_arr,
+                'img':im,
                 'objects':sorted_objects,
                 'object_class': object_class
             }
