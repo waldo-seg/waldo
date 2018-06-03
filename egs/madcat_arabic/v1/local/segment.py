@@ -94,10 +94,8 @@ def main():
     else:
         print("=> no checkpoint found at '{}'".format(model_path))
 
-    #testset = WaldoTestset(args.test_data, args.train_image_size)
     testset = WaldoTestset(args.test_data, args.train_image_size,
                            job=args.job, num_jobs=args.num_jobs)
-    #print("job number: {}".format(args.job))
     print('Total samples in the test set: {0}'.format(len(testset)))
 
     dataloader = torch.utils.data.DataLoader(
@@ -133,8 +131,6 @@ def segment(dataloader, segment_dir, model, core_config):
         original_height, original_width = size[0].item(), size[1].item()
         with torch.no_grad():
             output = model(img)
-            # class_pred = (output[:, :num_classes, :, :] + 0.001) * 0.999
-            # adj_pred = (output[:, num_classes:, :, :] + 0.001) * 0.999
             class_pred = output[:, :num_classes, :, :]
             adj_pred = output[:, num_classes:, :, :]
 
@@ -147,13 +143,9 @@ def segment(dataloader, segment_dir, model, core_config):
                               num_classes, offset_list,
                               segmenter_opts)
         mask_pred, object_class = seg.run_segmentation()
-        #mask_pred = resize(mask_pred, (original_height, original_width),
-        #                   order=0, preserve_range=True).astype(int)
 
         image_with_mask = {}
         img = np.moveaxis(img[0].detach().numpy(), 0, -1)
-        #img = resize(img, (original_height, original_width),
-        #             preserve_range=True)
         image_with_mask['img'] = img
         image_with_mask['mask'] = mask_pred
         image_with_mask['object_class'] = object_class
