@@ -20,7 +20,7 @@ train_prop=0.9
 seed=0
 if [ $stage -le 0 ]; then
   # data preparation
-  local/prepare_data.sh $train_prop $seed /home/desh/Research/icdar/icdar_2015/sample/
+  local/prepare_data.sh $train_prop $seed
 fi
 
 epochs=120
@@ -28,7 +28,7 @@ depth=5
 dir=exp/unet_${depth}_${epochs}_sgd
 if [ $stage -le 1 ]; then
   # training
-  local/run_unet.sh --dir $dir --epochs $epochs --depth $depth --train_prop $train_prop --seed $seed
+  local/run_unet.sh --dir $dir --epochs $epochs --depth $depth
 fi
 
 logdir=$dir/segment/log
@@ -40,16 +40,19 @@ if [ $stage -le 2 ]; then
        --model model_best.pth.tar \
        --test-data data/test \
        --dir $dir/segment \
-       --csv sub-icdar2015.csv \
        --job JOB --num-jobs $nj
 
 fi
 
+#Preparation for scoring
+mkdir -p $dir/segment/results
+zip -r $dir/segment/lbl.zip $dir/segment/lbl
+
 if [ $stage -le 3 ]; then
   echo "doing evaluation..."
-  local/scoring.py \
-    --ground-truth data/download/stage1_solution.csv \
-    --predict $dir/segment/sub-icdar2015.csv \
-    --result $dir/segment/result.txt
+  python local/eval/script.py \
+    -g=data/test/ground_truth.zip \
+    -s=$dir/segment/lbl.zip \
+    -o=$dir/segment/results
 fi
 

@@ -59,7 +59,7 @@ def DataProcess(input_path, cfg, train_prop=0.9):
 
 def save_data(data, data_ids, outdir, split):
     print ('Saving {} data...'.format(split))
-    saver = DataSaver(os.path.join(outdir, split), cfg)
+    saver = DataSaver(os.path.join(outdir, split), cfg, train=(split!='test'))
     for item,id in zip(data,data_ids):
         saver.write_image(id, item)
     saver.write_index()
