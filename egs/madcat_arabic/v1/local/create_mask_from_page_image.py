@@ -15,6 +15,7 @@ import xml.dom.minidom as minidom
 from waldo.data_manipulation import *
 from waldo.core_config import CoreConfig
 from waldo.mar_utils import compute_hull
+from scipy.spatial import ConvexHull
 from waldo.data_transformation import scale_down_image_with_objects, \
                                       make_square_image_with_padding
 
@@ -95,8 +96,10 @@ def _get_bounding_box(madcat_file_path):
                 word_coordinate = (int(word_node.getAttribute('x')), int(word_node.getAttribute('y')))
                 mbb_input.append(word_coordinate)
         points = get_minimum_bounding_box(mbb_input)
-        points_ordered = compute_hull(points)
-        points_ordered = points_ordered[:-1]
+        #points_ordered = compute_hull(points)
+        #points_ordered = points_ordered[:-1]
+        points = tuple(points)
+        points_ordered = [points[index] for index in ConvexHull(points).vertices]
         object['polygon'] = points_ordered
         objects.append(object)
     return objects

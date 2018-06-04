@@ -16,6 +16,7 @@
 from math import atan2, cos, sin, pi, sqrt
 from collections import namedtuple
 import numpy as np
+from scipy.spatial import ConvexHull
 
 """
 bounding_box is a named tuple which contains:
@@ -58,6 +59,7 @@ def compute_hull(points):
         -------
         [(float, float)]: convexhull points
         """
+    points = list(set(points))
     hull_points = []
     start = points[0]
     min_x = start[0]
@@ -213,6 +215,7 @@ def _get_mask_points(img_arr):
         points_location = np.where(img_arr == object_id)
         object_points = list(zip(points_location[0], points_location[1]))
         objects_point_dict[object_id] = object_points
+        print(len(object_points))
         if len(object_points) > max_num_points:
             max_num_points = len(object_points)
             max_point_object_id = object_id
@@ -230,6 +233,7 @@ def get_rectangles_from_mask(img_arr):
     mar_list = list()
     for object_id in objects_point_dict.keys():
         object_points = objects_point_dict[object_id]
+        print(len(object_points))
         hull_ordered = compute_hull(object_points)
         if len(hull_ordered) < 4:
             continue
@@ -262,7 +266,10 @@ def get_mar(polygon):
     -------
     list((int, int)): 4 corner points of rectangle.
     """
-    hull_ordered = compute_hull(list(polygon))
+    polygon = tuple(polygon)
+    hull_ordered = [polygon[index] for index in ConvexHull(polygon).vertices]
+    hull_ordered.append(hull_ordered[0])
+    #hull_ordered = compute_hull(list(polygon))
     hull_ordered = tuple(hull_ordered)
     min_rectangle = _bounding_area(0, hull_ordered)
     for i in range(1, len(hull_ordered) - 1):
