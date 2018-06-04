@@ -135,6 +135,7 @@ def get_mar_from_mask(image_path):
 
     return mar_list
 
+
 def convert_to_combined_image(x, c):
     """ This function processes an 'image-with-mask' x into a 'combined' image,
     containing both input and supervision information in a single numpy array.
