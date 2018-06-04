@@ -203,6 +203,57 @@ def _rectangle_corners(rectangle):
     return _rotate_points(rectangle['rectangle_center'], rectangle['unit_vector_angle'], corner_points)
 
 
+def _get_mask_points(img_arr):
+
+    img_unique_val = np.unique(img_arr)
+    max_point_object_id = -1
+    max_num_points = -1
+    objects_point_dict = dict()
+    for object_id in img_unique_val:
+        points_location = np.where(img_arr == object_id)
+        object_points = list(zip(points_location[0], points_location[1]))
+        objects_point_dict[object_id] = object_points
+        if len(object_points) > max_num_points:
+            max_num_points = len(object_points)
+            max_point_object_id = object_id
+
+    # assuming background have maximum number of points
+    if max_point_object_id != -1:
+        del objects_point_dict[max_point_object_id]
+
+    return objects_point_dict
+
+
+def get_rectangles_from_mask(img_arr):
+
+    objects_point_dict = _get_mask_points(img_arr)
+    mar_list = list()
+    for object_id in objects_point_dict.keys():
+        object_points = objects_point_dict[object_id]
+        hull_ordered = compute_hull(object_points)
+        if len(hull_ordered) < 4:
+            continue
+
+        hull_ordered = tuple(hull_ordered)
+        min_rectangle = _bounding_area(0, hull_ordered)
+        for i in range(1, len(hull_ordered) - 1):
+            rectangle = _bounding_area(i, hull_ordered)
+            if rectangle['area'] < min_rectangle['area']:
+                min_rectangle = rectangle
+
+        min_rectangle['unit_vector_angle'] = _atan2(min_rectangle['unit_vector'][1],
+                                                   min_rectangle['unit_vector'][0])
+
+        min_rectangle['rectangle_center'] = _to_xy_coordinates(min_rectangle['unit_vector_angle'],
+                                                              min_rectangle['rectangle_center'])
+        rect_corners = _rectangle_corners(min_rectangle)
+        points_ordered = compute_hull(rect_corners)
+        points_ordered = points_ordered[:-1]
+        mar_list.append(points_ordered)
+        print(points_ordered)
+    return mar_list
+
+
 def get_mar(polygon):
     """ Given a list of points, returns a minimum area rectangle that will
     contain all points. It will not necessarily be vertically or horizontally
@@ -224,4 +275,5 @@ def get_mar(polygon):
                                                            min_rectangle['rectangle_center'])
     points_list = _rectangle_corners(min_rectangle)
     return points_list
+
 

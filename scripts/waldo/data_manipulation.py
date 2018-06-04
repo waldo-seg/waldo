@@ -120,6 +120,21 @@ def get_minimum_bounding_box(polygon):
     return points_list
 
 
+def get_mar_from_mask(image_path):
+    """ Given a list of points, returns a minimum area rectangle that will
+    contain all points. It will not necessarily be vertically or horizontally
+     aligned.
+    Returns
+    -------
+    list((int, int)): 4 corner points of rectangle.
+    """
+    img_arr = np.load(image_path)
+    mar_list = get_rectangles_from_mask(img_arr)
+    #for mar_corners in mar_list:
+    #    validate_mar(mar_corners)
+
+    return mar_list
+
 def convert_to_combined_image(x, c):
     """ This function processes an 'image-with-mask' x into a 'combined' image,
     containing both input and supervision information in a single numpy array.
