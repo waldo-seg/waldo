@@ -111,7 +111,7 @@ def segment(dataloader, segment_dir, model, core_config):
     model.eval()  # convert the model into evaluation mode
     img_dir = os.path.join(segment_dir, 'img')
     rle_dir = os.path.join(segment_dir, 'rle')
-    mask_dir = os.path.join(segment_dir, 'mask_pred')
+    mask_dir = os.path.join(segment_dir, 'mask')
     if not os.path.exists(rle_dir):
         os.makedirs(rle_dir)
     if not os.path.exists(img_dir):

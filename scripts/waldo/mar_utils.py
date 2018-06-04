@@ -241,7 +241,7 @@ def get_rectangles_from_mask(img_arr):
             if rectangle['area'] < min_rectangle['area']:
                 min_rectangle = rectangle
 
-        min_rectangle['unit_vector_angle'] = _atan2(min_rectangle['unit_vector'][1],
+        min_rectangle['unit_vector_angle'] = atan2(min_rectangle['unit_vector'][1],
                                                    min_rectangle['unit_vector'][0])
 
         min_rectangle['rectangle_center'] = _to_xy_coordinates(min_rectangle['unit_vector_angle'],

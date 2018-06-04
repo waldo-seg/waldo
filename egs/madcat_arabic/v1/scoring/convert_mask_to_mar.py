@@ -5,7 +5,7 @@ import argparse
 import os
 import sys
 from glob import glob
-from waldo.scripts.waldo.data_manipulation import get_mar_from_mask
+from waldo.data_manipulation import get_mar_from_mask
 
 parser = argparse.ArgumentParser(description='converts np array to rle format')
 parser.add_argument('--indir', type=str, required=True,
@@ -23,7 +23,7 @@ def write_rects_to_file(out_dir, mar_dict):
             for mar in mask_mar_list:
                 point_str = str()
                 for point in mar:
-                    point_str = point_str + point
+                    point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
                 fh.write('{}\t{}\n'.format(mask_id, point_str))
     print('Saved to {}'.format(txt_path))
 
