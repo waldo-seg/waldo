@@ -96,8 +96,6 @@ def _get_bounding_box(madcat_file_path):
                 word_coordinate = (int(word_node.getAttribute('x')), int(word_node.getAttribute('y')))
                 mbb_input.append(word_coordinate)
         points = get_minimum_bounding_box(mbb_input)
-        #points_ordered = compute_hull(points)
-        #points_ordered = points_ordered[:-1]
         points = tuple(points)
         points_ordered = [points[index] for index in ConvexHull(points).vertices]
         object['polygon'] = points_ordered

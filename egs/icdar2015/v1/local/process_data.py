@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 
-# Copyright 2018 Johns Hopkins University (author: Desh Raj)
+# Copyright 2018 Johns Hopkins University (author: Yiwen Shao, Desh Raj)
 # Apache 2.0
 
-""" This script prepares the training, validation and test data for DSB2018 in a pytorch fashion
+""" This script prepares the training, validation and test data for ICDAR2015 in a pytorch fashion
 """
 
+import os
 import argparse
 import random
 import torch
 from dataset import DatasetICDAR2015
+from waldo.data_io import DataSaver
+from waldo.core_config import CoreConfig
+
 
 parser = argparse.ArgumentParser(
     description='ICDAR2015 Data Process with Pytorch')
@@ -22,41 +26,55 @@ parser.add_argument('--seed', default=0, type=int,
 parser.add_argument('--train_prop', default=0.9, type=float,
                     help='Propotion of training data after spliting'
                     'the traing input into training and validation data.')
+parser.add_argument('--cfg', default='data/core.config', type=str,
+                    help='core config file for preparing data')
 
 
-def DataProcess(input_path, train_prop=0.9):
-    icdar = DatasetICDAR2015(input_path)
-    data = icdar.load_data()
+def DataProcess(input_path, cfg, train_prop=0.9):
+    icdar = DatasetICDAR2015(input_path, cfg)
+    print ('Loading ICDAR data from disk...')
+    train_test = icdar.load_data()
+    train_test_ids = icdar.get_image_ids()
 
-    num_total = len(data['train'])
+    train_data = list(zip(train_test['train'],train_test_ids['train']))
+    random.shuffle(train_data)
+    train_test['train'][:], train_test_ids['train'][:] = zip(*train_data)
+
+    print ('Preparing training and validation splits in ratio {}...'.format(train_prop))
+    num_total = len(train_test['train'])
     num_train = int(num_total*train_prop)
-    train = data['train'][:num_train]
-    val = data['train'][num_train + 1:]
-    test = data['test']
+    data = {
+        'train': train_test['train'][:num_train],
+        'val': train_test['train'][num_train+1:],
+        'test': train_test['test']
+    }
+    data_ids = {
+        'train': train_test_ids['train'][:num_train],
+        'val': train_test_ids['train'][num_train+1:],
+        'test': train_test_ids['test']
+    }
 
-    return train, val, test
+    return data, data_ids
 
 
-def save_object(object, filename):
-    fh = open(filename,'wb')
-    torch.save(object, fh)
-    fh.close()
+def save_data(data, data_ids, outdir, split):
+    print ('Saving {} data...'.format(split))
+    saver = DataSaver(os.path.join(outdir, split), cfg)
+    for item,id in zip(data,data_ids):
+        saver.write_image(id, item)
+    saver.write_index()
     
 
 if __name__ == '__main__':
     global args
     args = parser.parse_args()
+    cfg = CoreConfig()
+    cfg.read(args.cfg)
 
-    train_output = "{0}/train_val/split{1}_seed{2}/train.pth.tar".format(
-        args.outdir, args.train_prop, args.seed)
-    val_output = "{0}/train_val/split{1}_seed{2}/val.pth.tar".format(
-        args.outdir, args.train_prop, args.seed)
-    test_output = "{0}/test/test.pth.tar".format(args.outdir)
+    data, data_ids = DataProcess(args.dl_dir, cfg, train_prop=args.train_prop)
 
-    random.seed(args.seed)
-    train, val, test = DataProcess(args.dl_dir, train_prop=args.train_prop)
+    for split in ['train','val','test']:
+        save_data(data[split], data_ids[split], args.outdir, split)
 
-    save_object(train, train_output)
-    save_object(val, val_output)
-    save_object(test, test_output)
-
+    print ('Finished processing data.')
+    

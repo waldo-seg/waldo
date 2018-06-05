@@ -209,27 +209,6 @@ def _get_mask_points(img_arr):
     img_unique_val = np.unique(img_arr)
     max_point_object_id = -1
     max_num_points = -1
-    objects_point_dict = dict()
-    for object_id in img_unique_val:
-        points_location = np.where(img_arr == object_id)
-        object_points = list(zip(points_location[0], points_location[1]))
-        objects_point_dict[object_id] = object_points
-        print(len(object_points))
-        if len(object_points) > max_num_points:
-            max_num_points = len(object_points)
-            max_point_object_id = object_id
-
-    # assuming background have maximum number of points
-    if max_point_object_id != -1:
-        del objects_point_dict[max_point_object_id]
-
-    return objects_point_dict
-
-
-def _get_mask_points(img_arr):
-    img_unique_val = np.unique(img_arr)
-    max_point_object_id = -1
-    max_num_points = -1
     masks_point_dict = dict()
     for mask_id in img_unique_val:
         points_location = np.where(img_arr == mask_id)
@@ -302,7 +281,6 @@ def get_mar(polygon):
     polygon = tuple(polygon)
     hull_ordered = [polygon[index] for index in ConvexHull(polygon).vertices]
     hull_ordered.append(hull_ordered[0])
-    #hull_ordered = compute_hull(list(polygon))
     hull_ordered = tuple(hull_ordered)
     min_rectangle = _bounding_area(0, hull_ordered)
     for i in range(1, len(hull_ordered) - 1):

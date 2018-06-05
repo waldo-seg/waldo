@@ -7,7 +7,7 @@
 
 [ -f ./path.sh ] && . ./path.sh; # source the path.
 
-dl_dir=${1:-/export/b18/draj/icdar_2015/}
+dl_dir=${3:-/export/b18/draj/icdar_2015/}
 
 
 if [ ! -d $dl_dir ] ; then
@@ -20,15 +20,20 @@ fi
 
 
 ### Process data and save it to pytorch path file
-. parse_options.sh
-
-outdir=data
-mkdir -p $outdir
-
 train_prop=0.9
 seed=0
+num_classes=2
+num_colors=3
+. parse_options.sh
 
-mkdir -p ${outdir}/train_val/split${train_prop}_seed${seed}
-mkdir -p ${outdir}/test
+mkdir -p data/train
+mkdir -p data/val
+mkdir -p data/test
 
-python3 local/process_data.py --dl_dir $dl_dir --outdir $outdir
+cat <<EOF > data/core.config
+num_classes $num_classes
+num_colors $num_colors
+EOF
+
+local/process_data.py --dl_dir $dl_dir --outdir data \
+		      --train_prop $train_prop --cfg data/core.config --seed $seed
