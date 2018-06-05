@@ -18,7 +18,7 @@ import warnings
 import resource
 import scipy.misc
 from collections import namedtuple
-from random import shuffle
+
 
 SegmenterOptions = namedtuple('SegmenterOptions',
                               ['same_different_bias',
@@ -205,7 +205,7 @@ class AdjacencyRecord:
 
     def update_merge_priority(self, segmenter):
         self.compute_class_delta_logprob()
-        den = min(len(self.obj1.pixels), len(self.obj2.pixels))
+        den = len(self.obj1.pixels) * len(self.obj2.pixels)
         self.merge_priority = (self.obj_merge_logprob * segmenter.opts.object_merge_factor +
                                self.class_delta_logprob) / den
 
@@ -340,14 +340,12 @@ class ObjectSegmenter:
 
     def output_mask(self):
         mask = np.zeros((self.img_height, self.img_width), dtype=int)
-        k = 0
-        obj_ids = list(range(1, len(self.objects) + 1))
-        shuffle(obj_ids)
+        k = 1
         object_class = []
         for obj in self.objects.values():
             object_class.append(obj.object_class)
             for p in obj.pixels:
-                mask[p] = obj_ids[k]
+                mask[p] = k
             k += 1
         return mask, object_class
 
@@ -563,3 +561,4 @@ class ObjectSegmenter:
             print("Deleting {} being merged to {} according "
                   "to {}".format(obj2, obj1, arec), file=sys.stderr)
         del self.objects[obj2.id]
+
