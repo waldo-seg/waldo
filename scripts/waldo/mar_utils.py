@@ -206,7 +206,6 @@ def _rectangle_corners(rectangle):
 
 
 def _get_mask_points(img_arr):
-
     img_unique_val = np.unique(img_arr)
     max_point_object_id = -1
     max_num_points = -1
@@ -227,15 +226,49 @@ def _get_mask_points(img_arr):
     return objects_point_dict
 
 
-def get_rectangles_from_mask(img_arr):
+def _get_mask_points(img_arr):
+    img_unique_val = np.unique(img_arr)
+    max_point_object_id = -1
+    max_num_points = -1
+    masks_point_dict = dict()
+    for mask_id in img_unique_val:
+        points_location = np.where(img_arr == mask_id)
+        min_height = min(points_location[0])
+        max_height = max(points_location[0])
+        min_width = min(points_location[1])
+        max_width = max(points_location[1])
+        # not a 2D data for convex hull function
+        if (max_height - min_height) <= 2 or (max_width - min_width) <= 2:
+            continue
 
-    objects_point_dict = _get_mask_points(img_arr)
+        mask_points = list(zip(points_location[0], points_location[1]))
+        mask_points = list(set(mask_points))  # unique points in the mask
+        if len(mask_points) <= 2:
+            continue
+
+        masks_point_dict[mask_id] = mask_points
+        if len(mask_points) > max_num_points:
+            max_num_points = len(mask_points)
+            max_point_object_id = mask_id
+
+    # assuming background have maximum number of points
+    if max_point_object_id != -1:
+        del masks_point_dict[max_point_object_id]
+
+    return masks_point_dict
+
+
+def get_rectangles_from_mask(img_arr):
+    masks_point_dict = _get_mask_points(img_arr)
     mar_list = list()
-    for object_id in objects_point_dict.keys():
-        object_points = objects_point_dict[object_id]
-        print(len(object_points))
-        hull_ordered = compute_hull(object_points)
-        if len(hull_ordered) < 4:
+    for object_id in masks_point_dict.keys():
+        mask_points = masks_point_dict[object_id]
+        mask_points = tuple(mask_points)
+        hull_ordered = [mask_points[index] for index in ConvexHull(mask_points).vertices]
+        hull_ordered.append(hull_ordered[0])  # making it cyclic, now first and last point are same
+
+        # not a rectangle
+        if len(hull_ordered) < 5:
             continue
 
         hull_ordered = tuple(hull_ordered)
@@ -251,10 +284,10 @@ def get_rectangles_from_mask(img_arr):
         min_rectangle['rectangle_center'] = _to_xy_coordinates(min_rectangle['unit_vector_angle'],
                                                               min_rectangle['rectangle_center'])
         rect_corners = _rectangle_corners(min_rectangle)
-        points_ordered = compute_hull(rect_corners)
-        points_ordered = points_ordered[:-1]
+
+        rect_corners = tuple(rect_corners)
+        points_ordered = [rect_corners[index] for index in ConvexHull(rect_corners).vertices]
         mar_list.append(points_ordered)
-        print(points_ordered)
     return mar_list
 
 

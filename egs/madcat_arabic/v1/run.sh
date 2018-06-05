@@ -21,7 +21,6 @@ local/check_dependencies.sh
 
 
 if [ $stage -le 0 ]; then
-  exit 0;
   echo "Preparing data. Date: $(date)."
   local/prepare_data.sh --download_dir1 $download_dir1 --download_dir2 $download_dir2 \
       --download_dir3 $download_dir3 --writing_condition1 $writing_condition1 \
@@ -35,7 +34,6 @@ lr=0.0005
 dir=exp/unet_${depth}_${epochs}_${lr}
 
 if [ $stage -le 1 ]; then
-  exit 0;
   echo "Training network Date: $(date)."
   local/run_unet.sh --dir $dir --epochs $epochs --depth $depth \
     --train_image_size 256 --lr $lr --batch_size 8
@@ -55,7 +53,6 @@ fi
 #fi
 
 if [ $stage -le 2 ]; then
-  exit 0;
   echo "doing segmentation.... Date: $(date)."
   local/segment.py \
     --train-image-size 256 \
@@ -69,18 +66,15 @@ if [ $stage -le 3 ]; then
   for dataset in data/test $dir/segment; do
     scoring/convert_mask_to_mar.py \
       --indir $dataset/mask \
-      --outdir $dataset
+      --outdir $dataset/mask
   done
-exit 0;
 fi
 
-exit 0;
 if [ $stage -le 4 ]; then
-  exit 0;
   echo "getting score... Date: $(date)."
   scoring/score.py \
     --reference data/test/mask \
-    --hypothesis $dir/segment/mask_pred \
+    --hypothesis $dir/segment/mask \
     --result $dir/segment/result.txt
 fi
 echo "Date: $(date)."
