@@ -105,7 +105,7 @@ def write_stats_to_file(mean_ap, mean_ar, stat_dict):
         for image_id in stat_dict.keys():
             for threshold in stat_dict[image_id].keys():
                 recall = stat_dict[image_id][threshold]
-                fh.write('{:0.3f}  {:0.3f}  {:0.3f}\n'.format(image_id, threshold, recall))
+                fh.write('{}  {}  {}\n'.format(image_id, threshold, recall))
     print('Saved to {}'.format(args.result))
 
 
