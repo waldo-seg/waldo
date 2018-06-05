@@ -19,10 +19,10 @@ import resource
 import scipy.misc
 from collections import namedtuple
 
-
 SegmenterOptions = namedtuple('SegmenterOptions',
                               ['same_different_bias',
-                               'object_merge_factor'])
+                               'object_merge_factor',
+                               'merge_logprob_bias'])
 
 
 class ObjPair:
@@ -122,23 +122,23 @@ class AdjacencyRecord:
     log-probs and class merge log-probs.
     Attributes:
         obj1, obj2:    The two objects to which it refers
-        object_merge_log_prob:    This is the change in log-probability from merging these two objects,
-                without considering the effect arising from changes of class assignments.
-                This is the sum of the following:
-                For each p,o such that o is in "offsets", p is in one of the two objects
-                and p+o is in the other, the value log(p(same) / p(different)), i.e.g
-                log(b_{p,o} / (1-b{p,o})).
-                Note: if the sum above had no terms in it, this
-                adjacency record should not exist because the objects would not be
-                "adjacent" in the sense which we refer to.
+        object_merge_logprob:    This is the change in log-probability from merging these two objects,
+              without considering the effect arising from changes of class assignments.
+              This is the sum of the following:
+              For each p,o such that o is in "offsets", p is in one of the two objects
+              and p+o is in the other, the value log(p(same) / p(different)), i.e.g
+              log(b_{p,o} / (1-b{p,o})).
+              Note: if the sum above had no terms in it, this
+              adjacency record should not exist because the objects would not be
+              "adjacent" in the sense which we refer to.
         merge_priority:    This merge priority is a heuristic which will determine what kinds of
-               objects will get merged first, and is a key choice that we'll have to
-               experiment with.  (Note: you can change the sign if it turns out to be
-               easier for python heap reasons).  The general idea will be:
-               merge_priority = merge_log_prob / den
-               where merge_log_prob is the log-prob change from doing this merge, and
-               for example, "den" might be the maximum of the num-pixels in
-               object1 and object2.  We can experiment with different heuristics for
+              objects will get merged first, and is a key choice that we'll have to
+              experiment with.  (Note: you can change the sign if it turns out to be
+              easier for python heap reasons).  The general idea will be:
+              merge_priority = merge_log_prob / den
+              where merge_log_prob is the log-prob change from doing this merge, and
+              for example, "den" might be the maximum of the num-pixels in
+              object1 and object2.  We can experiment with different heuristics for
               "den" though.
         class_delta_logprob:   It is a term representing a change in the total
               log-prob that we'll get from merging the two objects, that arises from
@@ -207,7 +207,7 @@ class AdjacencyRecord:
         self.compute_class_delta_logprob()
         den = len(self.obj1.pixels) * len(self.obj2.pixels)
         self.merge_priority = (self.obj_merge_logprob * segmenter.opts.object_merge_factor +
-                               self.class_delta_logprob) / den
+                               self.class_delta_logprob + segmenter.opts.merge_logprob_bias) / den
 
     def obj_pair(self):
         return ObjPair(self.obj1, self.obj2)
@@ -259,11 +259,12 @@ class ObjectSegmenter:
         self.adjacency_records = {}
         self.queue = []   # Python's heapq
         self.init_objects_and_adjacency_records()
-        self.show_stats()
+
 
     def default_options(self):
         return SegmenterOptions(same_different_bias=0.0,
-                                object_merge_factor=1.0)
+                                object_merge_factor=1.0,
+                                merge_logprob_bias=0.0)
 
     def init_objects_and_adjacency_records(self):
         print("Initializing the segmenter...")
@@ -315,6 +316,31 @@ class ObjectSegmenter:
         print("Top 10 biggest objs (adj_list size): {}".format(
             adjlistsize[:10]))
 
+    def compute_total_logprob_from_scratch(self):
+        """ This is for debugging only. """
+        tot_class_logprob = 0
+        tot_differentness_logprob = 0
+        tot_sameness_logprob = 0
+        for obj in self.objects.values():
+            for p in obj.pixels:
+                self.pixel2obj[p] = obj
+                tot_class_logprob += self.get_class_logprob(p, obj.object_class)
+        for row in range(self.img_height):
+            for col in range(self.img_width):
+                p1 = (row, col)
+                obj1 = self.pixel2obj[p1]
+                for i, o in enumerate(self.offsets):
+                    if (0 <= row + o[0] < self.img_height and
+                            0 <= col + o[1] < self.img_width):
+                        obj2 = self.pixel2obj[(row + o[0], col + o[1])]
+                        if obj1 is obj2 or obj1 == obj2:
+                            tot_sameness_logprob += np.log(self.get_sameness_prob(p1, i))
+                        else:
+                            tot_differentness_logprob += np.log(1.0 - self.get_sameness_prob(p1, i))
+        return tot_class_logprob + (tot_differentness_logprob +
+                                    tot_sameness_logprob) * self.opts.object_merge_factor
+
+
     def compute_total_logprob(self):
         tot_class_logprob = 0
         tot_differentness_logprob = 0
@@ -338,12 +364,40 @@ class ObjectSegmenter:
             k += 1
         scipy.misc.imsave('{}.png'.format(iter), img)
 
+    def prune(self, threshold=200.0):
+        # Find the biggest background object:
+        num_pixels = 0
+        for obj in self.objects.values():
+            if obj.object_class == 0 and len(obj.pixels) > num_pixels:
+                background_obj = obj
+                num_pixels = len(obj.pixels)
+
+        objects_to_be_merged = []
+        for obj in self.objects.values():
+            nonbackground_score = obj.class_logprob() - obj.class_logprobs[0]
+            if self.verbose >= 2:
+                print("obj: {}   -->   {:0.2f}".format(len(obj.pixels),
+                                                       nonbackground_score),
+                      file=sys.stderr)
+            if nonbackground_score < threshold and obj is not background_obj:
+                objects_to_be_merged.append(obj)
+
+        for obj in objects_to_be_merged:
+            if self.verbose >= 1:
+                print("Merging obj with {} pixels to "
+                      "background...".format(len(obj.pixels)), file=sys.stderr)
+            background_obj.pixels = background_obj.pixels.union(obj.pixels)
+            del self.objects[obj.id]
+        print("Pruned {} objects (merged into background). Final objects:"
+              " {}".format(len(objects_to_be_merged), len(self.objects)))
+
+
     def output_mask(self):
         mask = np.zeros((self.img_height, self.img_width), dtype=int)
-        k = 1
-        object_class = []
+        k = 0
+        object_class = [0] * len(self.objects)
         for obj in self.objects.values():
-            object_class.append(obj.object_class)
+            object_class[k] = obj.object_class
             for p in obj.pixels:
                 mask[p] = k
             k += 1
@@ -413,7 +467,7 @@ class ObjectSegmenter:
         """
         print("Starting segmentation...")
         n = 0
-        N = 1000000  # max iters -- for experimentation
+        N = 10000000  # max iters -- for experimentation
         target_objs = 0  # for experimentation
         self.verbose = 0
         self.do_debugging = False
@@ -421,14 +475,16 @@ class ObjectSegmenter:
             if len(self.objects) <= target_objs:
                 print("Target objects reached: {}".format(target_objs))
                 break
-            if len(self.queue) < 100:  # in case we want to see a few last steps of the algorithm
-                self.verbose = 1
             if n > 100:
                 self.verbose = 0
-            if n % 5000 == 0:
+            if len(self.queue) < 0:  # in case we want to see a few last steps of the algorithm
+                self.verbose = 1
+            if n % 500000 == 0:
                 print("At iteration {}:  max mem: {:0.2f} GB".format(
                     n, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024))
                 self.show_stats()
+                if self.do_debugging:
+                    print("Logprob from scratch: {}".format(self.compute_total_logprob_from_scratch()))
                 print("")
             if n > N:
                 print("Breaking after {} iters.".format(N))
@@ -440,7 +496,7 @@ class ObjectSegmenter:
                       file=sys.stderr)
             merge_priority = -merge_cost
             if merge_priority != arec.merge_priority:
-                if self.verbose >= 1:
+                if self.verbose >= 2:
                     print("Not merging {:0.2f} != {:0.2f}\n".format(
                         merge_priority, arec.merge_priority), file=sys.stderr)
                 continue
@@ -452,7 +508,7 @@ class ObjectSegmenter:
                 self.merge(arec)
                 if self.do_debugging and np.random.random() > 0.999:
                     self.debug()
-            elif arec.merge_priority >= 0.0:
+            elif arec.merge_priority >= 0:
                 if self.verbose >= 1:
                     print("Pushing with new mp: {:0.2f}\n".format(
                         arec.merge_priority), file=sys.stderr)
@@ -466,6 +522,8 @@ class ObjectSegmenter:
 
         self.show_stats()
         self.visualize('final')
+        if self.verbose >= 1:
+            print("Final logprob from scratch: {}".format(self.compute_total_logprob_from_scratch()))
         return self.output_mask()
 
     def merge(self, arec):
@@ -546,7 +604,7 @@ class ObjectSegmenter:
                 that_arec.differentness_logprob += this_arec.differentness_logprob
                 that_arec.sameness_logprob += this_arec.sameness_logprob
                 # make sure it is practically deleted from the queue
-                this_arec.merge_priority = -1.0
+                this_arec.merge_priority = -100000.0
                 self.adjacency_records[that_arec.obj_pair()] = that_arec
                 obj3.adjacency_list[that_arec.obj_pair()] = that_arec
                 that_arec.update_merge_priority(self)
@@ -557,7 +615,7 @@ class ObjectSegmenter:
                 this_arec.update_merge_priority(self)
                 if this_arec.merge_priority >= 0:
                     heappush(self.queue, (-this_arec.merge_priority, this_arec))
-        if self.verbose >= 1:
+        if self.verbose >= 2:
             print("Deleting {} being merged to {} according "
                   "to {}".format(obj2, obj1, arec), file=sys.stderr)
         del self.objects[obj2.id]
