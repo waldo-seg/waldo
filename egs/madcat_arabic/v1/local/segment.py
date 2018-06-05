@@ -225,4 +225,3 @@ def make_submission(segment_dir, csvname):
 
 if __name__ == '__main__':
     main()
-
