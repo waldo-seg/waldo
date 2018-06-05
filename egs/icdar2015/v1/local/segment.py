@@ -12,6 +12,7 @@ from waldo.segmenter import ObjectSegmenter, SegmenterOptions
 from skimage.transform import resize
 from waldo.core_config import CoreConfig
 from waldo.data_visualization import visualize_mask
+from waldo.data_manipulation import get_mar_from_mask
 from waldo.data_io import WaldoTestset
 from unet_config import UnetConfig
 
@@ -156,9 +157,9 @@ def segment(dataloader, segment_dir, model, core_config):
         segment_lbl_file = '{}/{}.txt'.format(lbl_dir, id)
         with open(segment_lbl_file, 'w') as fh:
             for obj in lbls:
-                obj_str = ','.join(str(n) for n in obj)
+                obj_str = ','.join((','.join(str(i) for i in point)) for point in obj)
                 fh.write(obj_str)
-                fh.write('\n')
+            fh.write('\n')
 
 
 def lbl_encoding(x):
@@ -167,12 +168,13 @@ def lbl_encoding(x):
     text. The function returns the corner points of this bounding box in a 
     clockwise sequence.
     """
-    #TODO
+    mask_mar_list = list(get_mar_from_mask(x))
+    return mask_mar_list
 
 
 def mask_to_lbls(x):
     for i in range(1, x.max() + 1):
-        yield rle_encoding((x == i).astype(int))
+        yield lbl_encoding((x == i).astype(int))
 
 
 
