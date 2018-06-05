@@ -63,7 +63,7 @@ def _evaluate_mask_image(mask_ref_arr, mask_hyp_arr, iou_threshold):
     return per_sample_metrics
 
 
-def _evaluate_text_file(ref_file, hyp_file, iou_threshold):
+def _evaluate_text_file(ref_rect_list, hyp_rect_list, iou_threshold):
     """Given reference file and hypothesis file, returns iou matrix
     and precision, recall score. It requires reference and hypothesis
     file to contain a rectangle in each line. A rectangle is described
@@ -77,8 +77,8 @@ def _evaluate_text_file(ref_file, hyp_file, iou_threshold):
     """
 
     # get all polygons present in the file
-    ref_polygons, ref_pol_points = _get_polygons(ref_file)
-    hyp_polygons, hyp_pol_points = _get_polygons(hyp_file)
+    ref_polygons, ref_pol_points = _get_polygons(ref_rect_list)
+    hyp_polygons, hyp_pol_points = _get_polygons(hyp_rect_list)
 
     # compute iou value
     iou_mat = np.zeros([len(ref_polygons), len(hyp_polygons)])
@@ -131,33 +131,19 @@ def get_stats(iou_mat, iou_threshold, num_hyp, num_ref):
     return per_sample_metrics
 
 
-def _get_polygons(file_handle):
+def _get_polygons(rect_list):
     """Given a file, it returns all the polygons
     present in the file.
     """
 
     polygons = []
     polygon_points = []
-    point_list = _get_pointlist(file_handle)
-    for n in range(len(point_list)):
-        points = point_list[n]
+    for n in range(len(rect_list)):
+        points = rect_list[n]
         polygon = _polygon_from_points(points)
         polygons.append(polygon)
         polygon_points.append(points)
     return polygons, polygon_points
-
-
-def _get_pointlist(file):
-    """Given a file returns list of rectangles present in the file.
-     It requires file to contain a rectangle in each line. A rectangle
-     is described by 8 values (x1,y1,x2,y2,x3,y3,x4,y4)
-    """
-    point_list = []
-    for line in file:
-        line = line.strip().split(',')
-        point_list.append((
-        line[0], line[1], line[2], line[3], line[4], line[5], line[6], line[7]))
-    return point_list
 
 
 def _get_union(hyp, ref):
@@ -207,6 +193,10 @@ def _polygon_from_points(points):
     return Polygon(point_mat)
 
 
-def get_score(ref_arr, hyp_arr, iou_threshold):
+def get_score(ref, hyp, iou_threshold, if_eval_text_file=True):
 
-    return _evaluate_mask_image(ref_arr, hyp_arr, iou_threshold)
+    if if_eval_text_file:
+        return _evaluate_text_file(ref, hyp, iou_threshold)
+    else:
+        return _evaluate_mask_image(ref, hyp, iou_threshold)
+

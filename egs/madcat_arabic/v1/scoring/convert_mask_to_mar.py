@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 
 def write_rects_to_file(out_dir, mar_dict):
-    txt_path = os.path.join(out_dir, 'text_file.txt')
+    txt_path = os.path.join(out_dir, 'mar.txt')
     with open(txt_path, 'w') as fh:
         for mask_id in mar_dict.keys():
             mask_mar_list = mar_dict[mask_id]
@@ -24,7 +24,7 @@ def write_rects_to_file(out_dir, mar_dict):
                 point_str = str()
                 for point in mar:
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
-                fh.write('{}\t{}\n'.format(mask_id, point_str))
+                fh.write('{} {}\n'.format(mask_id, point_str))
     print('Saved to {}'.format(txt_path))
 
 

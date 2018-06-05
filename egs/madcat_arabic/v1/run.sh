@@ -66,15 +66,15 @@ if [ $stage -le 3 ]; then
   for dataset in data/test $dir/segment; do
     scoring/convert_mask_to_mar.py \
       --indir $dataset/mask \
-      --outdir $dataset/mask
+      --outdir $dataset
   done
 fi
 
 if [ $stage -le 4 ]; then
   echo "getting score... Date: $(date)."
   scoring/score.py \
-    --reference data/test/mask \
-    --hypothesis $dir/segment/mask \
+    --reference data/test/mar.txt \
+    --hypothesis $dir/segment/mar.txt \
     --result $dir/segment/result.txt
 fi
 echo "Date: $(date)."
