@@ -46,6 +46,8 @@ if [ $stage -le 2 ]; then
   $cmd JOB=1:$nj $logdir/segment.JOB.log local/segment.py \
        --train-image-size 256 \
        --model model_best.pth.tar \
+       --object-merge-factor 1.0 \
+       --prune-threshold 500.0 \
        --test-data data/test \
        --dir $dir/segment \
        --job JOB --num-jobs $nj
