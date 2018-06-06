@@ -88,7 +88,7 @@ def _evaluate_text_file(ref_rect_list, hyp_rect_list, iou_threshold):
     """Given reference rectangle list and hypothesis rectangle list, it
     returns precision and recall score. It requires reference and hypothesis
     rectangle list to contain rectangle in each line. A rectangle is described
-    by 8 values (x1,y1,x2,y2,x3,y3,x4,y4)
+    by 8 values (h1,w1,h2,w2,h3,w3,h4,w4)
     input
     -----
     ref_rect_list [[int]]: contains a list of list, contains a list of rectangle
@@ -211,7 +211,7 @@ def _get_rect_in_shapely_format(rect_list):
     -----
     rect_list [[int]]: contains a list of list, contains a list of rectangle
     and a rectangle is a list containing 8 integer values. These values are
-    (x1,y1,x2,y2,x3,y3,x4,y4)
+    (h1,w1,h2,w2,h3,w3,h4,w4)
     return
     ------
     rect_list: list of rectangle in shapely format

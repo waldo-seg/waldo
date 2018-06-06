@@ -167,18 +167,20 @@ def write_stats_to_file(mean_ap, mean_ar, stat_dict):
 
 
 def read_rect_coordinates(file_name):
-    """ Given the file name, it reads image_id and rectangle
+    """ Given the file name, it reads mask_id and rectangle
         coordinates from the file. It finally returns a image_rect_dict.
-        A file should contain mask_id and mar coordinates. A mar is 
-        described by 8 values (x1,y1,x2,y2,x3,y3,x4,y4)
+        A file should contain mask_id and the co-ordinates of the 
+        minimum area rectangle that covers the mask with that mask id, 
+        in the form of a counter-clockwise list of points. A mar is 
+        described by 8 values (h1,w1,h2,w2,h3,w3,h4,w4), in the format:
+          <mask-id> h1,w1,h2,w2,h3,w3,h4,w4
         for example:
-          mask_id x1,y1,x2,y2,x3,y3,x4,y4
           HYT_ARB_20070103.0066_4_LDC0061 25,179,15,178,16,70,26,71
         return
         ------
         image_rect_dict : dict([[int]]): dict of a list of list, for
           each image_id it contains a list of rectangle and a rectangle
-          is a list containing 8 integer values (x1,y1,x2,y2,x3,y3,x4,y4)
+          is a list containing 8 integer values (h1,w1,h2,w2,h3,w3,h4,w4)
     """
     image_rect_dict = {}
     with open(file_name) as f:
