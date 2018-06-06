@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# Copyright 2018 Johns Hopkins University (author: Ashish Arora)
+# Apache 2.0
+
+# It contains utility functions for scoring. These functions are called from score.py
+
 from shapely.geometry.polygon import Polygon
 import numpy as np
 from PIL import Image
@@ -134,6 +139,10 @@ def get_stats(iou_score, iou_threshold):
      a good match or not.
     return
     -----
+    a dict that contains:
+    precision: (hypothesis matched)/(total hypothesis)
+    recall: (hypothesis matched)/(total reference)
+    pairs: list of matching hypothesis and reference pairs
     """
     hyp_matched = 0
     pairs = []

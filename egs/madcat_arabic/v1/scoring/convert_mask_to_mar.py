@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# Copyright 2018 Johns Hopkins University (author: Ashish Arora)
+# Apache 2.0
+
 import numpy as np
 import argparse
 import os
@@ -16,6 +19,13 @@ args = parser.parse_args()
 
 
 def write_rects_to_file(out_dir, mar_dict):
+    """ Given an output directory and mar_dictionary, it writes mask_id and
+    mar coordinates to mar.txt file
+    input
+    -----
+    out_dir (str): path of output directory
+    mar_dict (dict): mar dictionary containing mask_id and list of list of coordinates
+    """
     txt_path = os.path.join(out_dir, 'mar.txt')
     with open(txt_path, 'w') as fh:
         for mask_id in mar_dict.keys():

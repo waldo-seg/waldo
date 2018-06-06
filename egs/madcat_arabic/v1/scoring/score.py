@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+# Copyright 2018 Johns Hopkins University (author: Ashish Arora)
+# Apache 2.0
+
+# This script performs scoring based mask image or rectangle coordinates.
+# It calculates mean average recall and mean average precision for a given
+# threshold list. It calls utility functions from scoring_utils.py
+
 import argparse
 import os
 from scoring_utils import get_score
@@ -28,6 +35,28 @@ def main():
 
 def get_mean_avg_score_from_rect_coordinates(threshold_list, ref_image_rect_dict,
                                              hyp_image_rect_dict):
+    """
+        Given the threshold list, it returns mean average precision,
+        mean average recall and statistic dictionary
+        input
+        -----
+        threshold_list [float]: list of threshold values. MAP and MAR
+        are calculated for this threshold list.
+        ref_image_rect_dict: dict([[int]]): dict of a list of list, for
+          each image_id it contains a list of rectangle and a rectangle
+          is a list containing 8 integer values.
+        hyp_image_rect_dict : dict([[int]]): dict of a list of list, for
+          each image_id it contains a list of rectangle and a rectangle
+          is a list containing 8 integer values.
+        return
+        -----
+        mean_ap (float): mean average precision over a threshold list.
+         should be between 0 and 1
+        mean_ar (float): mean average recall over a threshold list.
+         should be between 0 and 1
+        stat_dict dict(dict): contains precision and recall value for each
+         image for each threshold
+    """
     mean_ar = 0
     mean_ap = 0
     stat_dict = {}
@@ -62,6 +91,22 @@ def get_mean_avg_score_from_rect_coordinates(threshold_list, ref_image_rect_dict
 
 
 def get_mean_avg_score_from_mask_image(threshold_list):
+    """
+        Given the threshold list, it returns mean average precision,
+        mean average recall and statistic dictionary
+        input
+        -----
+        threshold_list [float]: list of threshold values. MAP and MAR
+        are calculated for this threshold list.
+        return
+        -----
+        mean_ap (float): mean average precision over a threshold list.
+         should be between 0 and 1
+        mean_ar (float): mean average recall over a threshold list.
+         should be between 0 and 1
+        stat_dict dict(dict): contains precision and recall value for each
+         image for each threshold
+    """
     mean_ar = 0
     mean_ap = 0
     stat_dict = {}
@@ -98,6 +143,18 @@ def get_mean_avg_score_from_mask_image(threshold_list):
 
 
 def write_stats_to_file(mean_ap, mean_ar, stat_dict):
+    """ Given mean average precision, mean average recall
+        and statistic dictionary, it writes image_id, threshold,
+        precision and recall value in args.result text file.
+       input
+       -----
+       mean_ap (float): mean average precision over a threshold list.
+       should be between 0 and 1
+       mean_ar (float): mean average recall over a threshold list.
+       should be between 0 and 1
+       stat_dict dict(dict): contains precision and recall value for each
+       image for each threshold
+    """
     with open(args.result, 'w') as fh:
         fh.write('Mean Average Precision: {}\n'.format(mean_ap))
         fh.write('Mean Average Recall: {}\n'.format(mean_ar))
@@ -110,13 +167,20 @@ def write_stats_to_file(mean_ap, mean_ar, stat_dict):
 
 
 def read_rect_coordinates(file_name):
+    """ Given the file name, it reads image_id and rectangle
+        coordinates from the file. It finally returns a image_rect_dict
+        return
+        ------
+        image_rect_dict : dict([[int]]): dict of a list of list, for
+          each image_id it contains a list of rectangle and a rectangle
+          is a list containing 8 integer values.
+    """
     image_rect_dict = {}
     with open(file_name) as f:
         for line in f:
             line_vect = line.strip().split(' ')
             image_id = line_vect[0]
             rect_coordinates = line_vect[1].split(',')[:-1]
-            #print("{} {}".format(image_id,rect_coordinates))
             if image_id not in image_rect_dict.keys():
                 image_rect_dict[image_id] = list()
             image_rect_dict[image_id].append(rect_coordinates)
@@ -124,4 +188,4 @@ def read_rect_coordinates(file_name):
 
 
 if __name__ == '__main__':
-      main()
+    main()
