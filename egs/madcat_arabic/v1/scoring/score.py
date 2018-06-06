@@ -21,15 +21,20 @@ parser.add_argument('--hypothesis', type=str, required=True,
                     help='hypothesis directory of test data, contains np array')
 parser.add_argument('--result', type=str, required=True,
                     help='the file to store final statistical results')
+parser.add_argument("--if_eval_mask_image",
+                   help="calculate score based on comparing mask image")
 args = parser.parse_args()
-
 
 def main():
     threshold_list = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
-    ref_image_rect_dict = read_rect_coordinates(args.reference)
-    hyp_image_rect_dict = read_rect_coordinates(args.hypothesis)
-    mean_ap, mean_ar, stat_dict = get_mean_avg_score_from_rect_coordinates(
-                   threshold_list, ref_image_rect_dict, hyp_image_rect_dict)
+    if args.if_eval_mask_image:
+        mean_ap, mean_ar, stat_dict = get_mean_avg_score_from_mask_image(threshold_list)
+    else:
+        ref_image_rect_dict = read_rect_coordinates(args.reference)
+        hyp_image_rect_dict = read_rect_coordinates(args.hypothesis)
+        mean_ap, mean_ar, stat_dict = get_mean_avg_score_from_rect_coordinates(
+                       threshold_list, ref_image_rect_dict, hyp_image_rect_dict)
+
     write_stats_to_file(mean_ap, mean_ar, stat_dict)
 
 
@@ -120,7 +125,7 @@ def get_mean_avg_score_from_mask_image(threshold_list):
             ref_arr = np.load(img_ref_path)
             hyp_arr = np.load(img_hyp_path)
             image_id = os.path.basename(img_ref_path).split('.mask.npy')[0]
-            score = get_score(ref_arr, hyp_arr, threshold)
+            score = get_score(ref_arr, hyp_arr, threshold, False)
             precision = score['precision']
             recall = score['recall']
             mean_precision += precision
