@@ -134,8 +134,9 @@ def main():
     config.num_colors = 3
     data_saver = DataSaver(args.out_dir, config)
     for file_name in file_list:
-        y = get_mask_from_page_image(file_name[0], file_name[1], args.max_image_size)
+        y, size = get_mask_from_page_image(file_name[0], file_name[1], args.max_image_size)
         data_saver.write_image(file_name[2], y)
+        data_saver.write_original(file_name[2], size)
     data_saver.write_index()
 
 

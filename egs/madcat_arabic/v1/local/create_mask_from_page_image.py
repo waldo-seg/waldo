@@ -71,7 +71,7 @@ def get_mask_from_page_image(madcat_file_path, image_file_name, max_size):
 
     y = convert_to_mask(padded_image_with_objects, config)
 
-    return y
+    return y, np.array([im_height, im_width])
 
 
 def _get_bounding_box(madcat_file_path):
