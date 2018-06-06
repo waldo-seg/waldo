@@ -32,12 +32,18 @@ parser.add_argument('--train-image-size', default=128, type=int,
                     'These are derived from the input images'
                     ' by padding and then random cropping.')
 parser.add_argument('--object-merge-factor', type=float, default=None,
-                    help='Scale for object merge scores in the segmentaion '
+                    help='Scale for object merge scores in the segmentation '
                     'algorithm. If not set, it will be set to '
                     '1.0 / num_offsets by default.')
 parser.add_argument('--same-different-bias', type=float, default=0.0,
                     help='Bias for same/different probs in the segmentation '
                     'algorithm.')
+parser.add_argument('--merge-logprob-bias', type=float, default=0.0,
+                    help='A bias that is added to merge logprobs in the '
+                    'segmentation algorithm.')
+parser.add_argument('--prune-threshold', type=float, default=0.0,
+                    help='Threshold used in the pruning step of the '
+                    'segmentation algorithm. Higher values --> more pruning.')
 parser.add_argument('--csv', type=str, default='sub-dsbowl2018.csv',
                     help='Csv filename as the final submission file')
 parser.add_argument('--job', type=int, default=0, help='job id')
@@ -94,7 +100,7 @@ def main():
     else:
         print("=> no checkpoint found at '{}'".format(model_path))
 
-    testset = WaldoTestset(args.test_data, args.train_image_size,
+    testset = WaldoTestset(args.test_data,
                            job=args.job, num_jobs=args.num_jobs)
     print('Total samples in the test set: {0}'.format(len(testset)))
 
@@ -112,7 +118,7 @@ def segment(dataloader, segment_dir, model, core_config):
     model.eval()  # convert the model into evaluation mode
     img_dir = os.path.join(segment_dir, 'img')
     rle_dir = os.path.join(segment_dir, 'rle')
-    mask_dir = os.path.join(segment_dir, 'mask_pred')
+    mask_dir = os.path.join(segment_dir, 'mask')
     if not os.path.exists(rle_dir):
         os.makedirs(rle_dir)
     if not os.path.exists(img_dir):
@@ -123,42 +129,39 @@ def segment(dataloader, segment_dir, model, core_config):
 
     num_classes = core_config.num_classes
     offset_list = core_config.offsets
+    if args.object_merge_factor is None:
+        args.object_merge_factor = 1.0 / len(offset_list)
+    segmenter_opts = SegmenterOptions(same_different_bias=args.same_different_bias,
+                                      object_merge_factor=args.object_merge_factor,
+                                      merge_logprob_bias=args.merge_logprob_bias)
 
     for i, (img, size, id) in enumerate(dataloader):
         id = id[0]  # tuple to str
         if id + '.png' in exist_ids:
             continue
         original_height, original_width = size[0].item(), size[1].item()
+        print("Processing image '{}'...".format(id))
         with torch.no_grad():
             output = model(img)
-            # class_pred = (output[:, :num_classes, :, :] + 0.001) * 0.999
-            # adj_pred = (output[:, num_classes:, :, :] + 0.001) * 0.999
             class_pred = output[:, :num_classes, :, :]
             adj_pred = output[:, num_classes:, :, :]
 
-        if args.object_merge_factor is None:
-            args.object_merge_factor = 1.0 / len(offset_list)
-            segmenter_opts = SegmenterOptions(same_different_bias=args.same_different_bias,
-                                              object_merge_factor=args.object_merge_factor)
         seg = ObjectSegmenter(class_pred[0].detach().numpy(),
                               adj_pred[0].detach().numpy(),
                               num_classes, offset_list,
                               segmenter_opts)
-        mask_pred, object_class = seg.run_segmentation()
-        #mask_pred = resize(mask_pred, (original_height, original_width),
-        #                   order=0, preserve_range=True).astype(int)
-
-        image_with_mask = {}
+        seg.run_segmentation()
+        seg.prune(args.prune_threshold)
+        mask_pred, object_class = seg.output_mask()
         img = np.moveaxis(img[0].detach().numpy(), 0, -1)
-        #img = resize(img, (original_height, original_width),
-        #             preserve_range=True)
-        image_with_mask['img'] = img
-        image_with_mask['mask'] = mask_pred
-        image_with_mask['object_class'] = object_class
-        visual_mask = visualize_mask(image_with_mask, core_config)[
-            'img_with_mask']
-        scipy.misc.imsave('{}/{}.png'.format(img_dir, id), visual_mask)
-        #scipy.misc.imsave('{}/{}.png'.format(mask_dir, id), mask_pred)
+        segmented_img = {}
+        segmented_img['img'] = img
+        segmented_img['mask'] = mask_pred
+        segmented_img['object_class'] = object_class
+        visualize_mask(segmented_img, core_config)
+        scipy.misc.imsave('{}/{}.png'.format(img_dir, id),
+                          segmented_img['img_with_mask'])
+
         filename = mask_dir + '/' + id + '.' + 'mask' + '.npy'
         np.save(filename, mask_pred)
         rles = list(mask_to_rles(mask_pred))
@@ -168,6 +171,7 @@ def segment(dataloader, segment_dir, model, core_config):
                 obj_str = ' '.join(str(n) for n in obj)
                 fh.write(obj_str)
                 fh.write('\n')
+        print("\n\n")
 
 
 def rle_encoding(x):
@@ -215,4 +219,3 @@ def make_submission(segment_dir, csvname):
 
 if __name__ == '__main__':
     main()
-
