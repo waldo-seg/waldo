@@ -222,19 +222,6 @@ class AdjacencyRecord:
         return "<AREC-{}:  [{}, {}]  oml:{:0.2f}  cdl:{:0.2f}  mp:{:0.2f}>".format(
             id(self), self.obj1, self.obj2, self.obj_merge_logprob, self.class_delta_logprob, self.merge_priority)
 
-class _CaptureEq:
-    'Object wrapper that remembers "other" for successful equality tests.'
-    def __init__(self, obj):
-        self.obj = obj
-        self.match = obj
-    def __eq__(self, other):
-        result = (self.obj == other)
-        if result:
-            self.match = other
-        return result
-    def __getattr__(self, name):  # support hash() or anything else needed by __contains__
-        return getattr(self.obj, name)
-
 class ObjectSegmenter:
     def __init__(self, nnet_class_probs, nnet_sameness_probs, num_classes,
                  offsets, opts=None):
