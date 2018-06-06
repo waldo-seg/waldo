@@ -39,27 +39,45 @@ if [ $stage -le 1 ]; then
     --train_image_size 256 --lr $lr --batch_size 8
 fi
 
-logdir=$dir/segment/log
-nj=10
+#logdir=$dir/segment/log
+#nj=32
+#if [ $stage -le 2 ]; then
+#  echo "doing segmentation.... Date: $(date)."
+#  $cmd JOB=1:$nj $logdir/segment.JOB.log local/segment.py \
+#       --train-image-size 256 \
+#       --model model_best.pth.tar \
+#       --object-merge-factor 1.0 \
+#       --prune-threshold 500.0 \
+#       --test-data data/test \
+#       --dir $dir/segment \
+#       --job JOB --num-jobs $nj
+#fi
+
 if [ $stage -le 2 ]; then
   echo "doing segmentation.... Date: $(date)."
-  $cmd JOB=1:$nj $logdir/segment.JOB.log local/segment.py \
-       --train-image-size 256 \
-       --model model_best.pth.tar \
-       --object-merge-factor 1.0 \
-       --prune-threshold 500.0 \
-       --test-data data/test \
-       --dir $dir/segment \
-       --job JOB --num-jobs $nj
-
+  local/segment.py \
+    --train-image-size 256 \
+    --model model_best.pth.tar \
+    --object-merge-factor 1.0 \
+    --prune-threshold 500.0 \
+    --test-data data/test \
+    --dir $dir/segment
 fi
 
 if [ $stage -le 3 ]; then
-  echo "getting score... Date: $(date)."
-  scoring/score.py \
-    --reference data/test/mask \
-    --hypothesis $dir/segment/mask_pred \
-    --result $dir/segment/result.txt
+  echo "converting mask to mar format... Date: $(date)."
+  for dataset in data/test $dir/segment; do
+    scoring/convert_mask_to_mar.py \
+      --indir $dataset/mask \
+      --outdir $dataset
+  done
 fi
 
+if [ $stage -le 4 ]; then
+  echo "getting score... Date: $(date)."
+  scoring/score.py \
+    --reference data/test/mar.txt \
+    --hypothesis $dir/segment/mar.txt \
+    --result $dir/segment/result.txt
+fi
 echo "Date: $(date)."

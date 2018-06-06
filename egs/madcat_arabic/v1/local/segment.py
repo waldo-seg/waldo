@@ -100,7 +100,7 @@ def main():
     else:
         print("=> no checkpoint found at '{}'".format(model_path))
 
-    testset = WaldoTestset(args.test_data, args.train_image_size,
+    testset = WaldoTestset(args.test_data,
                            job=args.job, num_jobs=args.num_jobs)
     print('Total samples in the test set: {0}'.format(len(testset)))
 
@@ -118,7 +118,7 @@ def segment(dataloader, segment_dir, model, core_config):
     model.eval()  # convert the model into evaluation mode
     img_dir = os.path.join(segment_dir, 'img')
     rle_dir = os.path.join(segment_dir, 'rle')
-    mask_dir = os.path.join(segment_dir, 'mask_pred')
+    mask_dir = os.path.join(segment_dir, 'mask')
     if not os.path.exists(rle_dir):
         os.makedirs(rle_dir)
     if not os.path.exists(img_dir):
@@ -153,13 +153,7 @@ def segment(dataloader, segment_dir, model, core_config):
         seg.run_segmentation()
         seg.prune(args.prune_threshold)
         mask_pred, object_class = seg.output_mask()
-        #mask_pred = resize(mask_pred, (original_height, original_width),
-        #                   order=0, preserve_range=True).astype(int)
-
-
         img = np.moveaxis(img[0].detach().numpy(), 0, -1)
-        #img = resize(img, (original_height, original_width),
-        #             preserve_range=True)
         segmented_img = {}
         segmented_img['img'] = img
         segmented_img['mask'] = mask_pred

@@ -16,6 +16,7 @@
 from math import atan2, cos, sin, pi, sqrt
 from collections import namedtuple
 import numpy as np
+from scipy.spatial import ConvexHull
 
 """
 bounding_box is a named tuple which contains:
@@ -58,6 +59,7 @@ def compute_hull(points):
         -------
         [(float, float)]: convexhull points
         """
+    points = list(set(points))
     hull_points = []
     start = points[0]
     min_x = start[0]
@@ -203,6 +205,71 @@ def _rectangle_corners(rectangle):
     return _rotate_points(rectangle['rectangle_center'], rectangle['unit_vector_angle'], corner_points)
 
 
+def _get_mask_points(img_arr):
+    img_unique_val = np.unique(img_arr)
+    max_point_object_id = -1
+    max_num_points = -1
+    masks_point_dict = dict()
+    for mask_id in img_unique_val:
+        points_location = np.where(img_arr == mask_id)
+        min_height = min(points_location[0])
+        max_height = max(points_location[0])
+        min_width = min(points_location[1])
+        max_width = max(points_location[1])
+        # not a 2D data for convex hull function
+        if (max_height - min_height) <= 2 or (max_width - min_width) <= 2:
+            continue
+
+        mask_points = list(zip(points_location[0], points_location[1]))
+        mask_points = list(set(mask_points))  # unique points in the mask
+        if len(mask_points) <= 2:
+            continue
+
+        masks_point_dict[mask_id] = mask_points
+        if len(mask_points) > max_num_points:
+            max_num_points = len(mask_points)
+            max_point_object_id = mask_id
+
+    # assuming background have maximum number of points
+    if max_point_object_id != -1:
+        del masks_point_dict[max_point_object_id]
+
+    return masks_point_dict
+
+
+def get_rectangles_from_mask(img_arr):
+    masks_point_dict = _get_mask_points(img_arr)
+    mar_list = list()
+    for object_id in masks_point_dict.keys():
+        mask_points = masks_point_dict[object_id]
+        mask_points = tuple(mask_points)
+        hull_ordered = [mask_points[index] for index in ConvexHull(mask_points).vertices]
+        hull_ordered.append(hull_ordered[0])  # making it cyclic, now first and last point are same
+
+        # not a rectangle
+        if len(hull_ordered) < 5:
+            continue
+
+        hull_ordered = tuple(hull_ordered)
+        min_rectangle = _bounding_area(0, hull_ordered)
+        for i in range(1, len(hull_ordered) - 1):
+            rectangle = _bounding_area(i, hull_ordered)
+            if rectangle['area'] < min_rectangle['area']:
+                min_rectangle = rectangle
+
+        min_rectangle['unit_vector_angle'] = atan2(min_rectangle['unit_vector'][1],
+                                                   min_rectangle['unit_vector'][0])
+
+        min_rectangle['rectangle_center'] = _to_xy_coordinates(min_rectangle['unit_vector_angle'],
+                                                              min_rectangle['rectangle_center'])
+        rect_corners = _rectangle_corners(min_rectangle)
+
+        rect_corners = tuple(rect_corners)
+        points_ordered = [rect_corners[index] for index in ConvexHull(rect_corners).vertices]
+        mar_list.append(points_ordered)
+    return mar_list
+
+
 def get_mar(polygon):
     """ Given a list of points, returns a minimum area rectangle that will
     contain all points. It will not necessarily be vertically or horizontally
@@ -211,7 +278,9 @@ def get_mar(polygon):
     -------
     list((int, int)): 4 corner points of rectangle.
     """
-    hull_ordered = compute_hull(list(polygon))
+    polygon = tuple(polygon)
+    hull_ordered = [polygon[index] for index in ConvexHull(polygon).vertices]
+    hull_ordered.append(hull_ordered[0])
     hull_ordered = tuple(hull_ordered)
     min_rectangle = _bounding_area(0, hull_ordered)
     for i in range(1, len(hull_ordered) - 1):
@@ -224,4 +293,5 @@ def get_mar(polygon):
                                                            min_rectangle['rectangle_center'])
     points_list = _rectangle_corners(min_rectangle)
     return points_list
+
 
