@@ -13,7 +13,7 @@ stage=0
                               # if supplied.
 
 
-# local/check_dependencies.sh
+local/check_dependencies.sh
 
 # train/validate split
 train_prop=0.9

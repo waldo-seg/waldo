@@ -17,7 +17,7 @@ from waldo.core_config import CoreConfig
 
 parser = argparse.ArgumentParser(
     description='ICDAR2015 Data Process with Pytorch')
-parser.add_argument('--dl_dir', default='/export/b18/draj/icdar_2015/', type=str,
+parser.add_argument('--dl_dir', default='/export/b18/draj/icdar_2015', type=str,
                     help='Path to downloaded dataset')
 parser.add_argument('--outdir', default='data', type=str,
                     help='Output directory of processed data')
