@@ -134,7 +134,7 @@ def get_stats(iou_score, iou_threshold):
     input
     -----
     iou_score [num_ref, num_hyp]: iou score between ref and hyp pair,
-    all values should be between 0 and 1
+    all values will satsify 0 <= iou_score [imdex_ref, index_hyp] <= 1
     iou_threshold (float): should be between 0 and 1, it decides if a match is
      a good match or not.
     return
