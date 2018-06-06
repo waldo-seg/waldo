@@ -50,10 +50,10 @@ def get_mean_avg_score_from_rect_coordinates(threshold_list, ref_image_rect_dict
           is a list containing 8 integer values.
         return
         -----
-        mean_ap (float): mean average precision over a threshold list.
-         should be between 0 and 1
-        mean_ar (float): mean average recall over a threshold list.
-         should be between 0 and 1
+        mean_ap (float): mean average precision over threshold list.
+         will satsify 0 <= mean_ap <= 1
+        mean_ar (float): mean average recall over threshold list.
+         will satsify 0 <= mean_ar <= 1
         stat_dict dict(dict): contains precision and recall value for each
          image for each threshold
     """
@@ -100,10 +100,10 @@ def get_mean_avg_score_from_mask_image(threshold_list):
         are calculated for this threshold list.
         return
         -----
-        mean_ap (float): mean average precision over a threshold list.
-         should be between 0 and 1
-        mean_ar (float): mean average recall over a threshold list.
-         should be between 0 and 1
+        mean_ap (float): mean average precision over threshold list.
+         will satsify 0 <= mean_ap <= 1
+        mean_ar (float): mean average recall over threshold list.
+         will satsify 0 <= mean_ar <= 1
         stat_dict dict(dict): contains precision and recall value for each
          image for each threshold
     """
@@ -148,10 +148,10 @@ def write_stats_to_file(mean_ap, mean_ar, stat_dict):
         precision and recall value in args.result text file.
        input
        -----
-       mean_ap (float): mean average precision over a threshold list.
-       should be between 0 and 1
-       mean_ar (float): mean average recall over a threshold list.
-       should be between 0 and 1
+       mean_ap (float): mean average precision over threshold list.
+       will satsify 0 <= mean_ap <= 1.
+       mean_ar (float): mean average recall over threshold list.
+       will satsify 0 <= mean_ar <= 1
        stat_dict dict(dict): contains precision and recall value for each
        image for each threshold
     """
@@ -168,12 +168,17 @@ def write_stats_to_file(mean_ap, mean_ar, stat_dict):
 
 def read_rect_coordinates(file_name):
     """ Given the file name, it reads image_id and rectangle
-        coordinates from the file. It finally returns a image_rect_dict
+        coordinates from the file. It finally returns a image_rect_dict.
+        A file should contain mask_id and mar coordinates. A mar is 
+        described by 8 values (x1,y1,x2,y2,x3,y3,x4,y4)
+        for example:
+          mask_id x1,y1,x2,y2,x3,y3,x4,y4
+          HYT_ARB_20070103.0066_4_LDC0061 25,179,15,178,16,70,26,71
         return
         ------
         image_rect_dict : dict([[int]]): dict of a list of list, for
           each image_id it contains a list of rectangle and a rectangle
-          is a list containing 8 integer values.
+          is a list containing 8 integer values (x1,y1,x2,y2,x3,y3,x4,y4)
     """
     image_rect_dict = {}
     with open(file_name) as f:
