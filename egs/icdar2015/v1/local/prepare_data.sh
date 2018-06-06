@@ -7,7 +7,7 @@
 
 [ -f ./path.sh ] && . ./path.sh; # source the path.
 
-dl_dir=${3:-/export/b18/draj/icdar_2015/}
+dl_dir=${3:-/export/b18/draj/icdar_2015}
 
 
 if [ ! -d $dl_dir ] ; then
