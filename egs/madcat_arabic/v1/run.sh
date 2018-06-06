@@ -58,6 +58,8 @@ if [ $stage -le 2 ]; then
   local/segment.py \
     --train-image-size 256 \
     --model model_best.pth.tar \
+    --object-merge-factor 1.0 \
+    --prune-threshold 500.0 \
     --test-data data/test \
     --dir $dir/segment
 fi

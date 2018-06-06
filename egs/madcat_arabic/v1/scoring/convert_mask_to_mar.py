@@ -20,7 +20,11 @@ args = parser.parse_args()
 
 def write_rects_to_file(out_dir, mar_dict):
     """ Given an output directory and mar_dictionary, it writes mask_id and
-    mar coordinates to mar.txt file
+    mar coordinates to mar.txt file. A mar is described
+    by 8 values (x1,y1,x2,y2,x3,y3,x4,y4)
+    for example:
+      mask_id x1,y1,x2,y2,x3,y3,x4,y4 
+      HYT_ARB_20070103.0066_4_LDC0061 25,179,15,178,16,70,26,71
     input
     -----
     out_dir (str): path of output directory
