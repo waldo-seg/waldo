@@ -36,8 +36,8 @@ def main():
 def get_mean_avg_score_from_rect_coordinates(threshold_list, ref_image_rect_dict,
                                              hyp_image_rect_dict):
     """
-        Given the threshold list, it returns mean average precision,
-        mean average recall and statistic dictionary
+        Given the threshold list, it returns a tuple (mean_ap, mean_ar, stat_dict): 
+        mean average precision, mean average recall and statistic dictionary
         input
         -----
         threshold_list [float]: list of threshold values. MAP and MAR
@@ -92,8 +92,8 @@ def get_mean_avg_score_from_rect_coordinates(threshold_list, ref_image_rect_dict
 
 def get_mean_avg_score_from_mask_image(threshold_list):
     """
-        Given the threshold list, it returns mean average precision,
-        mean average recall and statistic dictionary
+        Given the threshold list, returns a tuple (mean_ap, mean_ar, stat_dict):
+        mean average precision, mean average recall and statistic dictionary
         input
         -----
         threshold_list [float]: list of threshold values. MAP and MAR
