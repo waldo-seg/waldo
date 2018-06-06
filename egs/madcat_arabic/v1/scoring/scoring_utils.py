@@ -23,7 +23,9 @@ def _evaluate_mask_image(mask_ref_arr, mask_hyp_arr, iou_threshold):
     -------
     a dict that contains:
     precision: (hypothesis matched)/(total hypothesis)
+      will satsify 0 <= precision <= 1
     recall: (hypothesis matched)/(total reference)
+      will satsify 0 <= recall <= 1
     pairs: list of matching hypothesis and reference pairs
     """
 
@@ -99,7 +101,9 @@ def _evaluate_text_file(ref_rect_list, hyp_rect_list, iou_threshold):
     -------
     a dict that contains:
     precision: (hypothesis matched)/(total hypothesis)
+      will satsify 0 <= precision <= 1
     recall: (hypothesis matched)/(total reference)
+      will satsify 0 <= recall <= 1
     pairs: list of matching hypothesis and reference pairs
     """
 
@@ -140,8 +144,10 @@ def get_stats(iou_score, iou_threshold):
     return
     -----
     a dict that contains:
-    precision: (hypothesis matched)/(total hypothesis)
+    precision: (hypothesis matched)/(total hypothesis).
+      will satsify 0 <= precision <= 1.
     recall: (hypothesis matched)/(total reference)
+      will satsify 0 <= recall <= 1
     pairs: list of matching hypothesis and reference pairs
     """
     hyp_matched = 0
@@ -250,7 +256,9 @@ def get_score(ref, hyp, iou_threshold, if_eval_text_file=True):
     -------
     a dict that contains:
     precision: (hypothesis matched)/(total hypothesis)
+      will satsify 0 <= precision <= 1
     recall: (hypothesis matched)/(total reference)
+      will satsify 0 <= recall <= 1
     pairs: list of matching hypothesis and reference pairs
     """
     if if_eval_text_file:
