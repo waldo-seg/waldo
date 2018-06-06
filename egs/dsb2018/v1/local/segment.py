@@ -37,6 +37,12 @@ parser.add_argument('--object-merge-factor', type=float, default=None,
 parser.add_argument('--same-different-bias', type=float, default=0.0,
                     help='Bias for same/different probs in the segmentation '
                     'algorithm.')
+parser.add_argument('--merge-logprob-bias', type=float, default=0.0,
+                    help='A bias that is added to merge logprobs in the '
+                    'segmentation algorithm.')
+parser.add_argument('--prune-threshold', type=float, default=0.0,
+                    help='Threshold used in the pruning step of the '
+                    'segmentation algorithm. Higher values --> more pruning.')
 parser.add_argument('--csv', type=str, default='sub-dsbowl2018.csv',
                     help='Csv filename as the final submission file')
 parser.add_argument('--job', type=int, default=0, help='job id')
@@ -135,7 +141,8 @@ def segment(dataloader, segment_dir, model, core_config):
         if args.object_merge_factor is None:
             args.object_merge_factor = 1.0 / len(offset_list)
             segmenter_opts = SegmenterOptions(same_different_bias=args.same_different_bias,
-                                              object_merge_factor=args.object_merge_factor)
+                                              object_merge_factor=args.object_merge_factor,
+                                              merge_logprob_bias=args.merge_logprob_bias)
         seg = ObjectSegmenter(class_pred[0].detach().numpy(),
                               adj_pred[0].detach().numpy(),
                               num_classes, offset_list,

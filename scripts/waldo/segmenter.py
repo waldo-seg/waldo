@@ -260,7 +260,6 @@ class ObjectSegmenter:
         self.queue = []   # Python's heapq
         self.init_objects_and_adjacency_records()
 
-
     def default_options(self):
         return SegmenterOptions(same_different_bias=0.0,
                                 object_merge_factor=1.0,
@@ -324,7 +323,8 @@ class ObjectSegmenter:
         for obj in self.objects.values():
             for p in obj.pixels:
                 self.pixel2obj[p] = obj
-                tot_class_logprob += self.get_class_logprob(p, obj.object_class)
+                tot_class_logprob += self.get_class_logprob(
+                    p, obj.object_class)
         for row in range(self.img_height):
             for col in range(self.img_width):
                 p1 = (row, col)
@@ -334,12 +334,13 @@ class ObjectSegmenter:
                             0 <= col + o[1] < self.img_width):
                         obj2 = self.pixel2obj[(row + o[0], col + o[1])]
                         if obj1 is obj2 or obj1 == obj2:
-                            tot_sameness_logprob += np.log(self.get_sameness_prob(p1, i))
+                            tot_sameness_logprob += np.log(
+                                self.get_sameness_prob(p1, i))
                         else:
-                            tot_differentness_logprob += np.log(1.0 - self.get_sameness_prob(p1, i))
+                            tot_differentness_logprob += np.log(
+                                1.0 - self.get_sameness_prob(p1, i))
         return tot_class_logprob + (tot_differentness_logprob +
                                     tot_sameness_logprob) * self.opts.object_merge_factor
-
 
     def compute_total_logprob(self):
         tot_class_logprob = 0
@@ -391,13 +392,15 @@ class ObjectSegmenter:
         print("Pruned {} objects (merged into background). Final objects:"
               " {}".format(len(objects_to_be_merged), len(self.objects)))
 
-
     def output_mask(self):
         mask = np.zeros((self.img_height, self.img_width), dtype=int)
-        k = 0
-        object_class = [0] * len(self.objects)
+        k = 1
+        object_class = []
         for obj in self.objects.values():
-            object_class[k] = obj.object_class
+            # skip background object
+            if obj.object_class == 0:
+                continue
+            object_class.append(obj.object_class)
             for p in obj.pixels:
                 mask[p] = k
             k += 1
@@ -484,7 +487,8 @@ class ObjectSegmenter:
                     n, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024))
                 self.show_stats()
                 if self.do_debugging:
-                    print("Logprob from scratch: {}".format(self.compute_total_logprob_from_scratch()))
+                    print("Logprob from scratch: {}".format(
+                        self.compute_total_logprob_from_scratch()))
                 print("")
             if n > N:
                 print("Breaking after {} iters.".format(N))
@@ -523,7 +527,8 @@ class ObjectSegmenter:
         self.show_stats()
         self.visualize('final')
         if self.verbose >= 1:
-            print("Final logprob from scratch: {}".format(self.compute_total_logprob_from_scratch()))
+            print("Final logprob from scratch: {}".format(
+                self.compute_total_logprob_from_scratch()))
         return self.output_mask()
 
     def merge(self, arec):
