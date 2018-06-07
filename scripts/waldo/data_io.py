@@ -58,9 +58,11 @@ class DataSaver:
             for id in self.ids:
                 fh.write(id + '\n')
 
-    def write_original(self, name, orig_dim):
+    def write_original(self, name, orig_img , orig_dim):
         """ This function saves the original image sizes.
         """
+        filename = self.dir + '/orig_img/' + name + '.orig_img.npy'
+        np.save(filename, orig_img)
         filename = self.dir + '/orig_dim/' + name + '.orig_dim.npy'
         np.save(filename, orig_dim)
 

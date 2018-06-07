@@ -3,7 +3,6 @@
 # Copyright 2018 Johns Hopkins University (author: Ashish Arora)
 # Apache 2.0
 
-import numpy as np
 import argparse
 import os
 import sys
@@ -40,11 +39,12 @@ def write_rects_to_file(out_dir, mar_dict):
     with open(txt_path, 'w') as fh:
         for mask_id in mar_dict.keys():
             mask_mar_list = mar_dict[mask_id]
+            point_str = str()
             for mar in mask_mar_list:
-                point_str = str()
                 for point in mar:
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
-                fh.write('{} {}\n'.format(mask_id, point_str))
+                point_str = point_str + ';'
+            fh.write('{} {}\n'.format(mask_id, point_str))
     print('Saved to {}'.format(txt_path))
 
 def write_rects_to_file_orig_dim(out_dir, mar_dict):
@@ -67,16 +67,17 @@ def write_rects_to_file_orig_dim(out_dir, mar_dict):
         for mask_id in mar_dict.keys():
             mask_mar_list = mar_dict[mask_id]
             dim_arr = np.load(args.sizedir + '/' + mask_id + '.orig_dim.npy')
-            scale = (1.0 * np.amax()) / args.cur_size
+            scale = (1.0 * np.amax(dim_arr)) / args.cur_size
+            point_str = str()
+            point_str_scaled = str()
             for mar in mask_mar_list:
-                point_str = str()
-                point_str_scaled = str()
                 for point in mar:
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
-                    point_str_scaled = point_str + str(int(point[0]*scale)) + ',' + str(int(point[1]*scale)) + ','
-                fh.write('{} {}\n'.format(mask_id, point_str))
-                point_str_scaled = check_edges(dim_arr, point_str_scaled)
-                mar_orig_fh.write('{} {}\n'.format(mask_id, point_str_scaled))
+                    point_str_scaled = point_str_scaled + str(int(point[0]*scale)) + ',' + str(int(point[1]*scale)) + ','
+                point_str = point_str + ';'
+                point_str_scaled = point_str_scaled + ';'
+            fh.write('{} {}\n'.format(mask_id, point_str))
+            mar_orig_fh.write('{} {}\n'.format(mask_id, point_str_scaled))
     print('Saved to {}'.format(txt_path))
 
 def main():

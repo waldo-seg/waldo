@@ -69,8 +69,11 @@ if [ $stage -le 3 ]; then
   for dataset in data/test $dir/segment; do
     scoring/convert_mask_to_mar.py \
       --indir $dataset/mask \
-      --outdir $dataset
+      --outdir $dataset \
+      --cur-size 256 \
+      --sizedir data/test/orig_dim
   done
+  scoring/draw_mar.py data/test $dir/segment
 fi
 
 if [ $stage -le 4 ]; then
