@@ -41,21 +41,27 @@ def main():
     write_stats_to_file(mean_ap, mean_ar, stat_dict)
 
 
-def get_mean_avg_scores(threshold_list, ref_dict,
-                        hyp_dict):
+def get_mean_avg_scores(threshold_list, ref_dict, hyp_dict):
     """
         Given the threshold list, it returns a tuple (mean_ap, mean_ar, stat_dict): 
         mean average precision, mean average recall and statistic dictionary
         input
         -----
+        If args.score_mar == true, then
+          ref_dict : dict([[int]]): dict of a list of list, for
+          each image_id it contains a list of rectangle and a rectangle
+          is a list containing 8 integer values
+          hyp_dict : dict([[int]]): dict of a list of list, for
+          each image_id it contains a list of rectangle and a rectangle
+          is a list containing 8 integer values.
+        else
+          ref_dict : dict(str): a dict of file basename and file path, for
+                     all files in the reference directory
+          hyp_dict : dict(str): a dict of file basename and file path, for
+                     all files in the hypothesis directory
+
         threshold_list [float]: list of threshold values. MAP and MAR
         are calculated for this threshold list.
-        ref_image_rect_dict: dict([[int]]): dict of a list of list, for
-          each image_id it contains a list of rectangle and a rectangle
-          is a list containing 8 integer values.
-        hyp_image_rect_dict : dict([[int]]): dict of a list of list, for
-          each image_id it contains a list of rectangle and a rectangle
-          is a list containing 8 integer values.
         return
         -----
         mean_ap (float): mean average precision over threshold list.
@@ -160,8 +166,10 @@ def get_filenames_from_directory():
     To do: add partial scoring option similar to kaldi.
     return
     ------
-    ref_file_dict : dict(str): a dict of file basename and file path
-    hyp_file_dict : dict(str): a dict of file basename and file path
+    ref_file_dict : dict(str): a dict of file basename and file path, for
+                    all files in the reference directory
+    hyp_file_dict : dict(str): a dict of file basename and file path, for
+                    all files in the hypothesis directory
     """
 
     ref_file_dict = dict()
