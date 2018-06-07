@@ -74,7 +74,9 @@ if __name__ == '__main__':
     data, data_ids = DataProcess(args.dl_dir, cfg, train_prop=args.train_prop)
 
     for split in ['train','val','test']:
-        save_data(data[split], data_ids[split], args.outdir, split)
+        ids_file = "{0}/{1}/image_ids.txt".format(args.outdir, split)
+        if not (os.path.exists(ids_file)):
+            save_data(data[split], data_ids[split], args.outdir, split)
 
     print ('Finished processing data.')
     
