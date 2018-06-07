@@ -51,6 +51,7 @@ GSYMS
 *.exp
 *.manifest
 
+
 # /egs/
 /egs/*/v*/mfcc
 /egs/*/v*/plp
