@@ -82,7 +82,7 @@ def write_rects_to_file_orig_dim(out_dir, mar_dict):
 
 def main():
     mar_dict = dict()
-    for mask_path in glob(args.indir+"/*.mask.npy"):
+    for mask_path in sorted(glob(args.indir+"/*.mask.npy")):
         mask_arr = np.load(mask_path)
         mask_id = os.path.basename(mask_path).split('.mask.npy')[0]
         mask_mar_list = list(get_mar_from_mask(mask_arr))

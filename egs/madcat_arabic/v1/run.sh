@@ -64,6 +64,7 @@ if [ $stage -le 3 ] && $score_mar; then
       --cur-size 256 \
       --sizedir data/test/orig_dim
   done
+  mkdir -p $dir/segment/img_orig
   scoring/draw_mar.py data/test $dir/segment
 fi
 
