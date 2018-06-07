@@ -25,31 +25,6 @@ SegmenterOptions = namedtuple('SegmenterOptions',
                                'merge_logprob_bias'])
 
 
-class ObjPair:
-    """
-    This class is used to make an unordered pair from 2 Objects.
-    Used for search and comparison. """
-
-    def __init__(self, obj1, obj2):
-        self.obj1 = obj1
-        self.obj2 = obj2
-        if obj1.id > obj2.id:  # swap them
-            self.obj1, self.obj2 = self.obj2, self.obj1
-
-    def __hash__(self):
-        assert self.obj1.id <= self.obj2.id
-        return hash((self.obj1.id, self.obj2.id))
-
-    def __eq__(self, other):
-        return (self.obj1.id, self.obj2.id) == (other.obj1.id, other.obj2.id)
-
-    def __ne__(self, other):
-        return not(self == other)
-
-    def __str__(self):
-        return "<ObjPair({},{})>".format(self.obj1.id, self.obj2.id)
-
-
 class Object:
     """
     This class represents an "object" in the output image.
@@ -152,13 +127,22 @@ class AdjacencyRecord:
               out class_delta_log_prob.
     """
 
-    def __init__(self, obj1, obj2, segmenter):
+    def __init__(self, obj1, obj2, segmenter, pixel=None, offset=None):
         self.obj1 = obj1
         self.obj2 = obj2
-        self.compute_obj_merge_logprob(segmenter)
-        if self.obj_merge_logprob is None:
-            raise Exception(
-                "Bad adjacency record. The given objects are not adjacent.")
+        self.sort_and_update_hash()
+        if pixel is not None and offset is not None:
+           same_prob = segmenter.get_sameness_prob(pixel, offset)
+           log_same_prob = np.log(same_prob)
+           log_different_prob = np.log(1.0 - same_prob)
+           self.differentness_logprob = log_different_prob
+           self.sameness_logprob = log_same_prob
+           self.obj_merge_logprob = log_same_prob - log_different_prob
+        else:
+            self.compute_obj_merge_logprob(segmenter)
+            if self.obj_merge_logprob is None:
+               raise Exception(
+                     "Bad adjacency record. The given objects are not adjacent.")
         self.class_delta_logprob = None
         self.merged_class = None
         self.merge_priority = None
@@ -212,13 +196,24 @@ class AdjacencyRecord:
     def obj_pair(self):
         return ObjPair(self.obj1, self.obj2)
 
+    def sort_and_update_hash(self):
+        if self.obj1.id > self.obj2.id:  # swap them
+            self.obj1, self.obj2 = self.obj2, self.obj1
+        self.cached_hash = hash((self.obj1.id, self.obj2.id))
+
+    def __hash__(self):
+        return self.cached_hash
+
+    def __eq__(self, other):
+        return (self.obj1.id, self.obj2.id) == (other.obj1.id, other.obj2.id)
+
+    def __ne__(self, other):
+        return not(self == other)
+
     def print(self):
         print("Objects in arec {}:".format(self))
         self.obj1.print()
         self.obj2.print()
-
-    def __eq__(self, other):
-        return self.obj_pair() == other.obj_pair()
 
     def __lt__(self, other):
         return self.merge_priority < other.merge_priority
@@ -226,7 +221,6 @@ class AdjacencyRecord:
     def __str__(self):
         return "<AREC-{}:  [{}, {}]  oml:{:0.2f}  cdl:{:0.2f}  mp:{:0.2f}>".format(
             id(self), self.obj1, self.obj2, self.obj_merge_logprob, self.class_delta_logprob, self.merge_priority)
-
 
 class ObjectSegmenter:
     def __init__(self, nnet_class_probs, nnet_sameness_probs, num_classes,
@@ -260,6 +254,7 @@ class ObjectSegmenter:
         self.queue = []   # Python's heapq
         self.init_objects_and_adjacency_records()
 
+
     def default_options(self):
         return SegmenterOptions(same_different_bias=0.0,
                                 object_merge_factor=1.0,
@@ -281,23 +276,22 @@ class ObjectSegmenter:
         for row in range(self.img_height):
             for col in range(self.img_width):
                 obj1 = self.pixel2obj[(row, col)]
-                for (i, j) in self.offsets:
+                for o, idx in zip(self.offsets, range(len(self.offsets))):
+                    (i, j) = o
                     if (0 <= row + i < self.img_height and
                             0 <= col + j < self.img_width):
                         obj2 = self.pixel2obj[(row + i, col + j)]
-                        arec = AdjacencyRecord(obj1, obj2, self)
-                        self.adjacency_records[arec.obj_pair()] = arec
-                        obj1.adjacency_list[arec.obj_pair()] = arec
-                        obj2.adjacency_list[arec.obj_pair()] = arec
+                        arec = AdjacencyRecord(obj1, obj2, self, (row, col), idx)
+                        self.adjacency_records[arec] = arec
+                        obj1.adjacency_list[arec] = arec
+                        obj2.adjacency_list[arec] = arec
                         if arec.merge_priority >= 0:
                             heappush(self.queue, (-arec.merge_priority, arec))
 
     def get_class_logprob(self, pixel, class_index):
-        assert class_index < self.num_classes
         return np.log(self.class_probs[class_index, pixel[0], pixel[1]])
 
     def get_sameness_prob(self, pixel, offset_index):
-        assert offset_index < len(self.offsets)
         return self.sameness_probs[offset_index, pixel[0], pixel[1]]
 
     def show_stats(self):
@@ -323,8 +317,7 @@ class ObjectSegmenter:
         for obj in self.objects.values():
             for p in obj.pixels:
                 self.pixel2obj[p] = obj
-                tot_class_logprob += self.get_class_logprob(
-                    p, obj.object_class)
+                tot_class_logprob += self.get_class_logprob(p, obj.object_class)
         for row in range(self.img_height):
             for col in range(self.img_width):
                 p1 = (row, col)
@@ -341,6 +334,7 @@ class ObjectSegmenter:
                                 1.0 - self.get_sameness_prob(p1, i))
         return tot_class_logprob + (tot_differentness_logprob +
                                     tot_sameness_logprob) * self.opts.object_merge_factor
+
 
     def compute_total_logprob(self):
         tot_class_logprob = 0
@@ -377,16 +371,14 @@ class ObjectSegmenter:
         for obj in self.objects.values():
             nonbackground_score = obj.class_logprob() - obj.class_logprobs[0]
             if self.verbose >= 2:
-                print("obj: {}   -->   {:0.2f}".format(len(obj.pixels),
-                                                       nonbackground_score),
-                      file=sys.stderr)
+                print("obj: {}   -->   {:0.2f}".format(len(obj.pixels), nonbackground_score))
             if nonbackground_score < threshold and obj is not background_obj:
                 objects_to_be_merged.append(obj)
 
         for obj in objects_to_be_merged:
             if self.verbose >= 1:
                 print("Merging obj with {} pixels to "
-                      "background...".format(len(obj.pixels)), file=sys.stderr)
+                      "background...".format(len(obj.pixels)))
             background_obj.pixels = background_obj.pixels.union(obj.pixels)
             del self.objects[obj.id]
         print("Pruned {} objects (merged into background). Final objects:"
@@ -419,8 +411,7 @@ class ObjectSegmenter:
             for p in obj.pixels:
                 pix2count[p] += 1
         if not (pix2count == 1).all():
-            print("Error: pixels are not all covered or they are double counted",
-                  file=sys.stderr)
+            print("Error: pixels are not all covered or they are double counted")
             np.set_printoptions(threshold=20000)
             print(pix2count)
             sys.exit(1)
@@ -430,7 +421,7 @@ class ObjectSegmenter:
         for obj in self.objects.values():
             tot_obj_adj_records += len(obj.adjacency_list)
             for arec in obj.adjacency_list.values():
-                assert arec.obj_pair() in self.adjacency_records
+                assert arec in self.adjacency_records
                 assert (arec.obj1 is obj) ^ (arec.obj2 is obj)
                 # make sure that re-computing obj-mere-logprob does not change it
                 # this is too costly to run, so only do it randomly with a small chance
@@ -439,11 +430,10 @@ class ObjectSegmenter:
                     arec.compute_obj_merge_logprob(self)
                     if np.abs(arec.obj_merge_logprob - obj_merge_logprob) > 0.001:
                         print("Error re-computing obj-merge logprob changed it for "
-                              "arec {}".format(arec), file=sys.stderr)
+                              "arec {}".format(arec))
                         print("Old logprob: {}   "
                               "new logprob: {}".format(obj_merge_logprob,
-                                                       arec.obj_merge_logprob),
-                              file=sys.stderr)
+                                                       arec.obj_merge_logprob))
                         arec.print()
                         sys.exit(1)
 
@@ -470,18 +460,9 @@ class ObjectSegmenter:
         """
         print("Starting segmentation...")
         n = 0
-        N = 10000000  # max iters -- for experimentation
-        target_objs = 0  # for experimentation
         self.verbose = 0
         self.do_debugging = False
         while self.queue:
-            if len(self.objects) <= target_objs:
-                print("Target objects reached: {}".format(target_objs))
-                break
-            if n > 100:
-                self.verbose = 0
-            if len(self.queue) < 0:  # in case we want to see a few last steps of the algorithm
-                self.verbose = 1
             if n % 500000 == 0:
                 print("At iteration {}:  max mem: {:0.2f} GB".format(
                     n, resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024))
@@ -490,36 +471,16 @@ class ObjectSegmenter:
                     print("Logprob from scratch: {}".format(
                         self.compute_total_logprob_from_scratch()))
                 print("")
-            if n > N:
-                print("Breaking after {} iters.".format(N))
-                break
             n += 1
             merge_cost, arec = heappop(self.queue)
-            if self.verbose >= 1:
-                print("Iter: {} Popped: {:0.2f},{}".format(n, merge_cost, arec),
-                      file=sys.stderr)
             merge_priority = -merge_cost
             if merge_priority != arec.merge_priority:
-                if self.verbose >= 2:
-                    print("Not merging {:0.2f} != {:0.2f}\n".format(
-                        merge_priority, arec.merge_priority), file=sys.stderr)
                 continue
             arec.update_merge_priority(self)
             if arec.merge_priority >= merge_priority:
-                if self.verbose >= 1:
-                    print("Merging...{:0.2f} >= {:0.2f}\n".format(
-                        arec.merge_priority, merge_priority), file=sys.stderr)
                 self.merge(arec)
-                if self.do_debugging and np.random.random() > 0.999:
-                    self.debug()
             elif arec.merge_priority >= 0:
-                if self.verbose >= 1:
-                    print("Pushing with new mp: {:0.2f}\n".format(
-                        arec.merge_priority), file=sys.stderr)
                 heappush(self.queue, (-arec.merge_priority, arec))
-            else:
-                if self.verbose >= 1:
-                    print("Not merging <0   {}\n".format(arec), file=sys.stderr)
 
         if len(self.queue) == 0:
             print("Finished. Queue is empty.")
@@ -584,44 +545,44 @@ class ObjectSegmenter:
         obj1.class_logprobs += obj2.class_logprobs
         obj1.sameness_logprob += arec.sameness_logprob + obj2.sameness_logprob
 
-        del self.adjacency_records[arec.obj_pair()]
-        del obj1.adjacency_list[arec.obj_pair()]
-        del obj2.adjacency_list[arec.obj_pair()]
+        del self.adjacency_records[arec]
+        del obj1.adjacency_list[arec]
+        del obj2.adjacency_list[arec]
         for this_arec in obj2.adjacency_list.values():
             # obj3 is any object adjacent to obj2 (never is obj1):
             obj3 = this_arec.obj2 if this_arec.obj1 is obj2 else this_arec.obj1
             assert obj3 is not obj1
 
-            del obj3.adjacency_list[this_arec.obj_pair()]
-            del self.adjacency_records[this_arec.obj_pair()]
+            del obj3.adjacency_list[this_arec]
+            del self.adjacency_records[this_arec]
             if this_arec.obj1 is obj2:
                 this_arec.obj1 = obj1
             if this_arec.obj2 is obj2:
                 this_arec.obj2 = obj1
-            obj3.adjacency_list[this_arec.obj_pair()] = this_arec
-            self.adjacency_records[this_arec.obj_pair()] = this_arec
+            this_arec.sort_and_update_hash()
 
             assert this_arec.obj1 is not this_arec.obj2
 
-            if this_arec.obj_pair() in obj1.adjacency_list:
-                that_arec = obj1.adjacency_list[this_arec.obj_pair()]
+            if this_arec in obj1.adjacency_list:
+                that_arec = obj1.adjacency_list[this_arec]
                 that_arec.obj_merge_logprob += this_arec.obj_merge_logprob
                 that_arec.differentness_logprob += this_arec.differentness_logprob
                 that_arec.sameness_logprob += this_arec.sameness_logprob
                 # make sure it is practically deleted from the queue
                 this_arec.merge_priority = -100000.0
-                self.adjacency_records[that_arec.obj_pair()] = that_arec
-                obj3.adjacency_list[that_arec.obj_pair()] = that_arec
+                self.adjacency_records[that_arec] = that_arec
+                obj3.adjacency_list[that_arec] = that_arec
                 that_arec.update_merge_priority(self)
                 if that_arec.merge_priority >= 0:
                     heappush(self.queue, (-that_arec.merge_priority, that_arec))
             else:
-                obj1.adjacency_list[this_arec.obj_pair()] = this_arec
+                obj1.adjacency_list[this_arec] = this_arec
+                obj3.adjacency_list[this_arec] = this_arec
+                self.adjacency_records[this_arec] = this_arec
                 this_arec.update_merge_priority(self)
                 if this_arec.merge_priority >= 0:
                     heappush(self.queue, (-this_arec.merge_priority, this_arec))
         if self.verbose >= 2:
             print("Deleting {} being merged to {} according "
-                  "to {}".format(obj2, obj1, arec), file=sys.stderr)
+                  "to {}".format(obj2, obj1, arec))
         del self.objects[obj2.id]
-
