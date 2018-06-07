@@ -206,6 +206,18 @@ def _rectangle_corners(rectangle):
 
 
 def _get_mask_points(img_arr):
+    """ Given an image numpy array, it returns all the points in each object
+    in the image. Assuming background have maximum number of points, it will 
+    remove background object points.
+    input
+    -----
+    img_arr : (np array): image array, contains same value for each object
+    Returns
+    -------
+    a dict that contains:
+    object_id: [[int]] contains a list of list, a list of points
+    and a point is a list containing 2 integer values.
+    """
     img_unique_val = np.unique(img_arr)
     max_point_object_id = -1
     max_num_points = -1
@@ -238,6 +250,16 @@ def _get_mask_points(img_arr):
 
 
 def get_rectangles_from_mask(img_arr):
+    """ Given an image numpy array, it returns a minimum area rectangle that will
+    contain the mask. It will not necessarily be vertically or horizontally
+     aligned.
+    input
+    -----
+    img_arr : (np array): image array, contains same value for each mask
+    Returns
+    -------
+    list((int, int)): 4 corner points of rectangle.
+    """
     masks_point_dict = _get_mask_points(img_arr)
     mar_list = list()
     for object_id in masks_point_dict.keys():

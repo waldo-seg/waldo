@@ -15,87 +15,51 @@ import numpy as np
 
 parser = argparse.ArgumentParser(
     description='scoring script for text localization')
-parser.add_argument('--reference', type=str, required=True,
+parser.add_argument('reference', type=str,
                     help='reference directory of test data, contains np array')
-parser.add_argument('--hypothesis', type=str, required=True,
+parser.add_argument('hypothesis', type=str,
                     help='hypothesis directory of test data, contains np array')
-parser.add_argument('--result', type=str, required=True,
+parser.add_argument('result', type=str,
                     help='the file to store final statistical results')
+parser.add_argument("--score-mar", action="store_true",
+                   help="If true, score after finding the minimum area rectangle"
+                        " derived from the object mask. If false, score based on" 
+                        " object mask without further processing.")
 args = parser.parse_args()
-
 
 def main():
     threshold_list = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
-    ref_image_rect_dict = read_rect_coordinates(args.reference)
-    hyp_image_rect_dict = read_rect_coordinates(args.hypothesis)
-    mean_ap, mean_ar, stat_dict = get_mean_avg_score_from_rect_coordinates(
-                   threshold_list, ref_image_rect_dict, hyp_image_rect_dict)
+    if args.score_mar:
+        ref_dict = read_rect_coordinates(args.reference)
+        hyp_dict = read_rect_coordinates(args.hypothesis)
+    else:
+        ref_dict, hyp_dict = get_filenames_from_directory()
+
+    mean_ap, mean_ar, stat_dict = get_mean_avg_scores(
+            threshold_list, ref_dict, hyp_dict)
+
     write_stats_to_file(mean_ap, mean_ar, stat_dict)
 
 
-def get_mean_avg_score_from_rect_coordinates(threshold_list, ref_image_rect_dict,
-                                             hyp_image_rect_dict):
+def get_mean_avg_scores(threshold_list, ref_dict, hyp_dict):
     """
         Given the threshold list, it returns a tuple (mean_ap, mean_ar, stat_dict): 
         mean average precision, mean average recall and statistic dictionary
         input
         -----
-        threshold_list [float]: list of threshold values. MAP and MAR
-        are calculated for this threshold list.
-        ref_image_rect_dict: dict([[int]]): dict of a list of list, for
+        If args.score_mar == true, then
+          ref_dict : dict([[int]]): dict of a list of list, for
+          each image_id it contains a list of rectangle and a rectangle
+          is a list containing 8 integer values
+          hyp_dict : dict([[int]]): dict of a list of list, for
           each image_id it contains a list of rectangle and a rectangle
           is a list containing 8 integer values.
-        hyp_image_rect_dict : dict([[int]]): dict of a list of list, for
-          each image_id it contains a list of rectangle and a rectangle
-          is a list containing 8 integer values.
-        return
-        -----
-        mean_ap (float): mean average precision over threshold list.
-         will satsify 0 <= mean_ap <= 1
-        mean_ar (float): mean average recall over threshold list.
-         will satsify 0 <= mean_ar <= 1
-        stat_dict dict(dict): contains precision and recall value for each
-         image for each threshold
-    """
-    mean_ar = 0
-    mean_ap = 0
-    stat_dict = {}
-    for threshold in threshold_list:
-        mean_recall = 0
-        mean_precision = 0
-        img_count = 0
-        for image_id in ref_image_rect_dict.keys():
-            img_count += 1
-            ref_rect_coord_list = ref_image_rect_dict[image_id]
-            hyp_rect_coord_list = hyp_image_rect_dict[image_id]
-            score = get_score(ref_rect_coord_list, hyp_rect_coord_list, threshold)
-            precision = score['precision']
-            recall = score['recall']
-            mean_precision += precision
-            mean_recall += recall
-            precision_recall = str(precision) + " " + str(recall)
-            if image_id not in stat_dict.keys():
-                stat_dict[image_id] = dict()
-            stat_dict[image_id][threshold] = precision_recall
-        mean_precision /= img_count
-        mean_recall /= img_count
-        print("For threshold: {} Mean precision: {:0.3f} Mean recall: {:0.3f}".format(
-                                     threshold, mean_precision, mean_recall))
-        mean_ap += mean_precision
-        mean_ar += mean_recall
-    mean_ap /= len(threshold_list)
-    mean_ar /= len(threshold_list)
-    print("Mean average precision: {} Mean average recall: {}".
-                                      format(mean_ap, mean_ar))
-    return mean_ap, mean_ar, stat_dict
+        else
+          ref_dict : dict(str): a dict of file basename and file path, for
+                     all files in the reference directory
+          hyp_dict : dict(str): a dict of file basename and file path, for
+                     all files in the hypothesis directory
 
-
-def get_mean_avg_score_from_mask_image(threshold_list):
-    """
-        Given the threshold list, returns a tuple (mean_ap, mean_ar, stat_dict):
-        mean average precision, mean average recall and statistic dictionary
-        input
-        -----
         threshold_list [float]: list of threshold values. MAP and MAR
         are calculated for this threshold list.
         return
@@ -114,13 +78,14 @@ def get_mean_avg_score_from_mask_image(threshold_list):
         mean_recall = 0
         mean_precision = 0
         img_count = 0
-        for img_ref_path, img_hyp_path in zip(glob(args.reference + "/*.mask.npy"),
-                                              glob(args.hypothesis + "/*.mask.npy")):
+        for image_id in ref_dict.keys():
             img_count += 1
-            ref_arr = np.load(img_ref_path)
-            hyp_arr = np.load(img_hyp_path)
-            image_id = os.path.basename(img_ref_path).split('.mask.npy')[0]
-            score = get_score(ref_arr, hyp_arr, threshold)
+            ref_data = ref_dict[image_id]
+            hyp_data = hyp_dict[image_id]
+            if not args.score_mar:
+                ref_data = np.load(ref_data)
+                hyp_data = np.load(hyp_data)
+            score = get_score(ref_data, hyp_data, threshold, args.score_mar)
             precision = score['precision']
             recall = score['recall']
             mean_precision += precision
@@ -194,5 +159,38 @@ def read_rect_coordinates(file_name):
     return image_rect_dict
 
 
+def get_filenames_from_directory():
+    """ Given the hypothesis and reference directory name, it returns
+    two dicts containing file name of each directory respectively. It
+    checks if both directory contains same files names.
+    To do: add partial scoring option similar to kaldi.
+    return
+    ------
+    ref_file_dict : dict(str): a dict of file basename and file path, for
+                    all files in the reference directory
+    hyp_file_dict : dict(str): a dict of file basename and file path, for
+                    all files in the hypothesis directory
+    """
+
+    ref_file_dict = dict()
+    hyp_file_dict = dict()
+    for img_ref_path, img_hyp_path in zip(glob(args.reference + "/*.mask.npy"),
+                                          glob(args.hypothesis + "/*.mask.npy")):
+
+        ref_id = os.path.basename(img_ref_path).split('.mask.npy')[0]
+        hyp_id = os.path.basename(img_hyp_path).split('.mask.npy')[0]
+        ref_file_dict[ref_id] = img_ref_path
+        hyp_file_dict[hyp_id] = img_hyp_path
+
+    assert len(ref_file_dict) == len(hyp_file_dict)
+
+    for file_id in ref_file_dict.keys():
+        if file_id not in hyp_file_dict.keys():
+            raise Exception("mask flie (np array): {} missing in reference directory".format(file_id))
+
+    return ref_file_dict, hyp_file_dict
+
+
 if __name__ == '__main__':
     main()
+

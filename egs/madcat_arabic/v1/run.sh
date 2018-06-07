@@ -17,6 +17,7 @@ download_dir3=/export/corpora/LDC/LDC2013T15/data
 writing_condition1=/export/corpora/LDC/LDC2012T15/docs/writing_conditions.tab
 writing_condition2=/export/corpora/LDC/LDC2013T09/docs/writing_conditions.tab
 writing_condition3=/export/corpora/LDC/LDC2013T15/docs/writing_conditions.tab
+score_mar=true
 local/check_dependencies.sh
 
 
@@ -39,32 +40,22 @@ if [ $stage -le 1 ]; then
     --train_image_size 256 --lr $lr --batch_size 8
 fi
 
-#logdir=$dir/segment/log
-#nj=32
-#if [ $stage -le 2 ]; then
-#  echo "doing segmentation.... Date: $(date)."
-#  $cmd JOB=1:$nj $logdir/segment.JOB.log local/segment.py \
-#       --train-image-size 256 \
-#       --model model_best.pth.tar \
-#       --object-merge-factor 1.0 \
-#       --prune-threshold 500.0 \
-#       --test-data data/test \
-#       --dir $dir/segment \
-#       --job JOB --num-jobs $nj
-#fi
-
+logdir=$dir/segment/log
+nj=32
 if [ $stage -le 2 ]; then
   echo "doing segmentation.... Date: $(date)."
-  local/segment.py \
-    --train-image-size 256 \
-    --model model_best.pth.tar \
-    --object-merge-factor 1.0 \
-    --prune-threshold 500.0 \
-    --test-data data/test \
-    --dir $dir/segment
+  $cmd JOB=1:$nj $logdir/segment.JOB.log local/segment.py \
+       --train-image-size 256 \
+       --model model_best.pth.tar \
+       --object-merge-factor 1.0 \
+       --prune-threshold 500.0 \
+       --test-data data/test \
+       --dir $dir/segment \
+       --job JOB --num-jobs $nj
 fi
 
-if [ $stage -le 3 ]; then
+
+if [ $stage -le 3 ] && $score_mar; then
   echo "converting mask to mar format... Date: $(date)."
   for dataset in data/test $dir/segment; do
     scoring/convert_mask_to_mar.py \
@@ -74,10 +65,13 @@ if [ $stage -le 3 ]; then
 fi
 
 if [ $stage -le 4 ]; then
-  echo "getting score... Date: $(date)."
-  scoring/score.py \
-    --reference data/test/mar.txt \
-    --hypothesis $dir/segment/mar.txt \
-    --result $dir/segment/result.txt
+  if $score_mar; then
+    echo "getting score based on comparing text file... Date: $(date)."
+    scoring/score.py data/test/mar.txt $dir/segment/mar.txt \
+      $dir/segment/result.txt --score-mar
+  else
+    echo "getting score based on comparing mask image... Date: $(date)."
+    scoring/score.py data/test/mask $dir/segment/mask $dir/segment/result.txt
+  fi
 fi
 echo "Date: $(date)."
