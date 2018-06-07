@@ -17,7 +17,7 @@ download_dir3=/export/corpora/LDC/LDC2013T15/data
 writing_condition1=/export/corpora/LDC/LDC2012T15/docs/writing_conditions.tab
 writing_condition2=/export/corpora/LDC/LDC2013T09/docs/writing_conditions.tab
 writing_condition3=/export/corpora/LDC/LDC2013T15/docs/writing_conditions.tab
-score_mask=false
+score_mar=true
 local/check_dependencies.sh
 
 
@@ -75,13 +75,13 @@ if [ $stage -le 3 ]; then
 fi
 
 if [ $stage -le 4 ]; then
-  if $score_mask; then
-    echo "getting score based on comparing mask image... Date: $(date)."
-    scoring/score.py data/test/mask $dir/segment/mask $dir/segment/result.txt
-  else
+  if $score_mar; then
     echo "getting score based on comparing text file... Date: $(date)."
     scoring/score.py data/test/mar.txt $dir/segment/mar.txt \
       $dir/segment/result.txt --score-mar
+  else
+    echo "getting score based on comparing mask image... Date: $(date)."
+    scoring/score.py data/test/mask $dir/segment/mask $dir/segment/result.txt
   fi
 fi
 echo "Date: $(date)."
