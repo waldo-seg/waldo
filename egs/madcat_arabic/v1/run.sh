@@ -65,7 +65,7 @@ if [ $stage -le 2 ]; then
     --dir $dir/segment
 fi
 
-if [ $stage -le 3 ]; then
+if [ $stage -le 3 ] && $score_mar; then
   echo "converting mask to mar format... Date: $(date)."
   for dataset in data/test $dir/segment; do
     scoring/convert_mask_to_mar.py \

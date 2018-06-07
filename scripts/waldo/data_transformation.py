@@ -52,19 +52,19 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
         return image_with_objects
 
     im = Image.fromarray(im_arr)
-    sx = float(im.size[0])
-    sy = float(im.size[1])
+    original_height = float(im.size[0])
+    original_width = float(im.size[1])
     scale = 0
-    if sy > sx:
-        ny = max_size
-        scale = (1.0 * ny) / sy
-        nx = scale * sx
+    if original_width > original_height:
+        new_width = max_size
+        scale = (1.0 * new_width) / original_width
+        new_height = scale * original_height
     else:
-        nx = max_size
-        scale = (1.0 * nx) / sx
-        ny = scale * sy
+        new_height = max_size
+        scale = (1.0 * new_height) / original_height
+        new_width = scale * original_width
 
-    resized_img = im.resize((int(nx), int(ny)), Image.ANTIALIAS)
+    resized_img = im.resize((int(new_height), int(new_width)), Image.ANTIALIAS)
     resized_img_arr = np.array(resized_img)
 
     resized_objects = []
@@ -73,10 +73,10 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
         object = {}
         resized_pp = []
         for point in ordered_polygon_points:
-            x, y = point
-            new_x = int(x * scale)
-            new_y = int(y * scale)
-            new_point = (new_x, new_y)
+            h, w = point
+            new_h = int(h * scale)
+            new_w = int(w * scale)
+            new_point = (new_h, new_w)
             resized_pp.append(new_point)
         object['polygon'] = resized_pp
         resized_objects.append(object)
@@ -87,7 +87,6 @@ def scale_down_image_with_objects(image_with_objects, config, max_size):
     }
 
     validate_image_with_objects(resized_image_with_objects, config)
-
     return resized_image_with_objects
 
 
