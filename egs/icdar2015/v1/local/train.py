@@ -106,8 +106,8 @@ def main():
     merge_mode = u_config.merge_mode
     depth = u_config.depth
 
-    train_data = args.train_dir + '/train'
-    val_data = args.train_dir + '/val'
+    train_data = os.path.join(args.train_dir,'train')
+    val_data = os.path.join(args.train_dir,'val')
 
     trainset = WaldoDataset(train_data, c_config, args.train_image_size)
     trainloader = torch.utils.data.DataLoader(
