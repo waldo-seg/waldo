@@ -77,12 +77,11 @@ fi
 if [ $stage -le 4 ]; then
   if $score_mask; then
     echo "getting score based on comparing mask image... Date: $(date)."
-    scoring/score.py data/test/mask $dir/segment/mask $dir/segment/result.txt \
-      -score-mask
+    scoring/score.py data/test/mask $dir/segment/mask $dir/segment/result.txt
   else
     echo "getting score based on comparing text file... Date: $(date)."
     scoring/score.py data/test/mar.txt $dir/segment/mar.txt \
-      $dir/segment/result.txt
+      $dir/segment/result.txt --score-mar
   fi
 fi
 echo "Date: $(date)."
