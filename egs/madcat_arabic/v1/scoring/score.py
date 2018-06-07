@@ -15,19 +15,19 @@ import numpy as np
 
 parser = argparse.ArgumentParser(
     description='scoring script for text localization')
-parser.add_argument('--reference', type=str, required=True,
+parser.add_argument('reference', type=str,
                     help='reference directory of test data, contains np array')
-parser.add_argument('--hypothesis', type=str, required=True,
+parser.add_argument('hypothesis', type=str,
                     help='hypothesis directory of test data, contains np array')
-parser.add_argument('--result', type=str, required=True,
+parser.add_argument('result', type=str,
                     help='the file to store final statistical results')
-parser.add_argument("--if_eval_mask_image",
-                   help="calculate score based on comparing mask image")
+parser.add_argument("-score-mask", "--if-score-mask-image", action="store_true",
+                   help="if to calculate the score based on comparing mask image")
 args = parser.parse_args()
 
 def main():
     threshold_list = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
-    if args.if_eval_mask_image:
+    if args.if_score_mask_image:
         mean_ap, mean_ar, stat_dict = get_mean_avg_score_from_mask_image(threshold_list)
     else:
         ref_image_rect_dict = read_rect_coordinates(args.reference)
