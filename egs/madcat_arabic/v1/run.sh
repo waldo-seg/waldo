@@ -65,7 +65,7 @@ if [ $stage -le 3 ] && $score_mar; then
       --sizedir data/test/orig_dim
   done
   mkdir -p $dir/segment/img_orig
-  scoring/draw_mar.py data/test $dir/segment
+  scoring/draw_mar.py data/test $dir/segment --head 10
 fi
 
 if [ $stage -le 4 ]; then

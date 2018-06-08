@@ -13,6 +13,8 @@ parser.add_argument('ground_truth_dir', type=str,
                     help='directory with original image and original MAR')
 parser.add_argument('predicted_dir', type=str,
                     help='directory with predicted MAR')
+parser.add_argument('--head', type=int, default=10,
+                    help='determines number images to draw the MAR. If value set to negative then processes all images.')
 args = parser.parse_args()
 
 def draw_rect(img, rect, color):
@@ -32,8 +34,11 @@ def main():
     gt_mar = os.path.join(args.ground_truth_dir, 'mar_orig.txt')
     pred_mar = os.path.join(args.predicted_dir, 'mar_orig.txt')
     output = os.path.join(args.predicted_dir, 'img_orig')
+    count = 0
     with open(gt_mar) as f1, open(pred_mar) as f2:
         for gt, pred in zip(f1, f2):
+            if count >= args.head and args.head >= 0:
+                break
             gt = gt.strip()
             pred = pred.strip()
             img_id = gt.split(' ')[0]
@@ -47,6 +52,7 @@ def main():
             img = draw_rect(img, gt_list, 'BLACK')
             img = draw_rect(img, pred_list, 'RED')
             scipy.misc.imsave('{}/{}_orig.png'.format(output, img_id), img)
+            count = count + 1
 
 
 if __name__ == '__main__':
