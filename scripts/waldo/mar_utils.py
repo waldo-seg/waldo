@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 
 # Copyright   2018 Ashish Arora
+# Copyright   2018 Chun-Chieh Chang
 # Apache 2.0
 
 # minimum bounding box script is originally from
 #https://github.com/BebeSparkelSparkel/MinimumBoundingBox
 #https://startupnextdoor.com/computing-convex-hull-in-python/
+
+# dilate and erode script is inspired by
+# https://stackoverflow.com/questions/3749678/expand-fill-of-convex-polygon
 
 """ It is a collection of utility functions that finds minimum area rectangle (MAR).
  Given the list of points, get_mar function finds a MAR that contains all the
@@ -247,6 +251,62 @@ def _get_mask_points(img_arr):
         del masks_point_dict[max_point_object_id]
 
     return masks_point_dict
+
+
+def dilate_polygon(points, amount_increase):
+    """ Increases size of polygon given as a list of tuples. Assumes points in polygon are given in CCW
+    """
+    expanded_points = []
+    for index, point in enumerate(points):
+        prev_point = points[(index - 1) % len(points)]
+        next_point = points[(index + 1) % len(points)]
+        prev_edge = np.subtract(point, prev_point)
+        next_edge = np.subtract(next_point, point)
+        
+        prev_normal = ((1 * prev_edge[1]), (-1 * prev_edge[0]))
+        prev_normal = np.divide(prev_normal, np.linalg.norm(prev_normal))
+        next_normal = ((1 * next_edge[1]), (-1 * next_edge[0]))
+        next_normal = np.divide(next_normal, np.linalg.norm(next_normal))
+
+        bisect = np.add(prev_normal, next_normal)
+        bisect = np.divide(bisect, np.linalg.norm(bisect))
+        
+        cos_theta = np.dot(next_normal, bisect)
+        hyp = amount_increase / cos_theta
+        
+        new_point = np.around(point + hyp * bisect)
+        new_point = new_point.astype(int)
+        new_point = new_point.tolist()
+        expanded_points.append(new_point)
+    return expanded_points
+
+
+def erode_polygon(points, amount_increase):
+    """ Increases size of polygon given as a list of tuples. Assumes points in polygon are given in CCW
+    """
+    expanded_points = []
+    for index, point in enumerate(points):
+        prev_point = points[(index - 1) % len(points)]
+        next_point = points[(index + 1) % len(points)]
+        prev_edge = np.subtract(point, prev_point)
+        next_edge = np.subtract(next_point, point)
+
+        prev_normal = ((-1 * prev_edge[1]), (1 * prev_edge[0]))
+        prev_normal = np.divide(prev_normal, np.linalg.norm(prev_normal))
+        next_normal = ((-1 * next_edge[1]), (1 * next_edge[0]))
+        next_normal = np.divide(next_normal, np.linalg.norm(next_normal))
+
+        bisect = np.add(prev_normal, next_normal)
+        bisect = np.divide(bisect, np.linalg.norm(bisect))
+
+        cos_theta = np.dot(next_normal, bisect)
+        hyp = amount_increase / cos_theta
+
+        new_point = np.around(point + hyp * bisect)
+        new_point = new_point.astype(int)
+        new_point = new_point.tolist()
+        expanded_points.append(new_point)
+    return expanded_points
 
 
 def get_rectangles_from_mask(img_arr):

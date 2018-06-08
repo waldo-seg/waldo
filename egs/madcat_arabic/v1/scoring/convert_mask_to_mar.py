@@ -9,6 +9,7 @@ import sys
 import numpy as np
 from glob import glob
 from waldo.data_manipulation import get_mar_from_mask
+from waldo.mar_utils import dilate_polygon
 
 parser = argparse.ArgumentParser(description='converts np array to rle format')
 parser.add_argument('--indir', type=str, required=True,
@@ -71,6 +72,7 @@ def write_rects_to_file_orig_dim(out_dir, mar_dict):
             point_str = str()
             point_str_scaled = str()
             for mar in mask_mar_list:
+                #mar = dilate_polygon(mar, 2)
                 for point in mar:
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
                     point_str_scaled = point_str_scaled + str(int(point[0]*scale)) + ',' + str(int(point[1]*scale)) + ','
