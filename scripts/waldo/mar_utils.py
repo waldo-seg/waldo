@@ -9,7 +9,7 @@
 #https://startupnextdoor.com/computing-convex-hull-in-python/
 
 # dilate and erode script is inspired by
-# https://stackoverflow.com/questions/3749678/expand-fill-of-convex-polygon
+# https://stackoverflow.com/a/3897471
 
 """ It is a collection of utility functions that finds minimum area rectangle (MAR).
  Given the list of points, get_mar function finds a MAR that contains all the

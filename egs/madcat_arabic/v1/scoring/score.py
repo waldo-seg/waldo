@@ -152,10 +152,8 @@ def read_rect_coordinates(file_name):
         for line in f:
             line_vect = line.strip().split(' ')
             image_id = line_vect[0]
-            rect_coordinates = line_vect[1].split(',')[:-1]
-            if image_id not in image_rect_dict.keys():
-                image_rect_dict[image_id] = list()
-            image_rect_dict[image_id].append(rect_coordinates)
+            rect_coordinates = [[int(y) for y in x.split(',')[:-1]] for x in line_vect[1].split(';')[:-1]]
+            image_rect_dict[image_id] = rect_coordinates
     return image_rect_dict
 
 

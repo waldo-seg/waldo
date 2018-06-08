@@ -72,7 +72,7 @@ def write_rects_to_file_orig_dim(out_dir, mar_dict):
             point_str = str()
             point_str_scaled = str()
             for mar in mask_mar_list:
-                #mar = dilate_polygon(mar, 2)
+                mar = dilate_polygon(mar, 1.5)
                 for point in mar:
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
                     point_str_scaled = point_str_scaled + str(int(point[0]*scale)) + ',' + str(int(point[1]*scale)) + ','
