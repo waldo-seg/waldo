@@ -43,7 +43,7 @@ def validate_data(gtFilePath, submFilePath,evaluationParams):
     gt = rrc_evaluation_funcs.load_zip_file(gtFilePath,evaluationParams['GT_SAMPLE_NAME_2_ID'])
 
     subm = rrc_evaluation_funcs.load_zip_file(submFilePath,evaluationParams['DET_SAMPLE_NAME_2_ID'],True)
-    
+    print(len(gt),len(subm))    
     #Validate format of GroundTruth
     for k in gt:
         rrc_evaluation_funcs.validate_lines_in_file(k,gt[k],evaluationParams['CRLF'],evaluationParams['LTRB'],True)
@@ -64,7 +64,7 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
         - samples (optional) Per sample metrics. Ex: {'sample1' : { 'Precision':0.8,'Recall':0.9 } , 'sample2' : { 'Precision':0.8,'Recall':0.9 }
     """    
     
-    for module,alias in evaluation_imports().iteritems():
+    for module,alias in evaluation_imports().items():
         globals()[alias] = importlib.import_module(module)    
     
     def polygon_from_points(points):

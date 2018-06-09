@@ -4,7 +4,7 @@
 set -e
 
 nj=4
-stage=1
+stage=3
 
 . ./cmd.sh ## You'll want to change cmd.sh to something that will work on your system.
            ## This relates to the queue.
@@ -46,11 +46,11 @@ fi
 
 #Preparation for scoring
 mkdir -p $dir/segment/results
-zip -r $dir/segment/lbl.zip $dir/segment/lbl
+zip -j $dir/segment/lbl.zip $dir/segment/lbl/*
 
 if [ $stage -le 3 ]; then
   echo "doing evaluation..."
-  python local/eval/script.py \
+  python3 local/eval/script.py \
     -g=data/test/ground_truth.zip \
     -s=$dir/segment/lbl.zip \
     -o=$dir/segment/results

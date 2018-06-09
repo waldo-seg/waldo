@@ -125,7 +125,7 @@ def segment(dataloader, segment_dir, model, core_config):
     offset_list = core_config.offsets
 
     for i, (img, size, id) in enumerate(dataloader):
-        id = id[0]  # tuple to str
+        id = "res_" + id[0][:-4]  # tuple to str
         if id + '.txt' in exist_ids:
             continue
         original_height, original_width = size[0].item(), size[1].item()

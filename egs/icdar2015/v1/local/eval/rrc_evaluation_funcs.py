@@ -14,7 +14,7 @@ import sys
 import os
 import codecs
 import importlib
-from StringIO import StringIO
+from io import StringIO
 
 def print_help():
     sys.stdout.write('Usage: python %s.py -g=<gtFile> -s=<submFile> [-o=<outputFolder> -p=<jsonParams>]' %sys.argv[0])
@@ -309,7 +309,7 @@ def main_evaluation(p,default_evaluation_params_fn,validate_data_fn,evaluate_met
         evalData = evaluate_method_fn(p['g'], p['s'], evalParams)
         resDict.update(evalData)
         
-    except Exception, e:
+    except Exception as e:
         resDict['Message']= str(e)
         resDict['calculated']=False
 
@@ -335,11 +335,11 @@ def main_evaluation(p,default_evaluation_params_fn,validate_data_fn,evaluate_met
     
     if 'o' in p:
         if per_sample == True:
-            for k,v in evalData['per_sample'].iteritems():
+            for k,v in evalData['per_sample'].items():
                 outZip.writestr( k + '.json',json.dumps(v)) 
 
             if 'output_items' in evalData.keys():
-                for k, v in evalData['output_items'].iteritems():
+                for k, v in evalData['output_items'].items():
                     outZip.writestr( k,v) 
 
         outZip.close()
