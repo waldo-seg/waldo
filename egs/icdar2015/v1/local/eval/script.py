@@ -1,5 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+"""
+This script is taken from the official evaluation script for ICDAR 2015 Robust Reading challenge
+Incidental Scene Text (http://rrc.cvc.uab.es/?ch=4&com=mymethods&task=1) Task 4.1 Text Localization.
+"""
+
 from collections import namedtuple
 import rrc_evaluation_funcs
 import importlib
