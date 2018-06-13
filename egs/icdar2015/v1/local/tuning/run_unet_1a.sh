@@ -4,7 +4,7 @@ stage=0
 num_colors=3
 num_classes=2
 padding=10
-train_image_size=128
+train_image_size=512
 
 depth=5
 epochs=10

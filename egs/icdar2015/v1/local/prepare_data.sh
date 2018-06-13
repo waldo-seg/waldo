@@ -40,4 +40,4 @@ local/process_data.py --dl_dir $dl_dir --outdir data \
 
 
 ##Zip test image ground truth labels and save in data directory
-zip -r data/test/ground_truth.zip ${dl_dir}/test/labels
+zip -j data/test/ground_truth.zip ${dl_dir}/test/labels/*
