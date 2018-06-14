@@ -153,7 +153,7 @@ def get_line_mar_from_word_bb(madcat_file_path, mar_text_fh):
         points = tuple(points)
         points_ordered = [points[index] for index in ConvexHull(points).vertices]
         mar_list.append(points_ordered)
-        (x1, y1), (x2, y2), (x3, y3), (x4, y4) = points_ordered[0], points_ordered[1], points_ordered[2], points_ordered[3]
+        (y1, x1), (y2, x2), (y3, x3), (y4, x4) = points_ordered[0], points_ordered[1], points_ordered[2], points_ordered[3]
         min_x, min_y = int(min(x1, x2, x3, x4)), int(min(y1, y2, y3, y4))
         max_x, max_y = int(max(x1, x2, x3, x4)), int(max(y1, y2, y3, y4))
 
@@ -163,7 +163,7 @@ def get_line_mar_from_word_bb(madcat_file_path, mar_text_fh):
         utt_id_coordinates = str(min_x) + '_' + str(min_y) + '_' + str(max_x) + '_' + str(max_y)
         point_str = str()
         for point in points_ordered:
-            point_str = point_str + str(int(point[0])) + ',' + str(int(point[1])) + ','
+            point_str = point_str + str(int(point[1])) + ',' + str(int(point[0])) + ','
         point_str = point_str[:-1]
         mar_text_fh.write(utt_id_filename + ' ' + utt_id_coordinates + ' ' + point_str + ' ' + text + '\n')
     return mar_list
