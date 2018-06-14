@@ -136,7 +136,7 @@ def get_line_mar_from_word_bb(madcat_file_path, mar_text_fh):
     text_line_word_dict = read_text(madcat_file_path)
     doc = minidom.parse(madcat_file_path)
     zone = doc.getElementsByTagName('zone')
-    base_name = os.path.splitext(os.path.basename(madcat_file_path))[0]
+    base_name = os.path.basename(madcat_file_path).split('.madcat')[0]
     for node in zone:
         line_id = node.getAttribute('id')
         line_id = line_id.zfill(4)

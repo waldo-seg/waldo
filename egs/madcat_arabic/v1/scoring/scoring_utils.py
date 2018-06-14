@@ -131,6 +131,44 @@ def _evaluate_text_file(ref_rect_list, hyp_rect_list, iou_threshold):
     return score
 
 
+def get_mar_transcription_mapping(ref_rect_list, hyp_rect):
+    """Given reference rectangle list and transcriptions and hypothesis
+    rectangle, it returns mapping between hypothesis rectangle
+    and reference transcription. It requires reference
+    rectangle list to contain rectangle in each line. A rectangle is described
+    by 8 values (h1,w1,h2,w2,h3,w3,h4,w4)
+    input
+    -----
+    ref_rect_list [([int], str)]: contains a list of tuple, contains a list of rectangle
+    and text and a rectangle is a list containing 8 integer values.
+    hyp_rect_list [int]: contains a list of list, contains a list of rectangle
+    and a rectangle is a list containing 8 integer values.
+    Returns
+    -------
+    a dict that contains:
+    """
+
+    # get all polygons present in the file
+    ref_polygons = _get_rect_in_shapely_format(ref_rect_list)
+    hyp_polygon = _get_rect_in_shapely_format(hyp_rect)
+    num_ref = len(ref_polygons)
+
+    # compute intersection over union value
+    # for each ref and hyp object pair. Store
+    # the value in iou_score matrix
+    # iou_score[ref_index, hyp_index] is the iou
+    # of reference object (ref_index) and hypothesis object (hyp_index).
+    iou_score = [0] * num_ref
+    for ref_index in range(num_ref):
+            polygon_ref = ref_polygons[ref_index]
+            iou_score[ref_index] = _get_intersection_over_union(polygon_hyp, polygon_ref)
+
+    # get stats for a given iou threshold value
+    mapping = get_mapping(iou_score, ref_rect_list)
+
+    return score
+
+
 def get_stats(iou_score, iou_threshold):
     """
     Given iou score for each ref hyp pair, it returns the precision

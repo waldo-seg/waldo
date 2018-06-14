@@ -25,6 +25,11 @@ parser.add_argument("--score-mar", action="store_true",
                    help="If true, score after finding the minimum area rectangle"
                         " derived from the object mask. If false, score based on" 
                         " object mask without further processing.")
+parser.add_argument("--map-mar-transcription", action="store_true",
+                   help="If true, map hypothesis mar with the transciptions. "
+                        "a hypothesis box is mapped with the transcription "
+                        "of reference box that had the largest IoU overlap "
+                        "with that box. ")
 args = parser.parse_args()
 
 def main():
@@ -40,6 +45,11 @@ def main():
 
     write_stats_to_file(mean_ap, mean_ar, stat_dict)
 
+    if args.map_mar_transcription:
+        ref_dict = read_rect_coordinates_and_transcription(args.reference)
+        hyp_dict = read_rect_coordinates(args.hypothesis)
+        mar_transcription_mapping = get_mar_transcription_mapping(
+            ref_dict, hyp_dict)
 
 def get_mean_avg_scores(threshold_list, ref_dict, hyp_dict):
     """
@@ -154,6 +164,35 @@ def read_rect_coordinates(file_name):
             image_id = line_vect[0]
             rect_coordinates = [[int(y) for y in x.split(',')[:-1]] for x in line_vect[1].split(';')[:-1]]
             image_rect_dict[image_id] = rect_coordinates
+    return image_rect_dict
+
+
+def read_rect_coordinates_and_transcription(file_name):
+    """ Given the file name, it reads mask_id, rectangle
+        coordinates and transcription from the file. It finally
+        returns a image_rect_dict. A file should contain mask_id and
+        the co-ordinates of the mar that covers the mask with that mask id,
+        in the form of a counter-clockwise list of points. A mar is
+        described by 8 values (h1,w1,h2,w2,h3,w3,h4,w4), in the format:
+          <mask-id> h1,w1,h2,w2,h3,w3,h4,w4
+        for example:
+          HYT_ARB_20070103.0066_4_LDC0061 25,179,15,178,16,70,26,71
+        return
+        ------
+        image_rect_dict : dict([[int]]): dict of a list of list, for
+          each image_id it contains a list of rectangle and a rectangle
+          is a list containing 8 integer values (h1,w1,h2,w2,h3,w3,h4,w4)
+    """
+    image_rect_dict = {}
+    with open(file_name) as f:
+        for line in f:
+            line_vect = line.strip().split(' ')
+            image_id = line_vect[0].split('_')
+            rect_coordinates = line_vect[2].split(',')
+            transcription = line_vect[3:]
+            if image_id not in image_rect_dict.keys():
+                image_rect_dict[image_id] = list()
+            image_rect_dict[image_id].append((rect_coordinates, transcription))
     return image_rect_dict
 
 
