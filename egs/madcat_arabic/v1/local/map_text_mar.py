@@ -144,6 +144,7 @@ def get_line_mar_from_word_bb(madcat_file_path, mar_text_fh):
         line_id = line_id.zfill(4)
         token_image = node.getElementsByTagName('token-image')
         mbb_input = []
+        # get mar coordinates for a line
         for token_node in token_image:
             word_point = token_node.getElementsByTagName('point')
             for word_node in word_point:
@@ -153,19 +154,16 @@ def get_line_mar_from_word_bb(madcat_file_path, mar_text_fh):
         points = tuple(points)
         points_ordered = [points[index] for index in ConvexHull(points).vertices]
         mar_list.append(points_ordered)
-        (y1, x1), (y2, x2), (y3, x3), (y4, x4) = points_ordered[0], points_ordered[1], points_ordered[2], points_ordered[3]
-        min_x, min_y = int(min(x1, x2, x3, x4)), int(min(y1, y2, y3, y4))
-        max_x, max_y = int(max(x1, x2, x3, x4)), int(max(y1, y2, y3, y4))
 
+        # write reference mar and transcription
         line = text_line_word_dict[line_id]
         text = ' '.join(line)
         utt_id_filename = base_name + '_' + str(line_id).zfill(4)
-        utt_id_coordinates = str(min_x) + '_' + str(min_y) + '_' + str(max_x) + '_' + str(max_y)
         point_str = str()
         for point in points_ordered:
             point_str = point_str + str(int(point[1])) + ',' + str(int(point[0])) + ','
         point_str = point_str[:-1]
-        mar_text_fh.write(utt_id_filename + ' ' + utt_id_coordinates + ' ' + point_str + ' ' + text + '\n')
+        mar_text_fh.write(utt_id_filename + ' ' + point_str + ' ' + text + '\n')
     return mar_list
 
 
@@ -216,7 +214,7 @@ def main():
         point_str = str()
         for mar in mar_list:
             for point in mar:
-                point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
+                point_str = point_str + str(point[1]) + ',' + str(point[0]) + ','
             point_str = point_str + ';'
         mar_fh.write('{} {}\n'.format(base_name, point_str))
 
