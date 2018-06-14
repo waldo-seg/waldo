@@ -9,7 +9,7 @@
 
 import argparse
 import os
-from scoring_utils import get_score
+from scoring_utils import get_score, get_mar_transcription_mapping
 from glob import glob
 import numpy as np
 
