@@ -62,7 +62,7 @@ def write_rects_to_file_orig_dim(out_dir, mar_dict):
     mar_dict (dict): mar dictionary containing mask_id and list of list of coordinates
     """
     txt_path = os.path.join(out_dir, 'mar.txt')
-    txt_path2 = os.path.join(out_dir, 'mar_orig.txt')
+    txt_path2 = os.path.join(out_dir, 'mar_orig_size.txt')
     mar_orig_fh = open(txt_path2, 'w')
     with open(txt_path, 'w') as fh:
         for mask_id in mar_dict.keys():

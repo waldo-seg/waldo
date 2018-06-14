@@ -108,8 +108,8 @@ def _evaluate_text_file(ref_rect_list, hyp_rect_list, iou_threshold):
     """
 
     # get all polygons present in the file
-    ref_polygons = _get_rect_in_shapely_format(ref_rect_list)
-    hyp_polygons = _get_rect_in_shapely_format(hyp_rect_list)
+    ref_polygons = _get_polygons(ref_rect_list)
+    hyp_polygons = _get_polygons(hyp_rect_list)
     num_ref = len(ref_polygons)
     num_hyp = len(hyp_polygons)
 
@@ -131,7 +131,7 @@ def _evaluate_text_file(ref_rect_list, hyp_rect_list, iou_threshold):
     return score
 
 
-def get_mar_transcription_mapping(ref_rect_list, hyp_rect):
+def get_mar_transcription_mapping(ref_rect_transcription_list, hyp_rect):
     """Given reference rectangle list and transcriptions and hypothesis
     rectangle, it returns mapping between hypothesis rectangle
     and reference transcription. It requires reference
@@ -149,8 +149,8 @@ def get_mar_transcription_mapping(ref_rect_list, hyp_rect):
     """
 
     # get all polygons present in the file
-    ref_polygons = _get_rect_in_shapely_format(ref_rect_list)
-    hyp_polygon = _get_rect_in_shapely_format(hyp_rect)
+    polygon_hyp = _get_rect_in_shapely_format(hyp_rect)
+    ref_polygons = _get_rect_list_in_shapely_format(ref_rect_transcription_list)
     num_ref = len(ref_polygons)
 
     # compute intersection over union value
@@ -163,10 +163,9 @@ def get_mar_transcription_mapping(ref_rect_list, hyp_rect):
             polygon_ref = ref_polygons[ref_index]
             iou_score[ref_index] = _get_intersection_over_union(polygon_hyp, polygon_ref)
 
-    # get stats for a given iou threshold value
-    mapping = get_mapping(iou_score, ref_rect_list)
-
-    return score
+    max_index = np.argmax(iou_score)
+    ref_rect_transcription = ref_rect_transcription_list[max_index]
+    return ref_rect_transcription, max_index
 
 
 def get_stats(iou_score, iou_threshold):
@@ -240,7 +239,7 @@ def _get_intersection_over_union(hyp_rect, ref_rect):
         return 0
 
 
-def _get_rect_in_shapely_format(rect_list):
+def _get_polygons(rect_list):
     """
     Given a rectangle list, it convert and returns the rectangle
     in shapely format. Shapely library is used to calculate intersection
@@ -258,19 +257,47 @@ def _get_rect_in_shapely_format(rect_list):
     rect_shapely = []
     for n in range(len(rect_list)):
         points = rect_list[n]
-        rect_coordinate = np.empty([1, 8], dtype='int32')
-        rect_coordinate[0, 0] = int(points[0])
-        rect_coordinate[0, 4] = int(points[1])
-        rect_coordinate[0, 1] = int(points[2])
-        rect_coordinate[0, 5] = int(points[3])
-        rect_coordinate[0, 2] = int(points[4])
-        rect_coordinate[0, 6] = int(points[5])
-        rect_coordinate[0, 3] = int(points[6])
-        rect_coordinate[0, 7] = int(points[7])
-        rect_coordinate_reshaped = rect_coordinate[0].reshape([2, 4]).T
-        rect = Polygon(rect_coordinate_reshaped)
+        rect = _get_rect_in_shapely_format(points)
         rect_shapely.append(rect)
     return rect_shapely
+
+
+def _get_rect_list_in_shapely_format(rect_list):
+    """
+    Given a rectangle list, it convert and returns the rectangle
+    in shapely format. Shapely library is used to calculate intersection
+    and union area of two rectangles.
+    input
+    -----
+    rect_list [[int]]: contains a list of list, contains a list of rectangle
+    and a rectangle is a list containing 8 integer values. These values are
+    (h1,w1,h2,w2,h3,w3,h4,w4)
+    return
+    ------
+    rect_list: list of rectangle in shapely format
+    """
+
+    rect_shapely = []
+    for n in range(len(rect_list)):
+        points = rect_list[n]
+        rect = _get_rect_in_shapely_format(points[0])
+        rect_shapely.append(rect)
+    return rect_shapely
+
+
+def _get_rect_in_shapely_format(points):
+    rect_coordinate = np.empty([1, 8], dtype='int32')
+    rect_coordinate[0, 0] = int(points[0])
+    rect_coordinate[0, 4] = int(points[1])
+    rect_coordinate[0, 1] = int(points[2])
+    rect_coordinate[0, 5] = int(points[3])
+    rect_coordinate[0, 2] = int(points[4])
+    rect_coordinate[0, 6] = int(points[5])
+    rect_coordinate[0, 3] = int(points[6])
+    rect_coordinate[0, 7] = int(points[7])
+    rect_coordinate_reshaped = rect_coordinate[0].reshape([2, 4]).T
+    rect = Polygon(rect_coordinate_reshaped)
+    return rect
 
 
 def get_score(ref, hyp, iou_threshold, if_eval_text_file=True):
@@ -303,4 +330,5 @@ def get_score(ref, hyp, iou_threshold, if_eval_text_file=True):
         return _evaluate_text_file(ref, hyp, iou_threshold)
     else:
         return _evaluate_mask_image(ref, hyp, iou_threshold)
+
 

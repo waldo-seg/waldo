@@ -48,8 +48,13 @@ def main():
     if args.map_mar_transcription:
         ref_dict = read_rect_coordinates_and_transcription(args.reference)
         hyp_dict = read_rect_coordinates(args.hypothesis)
-        mar_transcription_mapping = get_mar_transcription_mapping(
-            ref_dict, hyp_dict)
+        for image_id in hyp_dict:
+            ref_rect_transcription_list = ref_dict[image_id]
+            for hyp_rect in hyp_dict[image_id]:
+                ref_rect_transcription, best_index = get_mar_transcription_mapping(
+                    ref_rect_transcription_list, hyp_rect)
+                print("{}  {}".format(ref_rect_transcription, best_index))
+
 
 def get_mean_avg_scores(threshold_list, ref_dict, hyp_dict):
     """

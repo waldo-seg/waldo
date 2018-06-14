@@ -73,10 +73,11 @@ if [ $stage -le 4 ]; then
   if $score_mar; then
     echo "getting score based on comparing text file... Date: $(date)."
     scoring/score.py data/test/mar.txt $dir/segment/mar.txt \
-      $dir/segment/result.txt --score-mar
+      $dir/segment/result.txt --score-mar --map-mar-transcription
   else
     echo "getting score based on comparing mask image... Date: $(date)."
-    scoring/score.py data/test/mask $dir/segment/mask $dir/segment/result.txt
+    scoring/score.py data/test/mask $dir/segment/mask $dir/segment/result.txt \
+      --map-mar-transcription
   fi
 fi
 
@@ -85,10 +86,6 @@ if [ $stage -le 5 ]; then
   mkdir -p data/test/lines
   mkdir -p $dir/segment/lines
   data_split_file=$data_splits_dir/madcat.test.raw.lineid
-  #local/get_line_image_from_mar.py $download_dir1 $download_dir2 $download_dir3 \
-  #  $data_split_file data/test/lines $writing_condition1 $writing_condition2 \
-  #  $writing_condition3 data/test/mar_orig.txt
-
   local/get_line_image_from_mar.py $download_dir1 $download_dir2 $download_dir3 \
     $data_split_file $dir/segment/lines $writing_condition1 $writing_condition2 \
     $writing_condition3 $dir/segment/mar_orig.txt
