@@ -21,6 +21,8 @@ parser.add_argument('hypothesis', type=str,
                     help='hypothesis directory of test data, contains np array')
 parser.add_argument('result', type=str,
                     help='the file to store final statistical results')
+parser.add_argument('--mar-text-mapping', type=str,
+                    help='the reference file containing mapping between mar and text')
 parser.add_argument("--score-mar", action="store_true",
                    help="If true, score after finding the minimum area rectangle"
                         " derived from the object mask. If false, score based on" 
