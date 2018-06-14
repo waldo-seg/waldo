@@ -377,3 +377,34 @@ def get_mar(polygon):
     return points_list
 
 
+def get_rectangle(polygon):
+    """ Given a list of points, returns a minimum area rectangle that will
+    contain all points. It will not necessarily be vertically or horizontally
+     aligned.
+    Returns
+    -------
+    list((int, int)): 4 corner points of rectangle.
+    """
+    polygon = tuple(polygon)
+    hull_ordered = [polygon[index] for index in ConvexHull(polygon).vertices]
+    hull_ordered.append(hull_ordered[0])
+    hull_ordered = tuple(hull_ordered)
+    min_rectangle = _bounding_area(0, hull_ordered)
+    for i in range(1, len(hull_ordered) - 1):
+        rectangle = _bounding_area(i, hull_ordered)
+        if rectangle['area'] < min_rectangle['area']:
+            min_rectangle = rectangle
+
+    min_rectangle['unit_vector_angle'] = atan2(min_rectangle['unit_vector'][1], min_rectangle['unit_vector'][0])
+    min_rectangle['rectangle_center'] = _to_xy_coordinates(min_rectangle['unit_vector_angle'],
+                                                           min_rectangle['rectangle_center'])
+    return bounding_box_tuple(
+        area=min_rectangle['area'],
+        length_parallel=min_rectangle['length_parallel'],
+        length_orthogonal=min_rectangle['length_orthogonal'],
+        rectangle_center=min_rectangle['rectangle_center'],
+        unit_vector=min_rectangle['unit_vector'],
+        unit_vector_angle=min_rectangle['unit_vector_angle'],
+        corner_points=set(_rectangle_corners(min_rectangle))
+    )
+
