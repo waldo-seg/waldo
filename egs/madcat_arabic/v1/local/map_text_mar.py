@@ -12,6 +12,7 @@ import os
 from waldo.data_manipulation import *
 import xml.dom.minidom as minidom
 import unicodedata
+from scipy.spatial import ConvexHull
 
 parser = argparse.ArgumentParser(description="Creates line images from page image",
                                  epilog="E.g.  " + sys.argv[0] + "  data/LDC2012T15"
@@ -137,6 +138,7 @@ def get_line_mar_from_word_bb(madcat_file_path, mar_text_fh):
     doc = minidom.parse(madcat_file_path)
     zone = doc.getElementsByTagName('zone')
     base_name = os.path.basename(madcat_file_path).split('.madcat')[0]
+    mar_list = list()
     for node in zone:
         line_id = node.getAttribute('id')
         line_id = line_id.zfill(4)
@@ -148,7 +150,10 @@ def get_line_mar_from_word_bb(madcat_file_path, mar_text_fh):
                 word_coordinate = (int(word_node.getAttribute('x')), int(word_node.getAttribute('y')))
                 mbb_input.append(word_coordinate)
         points = get_minimum_bounding_box(mbb_input)
-        (x1, y1), (x2, y2), (x3, y3), (x4, y4) = points[0], points[1], points[2], points[3]
+        points = tuple(points)
+        points_ordered = [points[index] for index in ConvexHull(points).vertices]
+        mar_list.append(points_ordered)
+        (x1, y1), (x2, y2), (x3, y3), (x4, y4) = points_ordered[0], points_ordered[1], points_ordered[2], points_ordered[3]
         min_x, min_y = int(min(x1, x2, x3, x4)), int(min(y1, y2, y3, y4))
         max_x, max_y = int(max(x1, x2, x3, x4)), int(max(y1, y2, y3, y4))
 
@@ -157,10 +162,11 @@ def get_line_mar_from_word_bb(madcat_file_path, mar_text_fh):
         utt_id_filename = base_name + '_' + str(line_id).zfill(4)
         utt_id_coordinates = str(min_x) + '_' + str(min_y) + '_' + str(max_x) + '_' + str(max_y)
         point_str = str()
-        for point in points:
+        for point in points_ordered:
             point_str = point_str + str(int(point[0])) + ',' + str(int(point[1])) + ','
         point_str = point_str[:-1]
         mar_text_fh.write(utt_id_filename + ' ' + utt_id_coordinates + ' ' + point_str + ' ' + text + '\n')
+    return mar_list
 
 
 def read_text(madcat_file_path):
@@ -200,10 +206,19 @@ def read_text(madcat_file_path):
 
 def main():
     file_list = get_file_list()
-    mar_text_file = os.path.join(args.out_dir, 'mar_text.txt')
-    mar_text_fh = open(mar_text_file, 'w', encoding='utf-8')
+    mar_transcription_file = os.path.join(args.out_dir, 'mar_transcription_mapping.txt')
+    mar_transcription_fh = open(mar_transcription_file, 'w', encoding='utf-8')
+    mar_file = os.path.join(args.out_dir, 'madcat_mar.txt')
+    mar_fh = open(mar_file, 'w', encoding='utf-8')
     for madcat_file_path in file_list:
-        get_line_mar_from_word_bb(madcat_file_path, mar_text_fh)
+        mar_list = get_line_mar_from_word_bb(madcat_file_path, mar_transcription_fh)
+        base_name = os.path.basename(madcat_file_path).split('.madcat')[0]
+        point_str = str()
+        for mar in mar_list:
+            for point in mar:
+                point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
+            point_str = point_str + ';'
+        mar_fh.write('{} {}\n'.format(base_name, point_str))
 
 
 if __name__ == '__main__':
