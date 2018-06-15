@@ -206,17 +206,9 @@ def main():
     file_list = get_file_list()
     mar_transcription_file = os.path.join(args.out_dir, 'mar_transcription_mapping.txt')
     mar_transcription_fh = open(mar_transcription_file, 'w', encoding='utf-8')
-    mar_file = os.path.join(args.out_dir, 'madcat_mar.txt')
-    mar_fh = open(mar_file, 'w', encoding='utf-8')
     for madcat_file_path in file_list:
         mar_list = get_line_mar_from_word_bb(madcat_file_path, mar_transcription_fh)
         base_name = os.path.basename(madcat_file_path).split('.madcat')[0]
-        point_str = str()
-        for mar in mar_list:
-            for point in mar:
-                point_str = point_str + str(point[1]) + ',' + str(point[0]) + ','
-            point_str = point_str + ';'
-        mar_fh.write('{} {}\n'.format(base_name, point_str))
 
 
 if __name__ == '__main__':
