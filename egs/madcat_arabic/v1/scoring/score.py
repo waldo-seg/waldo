@@ -21,17 +21,16 @@ parser.add_argument('hypothesis', type=str,
                     help='hypothesis directory of test data, contains np array')
 parser.add_argument('result', type=str,
                     help='the file to store final statistical results')
-parser.add_argument('--mar-text-mapping', type=str,
-                    help='the reference file containing mapping between mar and text')
+parser.add_argument('--mar-text-mapping', type=str, default=None,
+                    help="If not none, map hypothesis mar with the transciptions."
+                        "A hypothesis box is mapped with the transcription "
+                        "of reference box that had the largest IoU overlap."
+                        "The variable will provide the path of the reference " 
+                        "file containing mapping between mar and text")
 parser.add_argument("--score-mar", action="store_true",
                    help="If true, score after finding the minimum area rectangle"
                         " derived from the object mask. If false, score based on" 
                         " object mask without further processing.")
-parser.add_argument("--map-mar-transcription", action="store_true",
-                   help="If true, map hypothesis mar with the transciptions. "
-                        "a hypothesis box is mapped with the transcription "
-                        "of reference box that had the largest IoU overlap "
-                        "with that box. ")
 args = parser.parse_args()
 
 def main():
@@ -46,16 +45,19 @@ def main():
             threshold_list, ref_dict, hyp_dict)
 
     write_stats_to_file(mean_ap, mean_ar, stat_dict)
-
-    if args.map_mar_transcription:
-        ref_dict = read_rect_coordinates_and_transcription(args.reference)
-        hyp_dict = read_rect_coordinates(args.hypothesis)
-        for image_id in hyp_dict:
-            ref_rect_transcription_list = ref_dict[image_id]
-            for hyp_rect in hyp_dict[image_id]:
-                ref_rect_transcription, best_index = get_mar_transcription_mapping(
-                    ref_rect_transcription_list, hyp_rect)
-                print("{}  {}".format(ref_rect_transcription, best_index))
+    if args.mar_text_mapping:
+        mapping_file = os.path.join(args.result, 'mar_transcription_mapping.txt')
+        with open(mapping_file, 'w') as mapping_fh:
+            mar_file = os.path.join(args.out_dir, 'madcat_mar.txt')
+            mar_fh = open(mar_file, 'w', encoding='utf-8')
+            ref_dict = read_rect_coordinates_and_transcription(args.mar_text_mapping)
+            hyp_dict = read_rect_coordinates(args.hypothesis)
+            for image_id in hyp_dict:
+                ref_rect_transcription_list = ref_dict[image_id]
+                for hyp_rect in hyp_dict[image_id]:
+                    ref_rect_transcription, best_index = get_mar_transcription_mapping(
+                        ref_rect_transcription_list, hyp_rect)
+                    mapping_fh.write('{}  {}  {}  {}\n'.format(image_id, hyp_rect, ref_rect_transcription, best_index))
 
 
 def get_mean_avg_scores(threshold_list, ref_dict, hyp_dict):
@@ -137,15 +139,16 @@ def write_stats_to_file(mean_ap, mean_ar, stat_dict):
        stat_dict dict(dict): contains precision and recall value for each
        image for each threshold
     """
-    with open(args.result, 'w') as fh:
-        fh.write('Mean Average Precision: {}\n'.format(mean_ap))
-        fh.write('Mean Average Recall: {}\n'.format(mean_ar))
-        fh.write('ImageID  Threshold  Recall\n')
+    result_file = os.path.join(args.result, 'scoring_result.txt')
+    with open(result_file, 'w') as result_fh:
+        result_fh.write('Mean Average Precision: {}\n'.format(mean_ap))
+        result_fh.write('Mean Average Recall: {}\n'.format(mean_ar))
+        result_fh.write('ImageID  Threshold  Recall\n')
         for image_id in stat_dict.keys():
             for threshold in stat_dict[image_id].keys():
                 recall = stat_dict[image_id][threshold]
-                fh.write('{}  {}  {}\n'.format(image_id, threshold, recall))
-    print('Saved to {}'.format(args.result))
+                result_fh.write('{}  {}  {}\n'.format(image_id, threshold, recall))
+    print('Saved to {}'.format(result_file))
 
 
 def read_rect_coordinates(file_name):
@@ -194,9 +197,9 @@ def read_rect_coordinates_and_transcription(file_name):
     with open(file_name) as f:
         for line in f:
             line_vect = line.strip().split(' ')
-            image_id = line_vect[0].split('_')
-            rect_coordinates = line_vect[2].split(',')
-            transcription = line_vect[3:]
+            image_id = line_vect[0][:-5]
+            rect_coordinates = line_vect[1].split(',')
+            transcription = " ".join(line_vect[2:])
             if image_id not in image_rect_dict.keys():
                 image_rect_dict[image_id] = list()
             image_rect_dict[image_id].append((rect_coordinates, transcription))

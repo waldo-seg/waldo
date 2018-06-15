@@ -72,14 +72,14 @@ fi
 if [ $stage -le 4 ]; then
   if $score_mar; then
     echo "getting score based on comparing text file... Date: $(date)."
-    scoring/score.py data/test/mar.txt $dir/segment/mar.txt \
+    scoring/score.py data/test/mar_orig.txt $dir/segment/mar_orig.txt \
       $dir/segment/result.txt \
       --mar-text-mapping data/test/mar_transcription_mapping.txt \
-      --score-mar --map-mar-transcription
+      --score-mar
   else
     echo "getting score based on comparing mask image... Date: $(date)."
     scoring/score.py data/test/mask $dir/segment/mask $dir/segment/result.txt \
-      --mar-text-mapping data/test/mar_transcription_mapping.txt --map-mar-transcription
+      --mar-text-mapping data/test/mar_transcription_mapping.txt
   fi
 fi
 
