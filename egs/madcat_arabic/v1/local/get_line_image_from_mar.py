@@ -142,14 +142,12 @@ def rotated_points(bounding_box, center):
     return x_dash_1, y_dash_1, x_dash_2, y_dash_2, x_dash_3, y_dash_3, x_dash_4, y_dash_4
 
 
-def set_line_image_data(image, line_id, image_file_name, image_fh):
+def set_line_image_data(image, line_id, image_fh):
     """ Given an image, saves a flipped line image. Line image file name
         is formed by appending the line id at the end page image name.
     """
 
-    base_name = os.path.splitext(os.path.basename(image_file_name))[0]
-    line_id = '_' + line_id.zfill(4)
-    line_image_file_name = base_name + line_id + '.png'
+    line_image_file_name = line_id + '.png'
     image_path = os.path.join(args.out_dir, line_image_file_name)
     imgray = image.convert('L')
     imgray_rev_arr = np.fliplr(imgray)
@@ -158,7 +156,7 @@ def set_line_image_data(image, line_id, image_file_name, image_fh):
     image_fh.write(image_path + '\n')
     
     
-def get_line_image_from_mar(image_file_name, image_fh, mar):
+def get_line_image_from_mar(image_file_name, image_fh, line_id, mar):
     """ Given a page image, extracts the line images from it.
     Input
     -----
@@ -168,7 +166,7 @@ def get_line_image_from_mar(image_file_name, image_fh, mar):
     """
 
     im = Image.open(image_file_name)
-    bounding_box = get_rectangle([(mar[1], mar[0]), (mar[3], mar[2]), (mar[5], mar[4]), (mar[7], mar[6])])
+    bounding_box = get_rectangle([(int(mar[1]), int(mar[0])), (int(mar[3]), int(mar[2])), (int(mar[5]), int(mar[4])), (int(mar[7]), int(mar[6]))])
     (x1, y1), (x2, y2), (x3, y3), (x4, y4) = bounding_box.corner_points
     min_x, min_y = int(min(x1, x2, x3, x4)), int(min(y1, y2, y3, y4))
     max_x, max_y = int(max(x1, x2, x3, x4)), int(max(y1, y2, y3, y4))
@@ -203,7 +201,7 @@ def get_line_image_from_mar(image_file_name, image_fh, mar):
     max_y = int(max(y_dash_1, y_dash_2, y_dash_3, y_dash_4))
     box = (min_x, min_y, max_x, max_y)
     region_final = img2.crop(box)
-    set_line_image_data(region_final, '0', image_file_name, image_fh)
+    set_line_image_data(region_final, line_id, image_fh)
 
 
 def check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3):
@@ -302,7 +300,7 @@ def read_rect_coordinates(mar_file_path):
             if image_id not in image_rect_dict.keys():
                 image_rect_dict[image_id] = dict()
             line_id = line_vect[1]
-            hyp_rect = line_vect[2]
+            hyp_rect = line_vect[2].split(',')
             image_rect_dict[image_id][line_id] = hyp_rect
 
     return image_rect_dict
@@ -318,8 +316,7 @@ def main():
         image_id = os.path.splitext(os.path.basename(file_name[1]))[0]
         for line_id in image_rect_dict[image_id]:
             mar = image_rect_dict[image_id][line_id]
-            #print(mar)
-            get_line_image_from_mar(file_name[1], image_fh, mar)
+            get_line_image_from_mar(file_name[1], image_fh, line_id, mar)
 
 if __name__ == '__main__':
       main()
