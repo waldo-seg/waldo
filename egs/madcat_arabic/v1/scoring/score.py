@@ -51,10 +51,14 @@ def main():
             ref_dict = read_rect_coordinates_and_transcription(args.mar_text_mapping)
             hyp_dict = read_rect_coordinates(args.hypothesis)
             for image_id in hyp_dict:
-                ref_rect_transcription_list = ref_dict[image_id]
+                ref_lineid_rect_transcription_list = list()
+                for line_id in ref_dict[image_id]:
+                    ref_rect_transcription = ref_dict[image_id][line_id]
+                    ref_lineid_rect_transcription = ref_rect_transcription + (line_id,)
+                    ref_lineid_rect_transcription_list.append(ref_lineid_rect_transcription)
                 for hyp_rect in hyp_dict[image_id]:
                     ref_rect_transcription, best_index = get_mar_transcription_mapping(
-                        ref_rect_transcription_list, hyp_rect)
+                        ref_lineid_rect_transcription_list, hyp_rect)
                     mapping_fh.write('{}  {}  {}  {}\n'.format(image_id, hyp_rect, ref_rect_transcription, best_index))
 
 
@@ -165,12 +169,13 @@ def read_rect_coordinates(file_name):
           each image_id it contains a list of rectangle and a rectangle
           is a list containing 8 integer values (h1,w1,h2,w2,h3,w3,h4,w4)
     """
-    image_rect_dict = {}
+    image_rect_dict = dict()
     with open(file_name) as f:
         for line in f:
             line_vect = line.strip().split(' ')
-            image_id = line_vect[0]
-            rect_coordinates = line_vect[1].split(',')[:-1]
+            image_id = line_vect[0].split('$')[0]
+            line_id = line_vect[0].split('$')[1]
+            rect_coordinates = line_vect[1].split(',')
             if image_id not in image_rect_dict.keys():
                 image_rect_dict[image_id] = list()
             image_rect_dict[image_id].append(rect_coordinates)
@@ -193,16 +198,18 @@ def read_rect_coordinates_and_transcription(file_name):
           each image_id it contains a list of rectangle and a rectangle
           is a list containing 8 integer values (h1,w1,h2,w2,h3,w3,h4,w4)
     """
-    image_rect_dict = {}
+    image_rect_dict = dict()
     with open(file_name) as f:
         for line in f:
             line_vect = line.strip().split(' ')
             image_id = line_vect[0][:-5]
+            line_id = line_vect[0]
             rect_coordinates = line_vect[1].split(',')
             transcription = " ".join(line_vect[2:])
             if image_id not in image_rect_dict.keys():
-                image_rect_dict[image_id] = list()
-            image_rect_dict[image_id].append((rect_coordinates, transcription))
+                image_rect_dict[image_id] = dict()
+            image_rect_dict[image_id][line_id] = (rect_coordinates, transcription)
+            #image_rect_dict[image_id].append((rect_coordinates, transcription))
     return image_rect_dict
 
 

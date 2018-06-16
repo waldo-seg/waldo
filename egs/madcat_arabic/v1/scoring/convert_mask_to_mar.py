@@ -44,11 +44,12 @@ def write_rects_to_file(out_dir, mar_dict):
                 point_str = str()
                 for point in mar:
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
+                point_str = point_str[:-1]
                 min_h = min(mar[0][0], mar[1][0], mar[2][0], mar[3][0])
                 min_w = min(mar[0][1], mar[1][1], mar[2][1], mar[3][1])
                 max_h = max(mar[0][0], mar[1][0], mar[2][0], mar[3][0])
                 max_w = max(mar[0][1], mar[1][1], mar[2][1], mar[3][1])
-                mask_line_id = mask_id + '_' + str(min_h) + '_' + str(min_w) + '_' + str(max_h) + '_' + str(max_w)
+                mask_line_id = mask_id + '$' + str(min_h) + '_' + str(min_w) + '_' + str(max_h) + '_' + str(max_w)
                 fh.write('{} {}\n'.format(mask_line_id, point_str))
     print('Saved to {}'.format(txt_path))
 
@@ -80,12 +81,15 @@ def write_rects_to_file_orig_dim(out_dir, mar_dict):
                 for point in mar:
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
                     point_str_scaled = point_str_scaled + str(int(point[0]*scale)) + ',' + str(int(point[1]*scale)) + ','
-                min_h = min(mar[0][0], mar[1][0], mar[2][0], mar[3][0])
-                min_w = min(mar[0][1], mar[1][1], mar[2][1], mar[3][1])
-                max_h = max(mar[0][0], mar[1][0], mar[2][0], mar[3][0])
-                max_w = max(mar[0][1], mar[1][1], mar[2][1], mar[3][1])
-                mask_line_id = mask_id + '_' + str(min_h) + '_' + str(min_w) + '_' + str(max_h) + '_' + str(max_w)
-                mask_line_id_slaled = mask_id + '_' + str(min_h*scale) + '_' + str(min_w*scale) + '_' + str(max_h*scale) + '_' + str(max_w*scale)
+                point_str = point_str[:-1]
+                point_str_scaled = point_str_scaled[:-1]
+                min_h = int(min(mar[0][0], mar[1][0], mar[2][0], mar[3][0]))
+                min_w = int(min(mar[0][1], mar[1][1], mar[2][1], mar[3][1]))
+                max_h = int(max(mar[0][0], mar[1][0], mar[2][0], mar[3][0]))
+                max_w = int(max(mar[0][1], mar[1][1], mar[2][1], mar[3][1]))
+                min_hs, min_ws, max_hs, max_ws = int(min_h*scale), int(min_w*scale), int(max_h*scale), int(max_w*scale)
+                mask_line_id = mask_id + '$' + str(min_h) + '_' + str(min_w) + '_' + str(max_h) + '_' + str(max_w)
+                mask_line_id_slaled = mask_id + '$' + str(min_hs) + '_' + str(min_ws) + '_' + str(max_hs) + '_' + str(max_ws)
                 fh.write('{} {}\n'.format(mask_line_id, point_str))
                 mar_orig_fh.write('{} {}\n'.format(mask_line_id_slaled, point_str_scaled))
     print('Saved to {}'.format(txt_path))
