@@ -158,7 +158,7 @@ def set_line_image_data(image, line_id, image_file_name, image_fh):
     image_fh.write(image_path + '\n')
     
     
-def get_line_images_from_mar(image_file_name, image_fh, rect_coordinates_list):
+def get_line_image_from_mar(image_file_name, image_fh, mar):
     """ Given a page image, extracts the line images from it.
     Input
     -----
@@ -168,57 +168,42 @@ def get_line_images_from_mar(image_file_name, image_fh, rect_coordinates_list):
     """
 
     im = Image.open(image_file_name)
-    count = 0
-    for rc in rect_coordinates_list:
-        count += 1
-        bounding_box = get_rectangle([(rc[1], rc[0]), (rc[3], rc[2]), (rc[5], rc[4]), (rc[7], rc[6])])
-        (x1, y1), (x2, y2), (x3, y3), (x4, y4) = bounding_box.corner_points
-        min_x, min_y = int(min(x1, x2, x3, x4)), int(min(y1, y2, y3, y4))
-        max_x, max_y = int(max(x1, x2, x3, x4)), int(max(y1, y2, y3, y4))
+    bounding_box = get_rectangle([(mar[1], mar[0]), (mar[3], mar[2]), (mar[5], mar[4]), (mar[7], mar[6])])
+    (x1, y1), (x2, y2), (x3, y3), (x4, y4) = bounding_box.corner_points
+    min_x, min_y = int(min(x1, x2, x3, x4)), int(min(y1, y2, y3, y4))
+    max_x, max_y = int(max(x1, x2, x3, x4)), int(max(y1, y2, y3, y4))
 
-        box = (min_x, min_y, max_x, max_y)
-        region_initial = im.crop(box)
-        rot_points = []
-        p1, p2 = (x1 - min_x, y1 - min_y), (x2 - min_x, y2 - min_y)
-        p3, p4 = (x3 - min_x, y3 - min_y), (x4 - min_x, y4 - min_y)
-        rot_points.append(p1)
-        rot_points.append(p2)
-        rot_points.append(p3)
-        rot_points.append(p4)
+    box = (min_x, min_y, max_x, max_y)
+    region_initial = im.crop(box)
+    rot_points = []
+    p1, p2 = (x1 - min_x, y1 - min_y), (x2 - min_x, y2 - min_y)
+    p3, p4 = (x3 - min_x, y3 - min_y), (x4 - min_x, y4 - min_y)
+    rot_points.append(p1)
+    rot_points.append(p2)
+    rot_points.append(p3)
+    rot_points.append(p4)
 
-        cropped_bounding_box = bounding_box_tuple(bounding_box.area,
-                                                  bounding_box.length_parallel,
-                                                  bounding_box.length_orthogonal,
-                                                  bounding_box.length_orthogonal,
-                                                  bounding_box.unit_vector,
-                                                  bounding_box.unit_vector_angle,
-                                                  set(rot_points)
-                                                  )
+    cropped_bounding_box = bounding_box_tuple(bounding_box.area,
+                                              bounding_box.length_parallel,
+                                              bounding_box.length_orthogonal,
+                                              bounding_box.length_orthogonal,
+                                              bounding_box.unit_vector,
+                                              bounding_box.unit_vector_angle,
+                                              set(rot_points)
+                                              )
 
-        rotation_angle_in_rad = get_smaller_angle(cropped_bounding_box)
-        img2 = region_initial.rotate(degrees(rotation_angle_in_rad), resample=Image.BICUBIC)
-        x_dash_1, y_dash_1, x_dash_2, y_dash_2, x_dash_3, y_dash_3, x_dash_4, y_dash_4 = rotated_points(
-            cropped_bounding_box, get_center(region_initial))
+    rotation_angle_in_rad = get_smaller_angle(cropped_bounding_box)
+    img2 = region_initial.rotate(degrees(rotation_angle_in_rad), resample=Image.BICUBIC)
+    x_dash_1, y_dash_1, x_dash_2, y_dash_2, x_dash_3, y_dash_3, x_dash_4, y_dash_4 = rotated_points(
+        cropped_bounding_box, get_center(region_initial))
 
-        min_x = int(min(x_dash_1, x_dash_2, x_dash_3, x_dash_4))
-        min_y = int(min(y_dash_1, y_dash_2, y_dash_3, y_dash_4))
-        max_x = int(max(x_dash_1, x_dash_2, x_dash_3, x_dash_4))
-        max_y = int(max(y_dash_1, y_dash_2, y_dash_3, y_dash_4))
-        box = (min_x, min_y, max_x, max_y)
-        region_final = img2.crop(box)
-        set_line_image_data(region_final, str(count), image_file_name, image_fh)
-
-
-def read_rect_coordinates(mar_file_path):
-    image_rect_dict = {}
-    with open(mar_file_path) as f:
-        for line in f:
-            line_vect = line.strip().split(' ')
-            image_id = line_vect[0]
-            rect_coordinates_list = [[int(y) for y in x.split(',')[:-1]] for x in line_vect[1].split(';')[:-1]]
-            image_rect_dict[image_id] = rect_coordinates_list
-
-    return image_rect_dict
+    min_x = int(min(x_dash_1, x_dash_2, x_dash_3, x_dash_4))
+    min_y = int(min(y_dash_1, y_dash_2, y_dash_3, y_dash_4))
+    max_x = int(max(x_dash_1, x_dash_2, x_dash_3, x_dash_4))
+    max_y = int(max(y_dash_1, y_dash_2, y_dash_3, y_dash_4))
+    box = (min_x, min_y, max_x, max_y)
+    region_final = img2.crop(box)
+    set_line_image_data(region_final, '0', image_file_name, image_fh)
 
 
 def check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3):
@@ -308,6 +293,21 @@ def get_file_list():
     return file_list
 
 
+def read_rect_coordinates(mar_file_path):
+    image_rect_dict = dict()
+    with open(mar_file_path) as f:
+        for line in f:
+            line_vect = line.strip().split(' ')
+            image_id = line_vect[0]
+            if image_id not in image_rect_dict.keys():
+                image_rect_dict[image_id] = dict()
+            line_id = line_vect[1]
+            hyp_rect = line_vect[2]
+            image_rect_dict[image_id][line_id] = hyp_rect
+
+    return image_rect_dict
+
+
 ### main ###
 def main():
     file_list = get_file_list()
@@ -316,8 +316,10 @@ def main():
     image_rect_dict = read_rect_coordinates(args.mar_file_path)
     for file_name in file_list:
         image_id = os.path.splitext(os.path.basename(file_name[1]))[0]
-        rect_coordinates_list = image_rect_dict[image_id]
-        get_line_images_from_mar(file_name[1], image_fh, rect_coordinates_list)
+        for line_id in image_rect_dict[image_id]:
+            mar = image_rect_dict[image_id][line_id]
+            #print(mar)
+            get_line_image_from_mar(file_name[1], image_fh, mar)
 
 if __name__ == '__main__':
       main()

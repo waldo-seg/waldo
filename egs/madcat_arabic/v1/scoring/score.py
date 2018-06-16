@@ -41,10 +41,10 @@ def main():
     else:
         ref_dict, hyp_dict = get_filenames_from_directory()
 
-    #mean_ap, mean_ar, stat_dict = get_mean_avg_scores(
-    #        threshold_list, ref_dict, hyp_dict)
+    mean_ap, mean_ar, stat_dict = get_mean_avg_scores(
+            threshold_list, ref_dict, hyp_dict)
 
-    #write_stats_to_file(mean_ap, mean_ar, stat_dict)
+    write_stats_to_file(mean_ap, mean_ar, stat_dict)
     if args.mar_text_mapping:
         mapping_file = os.path.join(args.result, 'mar_transcription_mapping.txt')
         with open(mapping_file, 'w') as mapping_fh:
@@ -59,14 +59,18 @@ def main():
                 for hyp_rect in hyp_dict[image_id]:
                     ref_rect_transcription_lineid, best_index = get_mar_transcription_mapping(
                         ref_rect_transcription_lineid_list, hyp_rect)
-                    mar = hyp_rect
-                    min_h = min(hyp_rect[0], hyp_rect[2], hyp_rect[4], hyp_rect[6])
-                    min_w = min(hyp_rect[1], hyp_rect[3], hyp_rect[5], hyp_rect[7])
-                    max_h = max(hyp_rect[0], hyp_rect[2], hyp_rect[4], hyp_rect[6])
-                    max_w = max(hyp_rect[1], hyp_rect[3], hyp_rect[5], hyp_rect[7])
-                    hyp_line_id = str(min_h) + '_' + str(min_w) + '_' + str(max_h) + '_' + str(max_w)
-                    hyp_id = image_id + '$' + hyp_line_id
-                    mapping_fh.write('{}  {}  {}  {}\n'.format(image_id, hyp_id, hyp_rect, ref_rect_transcription_lineid))
+                    line_id = ref_rect_transcription_lineid[2]
+                    transcription = ref_rect_transcription_lineid[1]
+                    hyp_mar = str()
+                    hyp_mar = str(int(hyp_rect[0]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[1]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[2]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[3]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[4]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[5]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[6]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[7]))
+                    mapping_fh.write(image_id + ' ' + line_id + ' ' + hyp_mar + ' ' + transcription + '\n')
 
 
 def get_mean_avg_scores(threshold_list, ref_dict, hyp_dict):

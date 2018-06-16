@@ -43,6 +43,11 @@ def write_rects_to_file(out_dir, mar_dict):
             for mar in mask_mar_list:
                 point_str = str()
                 for point in mar:
+                    #quick fix
+                    if point[0] <= 0:
+                        point[0] = 1
+                    if point[1] <= 0:
+                        point[1] = 1
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
                 point_str = point_str[:-1]
                 min_h = min(mar[0][0], mar[1][0], mar[2][0], mar[3][0])
@@ -79,6 +84,11 @@ def write_rects_to_file_orig_dim(out_dir, mar_dict):
                 point_str = str()
                 point_str_scaled = str()
                 for point in mar:
+                    #quick fix
+                    if point[0] <= 0:
+                        point[0] = 1
+                    if point[1] <= 0:
+                        point[1] = 1
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
                     point_str_scaled = point_str_scaled + str(int(point[0]*scale)) + ',' + str(int(point[1]*scale)) + ','
                 point_str = point_str[:-1]
