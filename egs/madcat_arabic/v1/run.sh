@@ -84,7 +84,7 @@ if [ $stage -le 4 ]; then
 fi
 
 if [ $stage -le 5 ]; then
-  echo "extracting line images from page image using mar information. Date: $(date)."
+  echo "extracting line images from page image using waldo segmentation output. Date: $(date)."
   mkdir -p $dir/segment/lines
   data_split_file=$data_splits_dir/madcat.test.raw.lineid
   local/get_line_image_from_mar.py $download_dir1 $download_dir2 $download_dir3 \
