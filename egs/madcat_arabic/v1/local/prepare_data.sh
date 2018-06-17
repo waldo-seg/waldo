@@ -19,7 +19,7 @@ writing_condition2=/export/corpora/LDC/LDC2013T09/docs/writing_conditions.tab
 writing_condition3=/export/corpora/LDC/LDC2013T15/docs/writing_conditions.tab
 overwrite=false
 mkdir -p data/{train,test,dev}
-mkdir -p data/{train,test,dev}/{img,mask,object_class}
+mkdir -p data/{train,test,dev}/{img,mask,object_class,orig_dim,orig_img}
 
 [ -f ./path.sh ] && . ./path.sh; # source the path.
 
@@ -47,7 +47,10 @@ if [ $stage -le 0 ]; then
         dataset_file=$data_splits_dir/madcat.$dataset.raw.lineid
         local/process_data.py $download_dir1 $download_dir2 $download_dir3 \
           $dataset_file data/$dataset $writing_condition1 $writing_condition2 \
-          $writing_condition3   
+          $writing_condition3
+        local/map_text_mar.py $download_dir1 $download_dir2 $download_dir3 \
+          $dataset_file data/$dataset $writing_condition1 $writing_condition2 \
+          $writing_condition3
       else
         echo "Not processing data since it is already processed"
       fi

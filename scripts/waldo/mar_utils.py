@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
 # Copyright   2018 Ashish Arora
+# Copyright   2018 Chun-Chieh Chang
 # Apache 2.0
 
 # minimum bounding box script is originally from
 #https://github.com/BebeSparkelSparkel/MinimumBoundingBox
-#https://startupnextdoor.com/computing-convex-hull-in-python/
+
+# dilate and erode script is inspired by
+# https://stackoverflow.com/a/3897471
 
 """ It is a collection of utility functions that finds minimum area rectangle (MAR).
  Given the list of points, get_mar function finds a MAR that contains all the
@@ -37,63 +40,6 @@ bounding_box_tuple = namedtuple('bounding_box_tuple', 'area '
                                         'corner_points '
                          )
 
-
-def _get_orientation(origin, p1, p2):
-    """ Given origin and two points, return the orientation of the Point p1 with
-        regards to Point p2 using origin.
-        Returns
-        -------
-        integer: Negative if p1 is clockwise of p2.
-        """
-    difference = (
-        ((p2[0] - origin[0]) * (p1[1] - origin[1]))
-        - ((p1[0] - origin[0]) * (p2[1] - origin[1]))
-    )
-    return difference
-
-
-def compute_hull(points):
-    """ Given input list of points, return a list of points that
-        made up the convex hull.
-        Returns
-        -------
-        [(float, float)]: convexhull points
-        """
-    points = list(set(points))
-    hull_points = []
-    start = points[0]
-    min_x = start[0]
-    for p in points[1:]:
-        if p[0] < min_x:
-            min_x = p[0]
-            start = p
-
-    point = start
-    hull_points.append(start)
-
-    far_point = None
-    while far_point is not start:
-        p1 = None
-        for p in points:
-            if p is point:
-                continue
-            else:
-                p1 = p
-                break
-
-        far_point = p1
-
-        for p2 in points:
-            if p2 is point or p2 is p1:
-                continue
-            else:
-                direction = _get_orientation(point, far_point, p2)
-                if direction > 0:
-                    far_point = p2
-
-        hull_points.append(far_point)
-        point = far_point
-    return hull_points
 
 
 def _unit_vector(pt0, pt1):
@@ -206,6 +152,18 @@ def _rectangle_corners(rectangle):
 
 
 def _get_mask_points(img_arr):
+    """ Given an image numpy array, it returns all the points in each object
+    in the image. Assuming background have maximum number of points, it will 
+    remove background object points.
+    input
+    -----
+    img_arr : (np array): image array, contains same value for each object
+    Returns
+    -------
+    a dict that contains:
+    object_id: [[int]] contains a list of list, a list of points
+    and a point is a list containing 2 integer values.
+    """
     img_unique_val = np.unique(img_arr)
     max_point_object_id = -1
     max_num_points = -1
@@ -237,7 +195,73 @@ def _get_mask_points(img_arr):
     return masks_point_dict
 
 
+def dilate_polygon(points, amount_increase):
+    """ Increases size of polygon given as a list of tuples. Assumes points in polygon are given in CCW
+    """
+    expanded_points = []
+    for index, point in enumerate(points):
+        prev_point = points[(index - 1) % len(points)]
+        next_point = points[(index + 1) % len(points)]
+        prev_edge = np.subtract(point, prev_point)
+        next_edge = np.subtract(next_point, point)
+        
+        prev_normal = ((1 * prev_edge[1]), (-1 * prev_edge[0]))
+        prev_normal = np.divide(prev_normal, np.linalg.norm(prev_normal))
+        next_normal = ((1 * next_edge[1]), (-1 * next_edge[0]))
+        next_normal = np.divide(next_normal, np.linalg.norm(next_normal))
+
+        bisect = np.add(prev_normal, next_normal)
+        bisect = np.divide(bisect, np.linalg.norm(bisect))
+        
+        cos_theta = np.dot(next_normal, bisect)
+        hyp = amount_increase / cos_theta
+        
+        new_point = np.around(point + hyp * bisect)
+        new_point = new_point.astype(int)
+        new_point = new_point.tolist()
+        expanded_points.append(new_point)
+    return expanded_points
+
+
+def erode_polygon(points, amount_increase):
+    """ Increases size of polygon given as a list of tuples. Assumes points in polygon are given in CCW
+    """
+    expanded_points = []
+    for index, point in enumerate(points):
+        prev_point = points[(index - 1) % len(points)]
+        next_point = points[(index + 1) % len(points)]
+        prev_edge = np.subtract(point, prev_point)
+        next_edge = np.subtract(next_point, point)
+
+        prev_normal = ((-1 * prev_edge[1]), (1 * prev_edge[0]))
+        prev_normal = np.divide(prev_normal, np.linalg.norm(prev_normal))
+        next_normal = ((-1 * next_edge[1]), (1 * next_edge[0]))
+        next_normal = np.divide(next_normal, np.linalg.norm(next_normal))
+
+        bisect = np.add(prev_normal, next_normal)
+        bisect = np.divide(bisect, np.linalg.norm(bisect))
+
+        cos_theta = np.dot(next_normal, bisect)
+        hyp = amount_increase / cos_theta
+
+        new_point = np.around(point + hyp * bisect)
+        new_point = new_point.astype(int)
+        new_point = new_point.tolist()
+        expanded_points.append(new_point)
+    return expanded_points
+
+
 def get_rectangles_from_mask(img_arr):
+    """ Given an image numpy array, it returns a minimum area rectangle that will
+    contain the mask. It will not necessarily be vertically or horizontally
+     aligned.
+    input
+    -----
+    img_arr : (np array): image array, contains same value for each mask
+    Returns
+    -------
+    list((int, int)): 4 corner points of rectangle.
+    """
     masks_point_dict = _get_mask_points(img_arr)
     mar_list = list()
     for object_id in masks_point_dict.keys():
@@ -294,4 +318,35 @@ def get_mar(polygon):
     points_list = _rectangle_corners(min_rectangle)
     return points_list
 
+
+def get_rectangle(polygon):
+    """ Given a list of points, returns a minimum area rectangle that will
+    contain all points. It will not necessarily be vertically or horizontally
+     aligned.
+    Returns
+    -------
+    list((int, int)): 4 corner points of rectangle.
+    """
+    polygon = tuple(polygon)
+    hull_ordered = [polygon[index] for index in ConvexHull(polygon).vertices]
+    hull_ordered.append(hull_ordered[0])
+    hull_ordered = tuple(hull_ordered)
+    min_rectangle = _bounding_area(0, hull_ordered)
+    for i in range(1, len(hull_ordered) - 1):
+        rectangle = _bounding_area(i, hull_ordered)
+        if rectangle['area'] < min_rectangle['area']:
+            min_rectangle = rectangle
+
+    min_rectangle['unit_vector_angle'] = atan2(min_rectangle['unit_vector'][1], min_rectangle['unit_vector'][0])
+    min_rectangle['rectangle_center'] = _to_xy_coordinates(min_rectangle['unit_vector_angle'],
+                                                           min_rectangle['rectangle_center'])
+    return bounding_box_tuple(
+        area=min_rectangle['area'],
+        length_parallel=min_rectangle['length_parallel'],
+        length_orthogonal=min_rectangle['length_orthogonal'],
+        rectangle_center=min_rectangle['rectangle_center'],
+        unit_vector=min_rectangle['unit_vector'],
+        unit_vector_angle=min_rectangle['unit_vector_angle'],
+        corner_points=set(_rectangle_corners(min_rectangle))
+    )
 
