@@ -40,12 +40,22 @@ def write_rects_to_file(out_dir, mar_dict):
     with open(txt_path, 'w') as fh:
         for mask_id in mar_dict.keys():
             mask_mar_list = mar_dict[mask_id]
-            point_str = str()
             for mar in mask_mar_list:
+                point_str = str()
                 for point in mar:
+                    #quick fix
+                    if point[0] <= 0:
+                        point[0] = 1
+                    if point[1] <= 0:
+                        point[1] = 1
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
-                point_str = point_str + ';'
-            fh.write('{} {}\n'.format(mask_id, point_str))
+                point_str = point_str[:-1]
+                min_h = min(mar[0][0], mar[1][0], mar[2][0], mar[3][0])
+                min_w = min(mar[0][1], mar[1][1], mar[2][1], mar[3][1])
+                max_h = max(mar[0][0], mar[1][0], mar[2][0], mar[3][0])
+                max_w = max(mar[0][1], mar[1][1], mar[2][1], mar[3][1])
+                mask_line_id = mask_id + '$' + str(min_h) + '_' + str(min_w) + '_' + str(max_h) + '_' + str(max_w)
+                fh.write('{} {}\n'.format(mask_line_id, point_str))
     print('Saved to {}'.format(txt_path))
 
 def write_rects_to_file_orig_dim(out_dir, mar_dict):
@@ -62,24 +72,36 @@ def write_rects_to_file_orig_dim(out_dir, mar_dict):
     mar_dict (dict): mar dictionary containing mask_id and list of list of coordinates
     """
     txt_path = os.path.join(out_dir, 'mar.txt')
-    txt_path2 = os.path.join(out_dir, 'mar_orig.txt')
+    txt_path2 = os.path.join(out_dir, 'mar_orig_dim.txt')
     mar_orig_fh = open(txt_path2, 'w')
     with open(txt_path, 'w') as fh:
         for mask_id in mar_dict.keys():
             mask_mar_list = mar_dict[mask_id]
             dim_arr = np.load(args.sizedir + '/' + mask_id + '.orig_dim.npy')
             scale = (1.0 * np.amax(dim_arr)) / args.cur_size
-            point_str = str()
-            point_str_scaled = str()
             for mar in mask_mar_list:
                 mar = dilate_polygon(mar, 1.5)
+                point_str = str()
+                point_str_scaled = str()
                 for point in mar:
+                    #quick fix
+                    if point[0] <= 0:
+                        point[0] = 1
+                    if point[1] <= 0:
+                        point[1] = 1
                     point_str = point_str + str(point[0]) + ',' + str(point[1]) + ','
                     point_str_scaled = point_str_scaled + str(int(point[0]*scale)) + ',' + str(int(point[1]*scale)) + ','
-                point_str = point_str + ';'
-                point_str_scaled = point_str_scaled + ';'
-            fh.write('{} {}\n'.format(mask_id, point_str))
-            mar_orig_fh.write('{} {}\n'.format(mask_id, point_str_scaled))
+                point_str = point_str[:-1]
+                point_str_scaled = point_str_scaled[:-1]
+                min_h = int(min(mar[0][0], mar[1][0], mar[2][0], mar[3][0]))
+                min_w = int(min(mar[0][1], mar[1][1], mar[2][1], mar[3][1]))
+                max_h = int(max(mar[0][0], mar[1][0], mar[2][0], mar[3][0]))
+                max_w = int(max(mar[0][1], mar[1][1], mar[2][1], mar[3][1]))
+                min_hs, min_ws, max_hs, max_ws = int(min_h*scale), int(min_w*scale), int(max_h*scale), int(max_w*scale)
+                mask_line_id = mask_id + '$' + str(min_h) + '_' + str(min_w) + '_' + str(max_h) + '_' + str(max_w)
+                mask_line_id_slaled = mask_id + '$' + str(min_hs) + '_' + str(min_ws) + '_' + str(max_hs) + '_' + str(max_ws)
+                fh.write('{} {}\n'.format(mask_line_id, point_str))
+                mar_orig_fh.write('{} {}\n'.format(mask_line_id_slaled, point_str_scaled))
     print('Saved to {}'.format(txt_path))
 
 def main():

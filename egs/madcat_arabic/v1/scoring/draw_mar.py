@@ -31,8 +31,8 @@ def draw_rect(img, rect, color):
     return img
 
 def main():
-    gt_mar = os.path.join(args.ground_truth_dir, 'mar_orig.txt')
-    pred_mar = os.path.join(args.predicted_dir, 'mar_orig.txt')
+    gt_mar = os.path.join(args.ground_truth_dir, 'mar_orig_dim.txt')
+    pred_mar = os.path.join(args.predicted_dir, 'mar_orig_dim.txt')
     output = os.path.join(args.predicted_dir, 'img_orig')
     count = 0
     with open(gt_mar) as f1, open(pred_mar) as f2:
@@ -41,7 +41,7 @@ def main():
                 break
             gt = gt.strip()
             pred = pred.strip()
-            img_id = gt.split(' ')[0]
+            img_id = gt.split(' ')[0].split('$')[0]
             gt_points = gt.split(' ')[1]
             pred_points = pred.split(' ')[1]
             gt_list = [[int(y) for y in x.split(',')[:-1]] for x in gt_points.split(';')[:-1]]

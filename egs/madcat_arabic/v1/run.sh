@@ -17,6 +17,7 @@ download_dir3=/export/corpora/LDC/LDC2013T15/data
 writing_condition1=/export/corpora/LDC/LDC2012T15/docs/writing_conditions.tab
 writing_condition2=/export/corpora/LDC/LDC2013T09/docs/writing_conditions.tab
 writing_condition3=/export/corpora/LDC/LDC2013T15/docs/writing_conditions.tab
+data_splits_dir=data/download/data_splits
 score_mar=true
 local/check_dependencies.sh
 
@@ -71,11 +72,23 @@ fi
 if [ $stage -le 4 ]; then
   if $score_mar; then
     echo "getting score based on comparing text file... Date: $(date)."
-    scoring/score.py data/test/mar.txt $dir/segment/mar.txt \
-      $dir/segment/result.txt --score-mar
+    scoring/score.py data/test/mar_orig_dim.txt $dir/segment/mar_orig_dim.txt \
+      $dir/segment \
+      --mar-text-mapping data/test/mar_transcription_mapping.txt \
+      --score-mar
   else
     echo "getting score based on comparing mask image... Date: $(date)."
-    scoring/score.py data/test/mask $dir/segment/mask $dir/segment/result.txt
+    scoring/score.py data/test/mask $dir/segment/mask $dir/segment \
+      --mar-text-mapping data/test/mar_transcription_mapping.txt
   fi
+fi
+
+if [ $stage -le 5 ]; then
+  echo "extracting line images from page image using waldo segmentation output. Date: $(date)."
+  mkdir -p $dir/segment/lines
+  data_split_file=$data_splits_dir/madcat.test.raw.lineid
+  local/get_line_image_from_mar.py $download_dir1 $download_dir2 $download_dir3 \
+    $data_split_file $dir/segment/lines $writing_condition1 $writing_condition2 \
+    $writing_condition3 $dir/segment/mar_transcription_mapping.txt
 fi
 echo "Date: $(date)."

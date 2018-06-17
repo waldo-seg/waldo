@@ -47,7 +47,10 @@ if [ $stage -le 0 ]; then
         dataset_file=$data_splits_dir/madcat.$dataset.raw.lineid
         local/process_data.py $download_dir1 $download_dir2 $download_dir3 \
           $dataset_file data/$dataset $writing_condition1 $writing_condition2 \
-          $writing_condition3   
+          $writing_condition3
+        local/map_text_mar.py $download_dir1 $download_dir2 $download_dir3 \
+          $dataset_file data/$dataset $writing_condition1 $writing_condition2 \
+          $writing_condition3
       else
         echo "Not processing data since it is already processed"
       fi

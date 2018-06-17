@@ -9,7 +9,7 @@
 
 import argparse
 import os
-from scoring_utils import get_score
+from scoring_utils import get_score, get_mar_transcription_mapping
 from glob import glob
 import numpy as np
 
@@ -21,6 +21,12 @@ parser.add_argument('hypothesis', type=str,
                     help='hypothesis directory of test data, contains np array')
 parser.add_argument('result', type=str,
                     help='the file to store final statistical results')
+parser.add_argument('--mar-text-mapping', type=str, default=None,
+                    help="If not none, map hypothesis mar with the transciptions."
+                        "A hypothesis box is mapped with the transcription "
+                        "of reference box that had the largest IoU overlap."
+                        "The variable will provide the path of the reference " 
+                        "file containing mapping between mar and text")
 parser.add_argument("--score-mar", action="store_true",
                    help="If true, score after finding the minimum area rectangle"
                         " derived from the object mask. If false, score based on" 
@@ -39,6 +45,32 @@ def main():
             threshold_list, ref_dict, hyp_dict)
 
     write_stats_to_file(mean_ap, mean_ar, stat_dict)
+    if args.mar_text_mapping:
+        mapping_file = os.path.join(args.result, 'mar_transcription_mapping.txt')
+        with open(mapping_file, 'w') as mapping_fh:
+            ref_dict = read_rect_coordinates_and_transcription(args.mar_text_mapping)
+            hyp_dict = read_rect_coordinates(args.hypothesis)
+            for image_id in hyp_dict:
+                ref_rect_transcription_lineid_list = list()
+                for line_id in ref_dict[image_id]:
+                    ref_rect_transcription = ref_dict[image_id][line_id]
+                    ref_lineid_rect_transcription = ref_rect_transcription + (line_id,)
+                    ref_rect_transcription_lineid_list.append(ref_lineid_rect_transcription)
+                for hyp_rect in hyp_dict[image_id]:
+                    ref_rect_transcription_lineid, best_index = get_mar_transcription_mapping(
+                        ref_rect_transcription_lineid_list, hyp_rect)
+                    line_id = ref_rect_transcription_lineid[2]
+                    transcription = ref_rect_transcription_lineid[1]
+                    hyp_mar = str()
+                    hyp_mar = str(int(hyp_rect[0]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[1]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[2]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[3]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[4]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[5]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[6]))
+                    hyp_mar = hyp_mar + ',' + str(int(hyp_rect[7]))
+                    mapping_fh.write(image_id + ' ' + line_id + ' ' + hyp_mar + ' ' + transcription + '\n')
 
 
 def get_mean_avg_scores(threshold_list, ref_dict, hyp_dict):
@@ -120,15 +152,16 @@ def write_stats_to_file(mean_ap, mean_ar, stat_dict):
        stat_dict dict(dict): contains precision and recall value for each
        image for each threshold
     """
-    with open(args.result, 'w') as fh:
-        fh.write('Mean Average Precision: {}\n'.format(mean_ap))
-        fh.write('Mean Average Recall: {}\n'.format(mean_ar))
-        fh.write('ImageID  Threshold  Recall\n')
+    result_file = os.path.join(args.result, 'scoring_result.txt')
+    with open(result_file, 'w') as result_fh:
+        result_fh.write('Mean Average Precision: {}\n'.format(mean_ap))
+        result_fh.write('Mean Average Recall: {}\n'.format(mean_ar))
+        result_fh.write('ImageID  Threshold  Recall\n')
         for image_id in stat_dict.keys():
             for threshold in stat_dict[image_id].keys():
                 recall = stat_dict[image_id][threshold]
-                fh.write('{}  {}  {}\n'.format(image_id, threshold, recall))
-    print('Saved to {}'.format(args.result))
+                result_fh.write('{}  {}  {}\n'.format(image_id, threshold, recall))
+    print('Saved to {}'.format(result_file))
 
 
 def read_rect_coordinates(file_name):
@@ -147,13 +180,47 @@ def read_rect_coordinates(file_name):
           each image_id it contains a list of rectangle and a rectangle
           is a list containing 8 integer values (h1,w1,h2,w2,h3,w3,h4,w4)
     """
-    image_rect_dict = {}
+    image_rect_dict = dict()
     with open(file_name) as f:
         for line in f:
             line_vect = line.strip().split(' ')
-            image_id = line_vect[0]
-            rect_coordinates = [[int(y) for y in x.split(',')[:-1]] for x in line_vect[1].split(';')[:-1]]
-            image_rect_dict[image_id] = rect_coordinates
+            image_id = line_vect[0].split('$')[0]
+            line_id = line_vect[0].split('$')[1]
+            rect_coordinates = line_vect[1].split(',')
+            if image_id not in image_rect_dict.keys():
+                image_rect_dict[image_id] = list()
+            image_rect_dict[image_id].append(rect_coordinates)
+    return image_rect_dict
+
+
+def read_rect_coordinates_and_transcription(file_name):
+    """ Given the file name, it reads mask_id, rectangle
+        coordinates and transcription from the file. It finally
+        returns a image_rect_dict. A file should contain mask_id and
+        the co-ordinates of the mar that covers the mask with that mask id,
+        in the form of a counter-clockwise list of points. A mar is
+        described by 8 values (h1,w1,h2,w2,h3,w3,h4,w4), in the format:
+          <mask-id> h1,w1,h2,w2,h3,w3,h4,w4
+        for example:
+          HYT_ARB_20070103.0066_4_LDC0061 25,179,15,178,16,70,26,71
+        return
+        ------
+        image_rect_dict : dict([[int]]): dict of a list of list, for
+          each image_id it contains a list of rectangle and a rectangle
+          is a list containing 8 integer values (h1,w1,h2,w2,h3,w3,h4,w4)
+    """
+    image_rect_dict = dict()
+    with open(file_name) as f:
+        for line in f:
+            line_vect = line.strip().split(' ')
+            image_id = line_vect[0][:-5]
+            line_id = line_vect[0]
+            rect_coordinates = line_vect[1].split(',')
+            transcription = " ".join(line_vect[2:])
+            if image_id not in image_rect_dict.keys():
+                image_rect_dict[image_id] = dict()
+            image_rect_dict[image_id][line_id] = (rect_coordinates, transcription)
+            #image_rect_dict[image_id].append((rect_coordinates, transcription))
     return image_rect_dict
 
 
