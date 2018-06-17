@@ -142,7 +142,7 @@ def rotated_points(bounding_box, center):
     return x_dash_1, y_dash_1, x_dash_2, y_dash_2, x_dash_3, y_dash_3, x_dash_4, y_dash_4
 
 
-def set_line_image_data(image, line_id, image_fh):
+def set_line_image_data(image, line_id, image_fh, transcription):
     """ Given an image, saves a flipped line image. Line image file name
         is formed by appending the line id at the end page image name.
     """
@@ -153,10 +153,10 @@ def set_line_image_data(image, line_id, image_fh):
     imgray_rev_arr = np.fliplr(imgray)
     imgray_rev = toimage(imgray_rev_arr)
     imgray_rev.save(image_path)
-    image_fh.write(image_path + '\n')
+    image_fh.write(image_path + ' ' + transcription + '\n')
     
     
-def get_line_image_from_mar(image_file_name, image_fh, line_id, mar):
+def get_line_image_from_mar(image_file_name, image_fh, line_id, mar, transcription):
     """ Given a page image, extracts the line images from it.
     Input
     -----
@@ -201,7 +201,7 @@ def get_line_image_from_mar(image_file_name, image_fh, line_id, mar):
     max_y = int(max(y_dash_1, y_dash_2, y_dash_3, y_dash_4))
     box = (min_x, min_y, max_x, max_y)
     region_final = img2.crop(box)
-    set_line_image_data(region_final, line_id, image_fh)
+    set_line_image_data(region_final, line_id, image_fh, transcription)
 
 
 def check_file_location(base_name, wc_dict1, wc_dict2, wc_dict3):
@@ -298,10 +298,15 @@ def read_rect_coordinates(mar_file_path):
             line_vect = line.strip().split(' ')
             image_id = line_vect[0]
             if image_id not in image_rect_dict.keys():
+                count = 0
                 image_rect_dict[image_id] = dict()
             line_id = line_vect[1]
             hyp_rect = line_vect[2].split(',')
-            image_rect_dict[image_id][line_id] = hyp_rect
+            transcription = line_vect[3:]
+            transcription = " ".join(transcription)
+            line_id = line_id + '_' + str(count)
+            count += 1
+            image_rect_dict[image_id][line_id] = (hyp_rect, transcription)
 
     return image_rect_dict
 
@@ -309,14 +314,15 @@ def read_rect_coordinates(mar_file_path):
 ### main ###
 def main():
     file_list = get_file_list()
-    image_file = os.path.join(args.out_dir, 'images.scp')
+    image_file = os.path.join(args.out_dir, 'hyp_line_image_transcription_mapping.txt')
     image_fh = open(image_file, 'w', encoding='utf-8')
     image_rect_dict = read_rect_coordinates(args.mar_file_path)
     for file_name in file_list:
         image_id = os.path.splitext(os.path.basename(file_name[1]))[0]
         for line_id in image_rect_dict[image_id]:
-            mar = image_rect_dict[image_id][line_id]
-            get_line_image_from_mar(file_name[1], image_fh, line_id, mar)
+            mar = image_rect_dict[image_id][line_id][0]
+            transcription = image_rect_dict[image_id][line_id][1]
+            get_line_image_from_mar(file_name[1], image_fh, line_id, mar, transcription)
 
 if __name__ == '__main__':
       main()
