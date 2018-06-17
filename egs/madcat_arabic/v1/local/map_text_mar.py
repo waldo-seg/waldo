@@ -119,8 +119,9 @@ def get_file_list():
     return file_list
 
 
-def get_line_mar_from_word_bb(madcat_file_path, mar_text_fh):
-    """ Given a page image, extracts the line images from it.
+def get_line_mar_transcription(madcat_file_path, mar_text_fh):
+    """ Given a page image, extracts the line images from it. It also
+        stored reference mar and transcription mapping.
     Input
     -----
     image_file_name (string): complete path and name of the page image.
@@ -201,8 +202,7 @@ def main():
     mar_transcription_file = os.path.join(args.out_dir, 'mar_transcription_mapping.txt')
     mar_transcription_fh = open(mar_transcription_file, 'w', encoding='utf-8')
     for madcat_file_path in file_list:
-        mar_list = get_line_mar_from_word_bb(madcat_file_path, mar_transcription_fh)
-        base_name = os.path.basename(madcat_file_path).split('.madcat')[0]
+        mar_list = get_line_mar_transcription(madcat_file_path, mar_transcription_fh)
 
 
 if __name__ == '__main__':

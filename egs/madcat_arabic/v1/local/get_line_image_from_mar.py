@@ -143,8 +143,8 @@ def rotated_points(bounding_box, center):
 
 
 def set_line_image_data(image, line_id, image_fh, transcription):
-    """ Given an image, saves a flipped line image. Line image file name
-        is formed by appending the line id at the end page image name.
+    """ Given an image, saves a flipped line image. It also stores
+        line image and transcription mapping.
     """
 
     line_image_file_name = line_id + '.png'
@@ -292,6 +292,12 @@ def get_file_list():
 
 
 def read_rect_coordinates(mar_file_path):
+    """ Given the file path containing, mapping information of hypothesis
+    mar and transcription, it returns a dict. The dict contains this mapping 
+    info. It can be accessed via line_id and image_id.
+    Returns
+    dict: line_id and mar, transcription mapping
+    """
     image_rect_dict = dict()
     with open(mar_file_path) as f:
         for line in f:
