@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
 
-# Copyright 2018 Johns Hopkins University (author: Ashish Arora)
-# Apache 2.0
-
-""" This script prepares the training, validation and test data for MADCAT Arabic in a pytorch fashion
-"""
-
 import sys
 import argparse
 import os
