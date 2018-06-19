@@ -13,14 +13,14 @@ stage=0
                               # if supplied.
 
 
-# local/check_dependencies.sh
+local/check_dependencies.sh
 
 # train/validate split
 train_prop=0.9
 seed=0
 if [ $stage -le 0 ]; then
   # data preparation
-  local/prepare_data.sh $train_prop $seed /home/desh/Research/icdar/icdar_2015/sample/
+  local/prepare_data.sh $train_prop $seed
 fi
 
 epochs=120

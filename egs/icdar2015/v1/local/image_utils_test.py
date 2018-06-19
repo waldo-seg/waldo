@@ -17,8 +17,7 @@ import random
 import numpy as np
 import unittest
 
-# DL_DIR = '/export/b18/draj/icdar_2015/'
-DL_DIR = '/home/desh/Research/icdar/icdar_2015/sample/'
+DL_DIR = '/export/b18/draj/icdar_2015/'
 TRANSPARENCY = 0.3
 
 class ImageUtilsTest(unittest.TestCase):
