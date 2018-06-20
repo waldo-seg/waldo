@@ -23,12 +23,12 @@ if [ $stage -le 0 ]; then
   local/prepare_data.sh $train_prop $seed
 fi
 
-epochs=120
+epochs=20
 depth=5
 dir=exp/unet_${depth}_${epochs}_sgd
 if [ $stage -le 1 ]; then
   # training
-  local/run_unet.sh --dir $dir --epochs $epochs --depth $depth --train_prop $train_prop --seed $seed
+  local/run_unet.sh --dir $dir --epochs $epochs --depth $depth
 fi
 
 logdir=$dir/segment/log
@@ -36,20 +36,23 @@ nj=10
 if [ $stage -le 2 ]; then
     echo "doing segmentation...."
   $cmd JOB=1:$nj $logdir/segment.JOB.log local/segment.py \
-       --train-image-size 128 \
+       --train-image-size 512 \
        --model model_best.pth.tar \
        --test-data data/test \
        --dir $dir/segment \
-       --csv sub-icdar2015.csv \
        --job JOB --num-jobs $nj
 
 fi
 
+#Preparation for scoring
+mkdir -p $dir/segment/results
+zip -j $dir/segment/lbl.zip $dir/segment/lbl/*
+
 if [ $stage -le 3 ]; then
   echo "doing evaluation..."
-  local/scoring.py \
-    --ground-truth data/download/stage1_solution.csv \
-    --predict $dir/segment/sub-icdar2015.csv \
-    --result $dir/segment/result.txt
+  python3 local/eval/script.py \
+    -g=data/test/ground_truth.zip \
+    -s=$dir/segment/lbl.zip \
+    -o=$dir/segment/results
 fi
 

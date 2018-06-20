@@ -28,10 +28,10 @@ class DatasetICDAR2015:
              integer object-ids from 0 ... num-objects - 1.
     """
 
-    TRAIN_IMAGES = "train/images"
-    TEST_IMAGES = "test/images"
-    TRAIN_LABELS = "train/labels"
-    TEST_LABELS = "test/labels"
+    TRAIN_IMAGES = "/train/images"
+    TEST_IMAGES = "/test/images"
+    TRAIN_LABELS = "/train/labels"
+    TEST_LABELS = "/test/labels"
 
     
 

@@ -7,7 +7,7 @@
 
 [ -f ./path.sh ] && . ./path.sh; # source the path.
 
-dl_dir=${3:-/export/b18/draj/icdar_2015/}
+dl_dir=${3:-/export/b18/draj/icdar_2015}
 
 
 if [ ! -d $dl_dir ] ; then
@@ -37,3 +37,7 @@ EOF
 
 local/process_data.py --dl_dir $dl_dir --outdir data \
 		      --train_prop $train_prop --cfg data/core.config --seed $seed
+
+
+##Zip test image ground truth labels and save in data directory
+zip -j data/test/ground_truth.zip ${dl_dir}/test/labels/*

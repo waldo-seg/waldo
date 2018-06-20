@@ -17,7 +17,7 @@ from waldo.core_config import CoreConfig
 
 parser = argparse.ArgumentParser(
     description='ICDAR2015 Data Process with Pytorch')
-parser.add_argument('--dl_dir', default='/export/b18/draj/icdar_2015/', type=str,
+parser.add_argument('--dl_dir', default='/export/b18/draj/icdar_2015', type=str,
                     help='Path to downloaded dataset')
 parser.add_argument('--outdir', default='data', type=str,
                     help='Output directory of processed data')
@@ -59,7 +59,7 @@ def DataProcess(input_path, cfg, train_prop=0.9):
 
 def save_data(data, data_ids, outdir, split):
     print ('Saving {} data...'.format(split))
-    saver = DataSaver(os.path.join(outdir, split), cfg)
+    saver = DataSaver(os.path.join(outdir, split), cfg, train=(split!='test'))
     for item,id in zip(data,data_ids):
         saver.write_image(id, item)
     saver.write_index()
@@ -74,7 +74,9 @@ if __name__ == '__main__':
     data, data_ids = DataProcess(args.dl_dir, cfg, train_prop=args.train_prop)
 
     for split in ['train','val','test']:
-        save_data(data[split], data_ids[split], args.outdir, split)
+        ids_file = "{0}/{1}/image_ids.txt".format(args.outdir, split)
+        if not (os.path.exists(ids_file)):
+            save_data(data[split], data_ids[split], args.outdir, split)
 
     print ('Finished processing data.')
     
