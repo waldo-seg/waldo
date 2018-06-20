@@ -34,7 +34,6 @@ def get_iou_from_csvs(gt_csv, pred_csv):
             raise ValueError(
                 'All images need to be segmented but now miss: {}'.format(image_id))
         else:
-            print(image_id)
             gt_rles = gt_dict[image_id]
             pred_rles = pred_dict[image_id]
             iou_matrix = np.zeros((len(pred_rles), len(gt_rles)))
