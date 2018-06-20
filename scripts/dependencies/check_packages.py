@@ -38,7 +38,10 @@ def gen_suggestion_str(dependencies_list):
         elif pkg == "torchvision" or "torchvision>" in pkg or "torchvision=" in pkg: 
             dependencies_list_special.append("torchvision")
         else:
-            dependencies_list_normal.append(pkg)
+            if ">" in pkg or "<" in pkg:
+                dependencies_list_normal.append("'" + pkg + "'")
+            else:
+                dependencies_list_normal.append(pkg)
 
     # generate package installation suggestions
     # [note] default packages installation location:
