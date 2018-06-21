@@ -164,7 +164,7 @@ def segment(dataloader, segment_dir, model, core_config):
         segment_lbl_file = '{}/{}.txt'.format(lbl_dir, id)
         with open(segment_lbl_file, 'w') as fh:
             for obj in lbls:
-                obj_str = ','.join((','.join(str(i) for i in point)) for point in obj)
+                obj_str = ','.join(','.join(str(i) for i in point) for point in obj)
                 fh.write(obj_str)
             fh.write('\n')
 

@@ -4,7 +4,7 @@
 set -e
 
 nj=4
-stage=0
+stage=2
 
 . ./cmd.sh ## You'll want to change cmd.sh to something that will work on your system.
            ## This relates to the queue.
