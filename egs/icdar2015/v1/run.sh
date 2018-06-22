@@ -4,7 +4,7 @@
 set -e
 
 nj=4
-stage=0
+stage=1
 
 . ./cmd.sh ## You'll want to change cmd.sh to something that will work on your system.
            ## This relates to the queue.
@@ -23,7 +23,7 @@ if [ $stage -le 0 ]; then
   local/prepare_data.sh $train_prop $seed
 fi
 
-epochs=20
+epochs=50
 depth=5
 dir=exp/unet_${depth}_${epochs}_sgd
 if [ $stage -le 1 ]; then

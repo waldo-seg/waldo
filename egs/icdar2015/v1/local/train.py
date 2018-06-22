@@ -106,6 +106,14 @@ def main():
     merge_mode = u_config.merge_mode
     depth = u_config.depth
 
+    # create model
+    print("Creating UNet model from config.")
+    model = UNet(num_classes, num_offsets,
+                 in_channels=num_colors, depth=depth,
+                 start_filts=start_filters,
+                 up_mode=up_mode,
+                 merge_mode=merge_mode).cuda()
+
     train_data = os.path.join(args.train_dir,'train')
     val_data = os.path.join(args.train_dir,'val')
 
@@ -123,12 +131,6 @@ def main():
           'Using {1} samples for training, '
           '{2} samples for validation'.format(NUM_ALL, NUM_TRAIN, NUM_VAL))
 
-    # create model
-    model = UNet(num_classes, num_offsets,
-                 in_channels=num_colors, depth=depth,
-                 start_filts=start_filters,
-                 up_mode=up_mode,
-                 merge_mode=merge_mode).cuda()
 
     # get the number of model parameters
     print('Number of model parameters: {}'.format(
