@@ -9,7 +9,7 @@ train_image_size=512
 depth=5
 epochs=10
 start_filters=64
-batch_size=16
+batch_size=4
 lr=0.01
 dir=exp/unet_1a
 

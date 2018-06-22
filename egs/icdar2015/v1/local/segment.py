@@ -6,6 +6,7 @@ import argparse
 import os
 import random
 import numpy as np
+import re
 import scipy.misc
 from models.Unet import UNet
 from waldo.segmenter import ObjectSegmenter, SegmenterOptions
@@ -165,6 +166,7 @@ def segment(dataloader, segment_dir, model, core_config):
         with open(segment_lbl_file, 'w') as fh:
             for obj in lbls:
                 obj_str = ','.join(','.join(str(i) for i in point) for point in obj)
+                obj_str = re.sub('[() ]','')
                 fh.write(obj_str)
             fh.write('\n')
 
