@@ -117,32 +117,25 @@ def segment(dataloader, segment_dir, core_config):
     if args.object_merge_factor is None:
         args.object_merge_factor = 1.0 / len(offset_list)
 
-    epsilon = np.finfo(np.float32).eps
-    class_pred_in = class_pred[0].detach().numpy().astype(np.float32).clip(epsilon, 1.0 - epsilon)
-    adj_pred_in = adj_pred[0].detach().numpy().astype(np.float32).clip(epsilon, 1.0 - epsilon)
+    class_pred_in = class_pred[0].detach().numpy().astype(np.float32)
+    adj_pred_in = adj_pred[0].detach().numpy().astype(np.float32)
 
-    offset_array = np.array(offset_list).astype(np.int32)
-    
     mask_pred = np.zeros((class_pred[0].detach().numpy().shape[1],
                           class_pred[0].detach().numpy().shape[2])).astype(np.int32)
     object_class_pred = np.zeros((1,class_pred[0].detach().numpy().shape[1] *
                             class_pred[0].detach().numpy().shape[2])).astype(np.int32)
     #start = time.time()
-    cseg.run_segmentation(class_pred_in, adj_pred_in,
-                          num_classes,
-                          offset_array,
-                          mask_pred,
-                          object_class_pred,
-                          args.same_different_bias,
-                          args.object_merge_factor,
-                          args.merge_logprob_bias)
+    mask_pred, object_class_pred = cseg.run_segmentation(
+            class_pred_in,
+            adj_pred_in,
+            num_classes,
+            offset_list,
+            args.same_different_bias,
+            args.object_merge_factor,
+            args.merge_logprob_bias)
     #end = time.time()
     #tot = tot + end - start
-    object_class = []
-    for i in range(object_class_pred.shape[1] - 1):
-        if object_class_pred[0, i] == -1: break
-        object_class.append(object_class_pred[0, i])
-    
+   
     image_with_mask = {}
     img = np.moveaxis(img[0].detach().numpy(), 0, -1)
     image_with_mask['img'] = img
