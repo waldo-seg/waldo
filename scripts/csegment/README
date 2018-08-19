@@ -29,7 +29,7 @@ A Brief Introduction of the files
 How to compile
 ---------------------------------------
 1) Please use the following command to compile the code:
-python setup.py build_ext --inplace
+python3 setup.py build_ext --inplace
 If the compilation is passed, we will get a build folder, a "c_segment.cpp"
 file and a "c_segment.***.so" dynamic library.
 
