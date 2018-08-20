@@ -14,7 +14,7 @@ from waldo.core_config import CoreConfig
 from waldo.data_visualization import visualize_mask
 from waldo.data_io import WaldoTestset
 from unet_config import UnetConfig
-
+import waldo.csegmenter.c_segmenter as cseg
 
 parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
 parser.add_argument('--test-data', type=str, required=True,
@@ -138,6 +138,12 @@ def segment(dataloader, segment_dir, model, core_config):
             class_pred = output[:, :num_classes, :, :]
             adj_pred = output[:, num_classes:, :, :]
 
+        # By default, we use c++ version segmenter. In short, we call function
+        # cseg.run_segmentation(). For details, please check the "README" file
+        # in directory whose path is "scripts/waldo/csegmenter".
+        # If the c++ version segmenter is not available, we can comment out the
+        # python segmenter and use it.
+        """
         if args.object_merge_factor is None:
             args.object_merge_factor = 1.0 / len(offset_list)
             segmenter_opts = SegmenterOptions(same_different_bias=args.same_different_bias,
@@ -148,6 +154,18 @@ def segment(dataloader, segment_dir, model, core_config):
                               num_classes, offset_list,
                               segmenter_opts)
         mask_pred, object_class = seg.run_segmentation()
+        """
+        if args.object_merge_factor is None:
+            args.object_merge_factor = 1.0 / len(offset_list)
+        mask_pred, object_class = cseg.run_segmentation(
+                class_pred[0].detach().numpy().astype(np.float32),
+                adj_pred[0].detach().numpy().astype(np.float32),
+                num_classes,
+                offset_list,
+                args.same_different_bias,
+                args.object_merge_factor,
+                args.merge_logprob_bias)
+
         mask_pred = resize(mask_pred, (original_height, original_width),
                            order=0, preserve_range=True).astype(int)
 
