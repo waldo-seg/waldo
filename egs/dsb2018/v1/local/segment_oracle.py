@@ -18,7 +18,7 @@ from waldo.core_config import CoreConfig
 from waldo.data_visualization import visualize_mask
 from waldo.data_io import WaldoDataset
 from unet_config import UnetConfig
-import csegment.c_segment as cseg
+import waldo.csegmenter.c_segmenter as cseg
 
 
 parser = argparse.ArgumentParser(description='Pytorch DSB2018 setup')
@@ -83,7 +83,6 @@ def main():
 
 
 def segment(dataloader, segment_dir, core_config):
-    tot = 0
     rle_dir = os.path.join(segment_dir, 'rle')
     img_dir = os.path.join(segment_dir, 'img')
     if not os.path.exists(rle_dir):
@@ -95,23 +94,23 @@ def segment(dataloader, segment_dir, core_config):
     offset_list = core_config.offsets
 
     img, class_pred, adj_pred = next(iter(dataloader))
+    # By default, we use c++ version segmenter. In short, we call function
+    # cseg.run_segmentation(). For details, please check the "README" file
+    # in directory whose path is "scripts/waldo/csegmenter".
+    # If the c++ version segmenter is not available, we can comment out the
+    # python segmenter and use it.
 
-##    print("{}".format(class_pred[0].detach().numpy().shape))
-##    print("{}".format(adj_pred[0].detach().numpy().shape))
     """
     if args.object_merge_factor is None:
         args.object_merge_factor = 1.0 / len(offset_list)
         segmenter_opts = SegmenterOptions(same_different_bias=args.same_different_bias,
                                           object_merge_factor=args.object_merge_factor,
                                           merge_logprob_bias=args.merge_logprob_bias)
-    start = time.time()   
     seg = ObjectSegmenter(class_pred[0].detach().numpy(),
                           adj_pred[0].detach().numpy(),
                           num_classes, offset_list,
                           segmenter_opts)
     mask_pred, object_class = seg.run_segmentation()
-    end = time.time()
-    tot = tot + end - start
     
     """
     if args.object_merge_factor is None:
@@ -120,12 +119,7 @@ def segment(dataloader, segment_dir, core_config):
     class_pred_in = class_pred[0].detach().numpy().astype(np.float32)
     adj_pred_in = adj_pred[0].detach().numpy().astype(np.float32)
 
-    mask_pred = np.zeros((class_pred[0].detach().numpy().shape[1],
-                          class_pred[0].detach().numpy().shape[2])).astype(np.int32)
-    object_class_pred = np.zeros((1,class_pred[0].detach().numpy().shape[1] *
-                            class_pred[0].detach().numpy().shape[2])).astype(np.int32)
-    #start = time.time()
-    mask_pred, object_class_pred = cseg.run_segmentation(
+    mask_pred, object_class = cseg.run_segmentation(
             class_pred_in,
             adj_pred_in,
             num_classes,
@@ -133,8 +127,6 @@ def segment(dataloader, segment_dir, core_config):
             args.same_different_bias,
             args.object_merge_factor,
             args.merge_logprob_bias)
-    #end = time.time()
-    #tot = tot + end - start
    
     image_with_mask = {}
     img = np.moveaxis(img[0].detach().numpy(), 0, -1)
@@ -152,7 +144,6 @@ def segment(dataloader, segment_dir, core_config):
             obj_str = ' '.join(str(n) for n in obj)
             fh.write(obj_str)
             fh.write('\n')
-    print("{0}".format(tot))
 
 ##    mask_rle_file = '{}/oracle.img'.format(rle_dir)
 ##    with open(mask_rle_file, 'w') as fh:

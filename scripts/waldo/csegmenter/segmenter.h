@@ -1,5 +1,9 @@
 // segment.h
 
+
+// CopyRight  2018  Daniel Povey
+//                  Hang Lyu
+// Apache 2.0
 #include <iostream>
 #include <iomanip>
 #include <tuple>
@@ -35,7 +39,7 @@ class Matrix {
     cols_ = other.cols_;
   }
 
-  inline Real& operator() (size_t r, size_t c) {
+  inline Real& operator() (size_t r, size_t c) const {
     return *(data_ + r * cols_ + c);
   }
 
@@ -53,7 +57,7 @@ class ObjectSegmenter;
 
 struct IntPairHasher {
   size_t operator() (const pair<int, int> a) const noexcept {
-    return ((size_t)a.first * 1619 + (size_t)a.second * 4111);
+    return (size_t(a.first) * 1619 + size_t(a.second) * 4111);
   }
 };
 
@@ -86,53 +90,57 @@ class Object {
  public:
   Object(PixelSet& pixels, size_t id, ObjectSegmenter* segmenter);
 
-  inline PixelSet* GetPixels() { return &pixels; }
+  inline PixelSet* GetPixels() { return &pixels_; }
 
-  inline int GetObjectClass() { return object_class; }
-  inline void SetObjectClass(int obj_class) { this->object_class = obj_class; }
+  inline int GetObjectClass() const { return object_class_; }
+
+  inline void SetObjectClass(int obj_class) { this->object_class_ = obj_class; }
   
-  inline vector<float>* GetClassLogprobs() { return &class_logprobs; }
+  inline vector<float>* GetClassLogprobs() { return &class_logprobs_; }
+  
   inline void AddClassLogprobs(const vector<float>* other) {
-    if(!(this->class_logprobs.size() == other->size())) {
+    if(!(this->class_logprobs_.size() == other->size())) {
       cout << "Error: the logprobs of two objects isn't same dimension."
            << endl;
       exit(1);
     }
-    vector<float>::iterator it_this = class_logprobs.begin();
+    vector<float>::iterator it_this = class_logprobs_.begin();
     vector<float>::const_iterator it_other = other->begin();
-    for (; it_this != class_logprobs.end(); it_this++, it_other++) {
+    for (; it_this != class_logprobs_.end(); it_this++, it_other++) {
       *it_this += *it_other;
     }
   }
 
-  inline float GetClassLogprob() { return class_logprobs[object_class]; }
+  inline float GetClassLogprob() const { 
+    return class_logprobs_[object_class_];
+  }
 
-  inline size_t GetId() { return id; }
+  inline size_t GetId() const { return id_; }
 
-  inline float GetSamenessLogprob() { return sameness_logprob; }
+  inline float GetSamenessLogprob() const { return sameness_logprob_; }
   inline void AddSamenessLogprob(float other) {
-    this->sameness_logprob += other;
+    this->sameness_logprob_ += other;
   }
 
   inline unordered_map<size_t, AdjacencyRecord*>* GetAdjacencyList() {
-    return &adjacency_list;
+    return &adjacency_list_;
   }
 
   inline bool operator== (const Object& other) {
-    return (id == other.id);
+    return (id_ == other.id_);
   }
 
   inline bool operator!= (const Object& other) {
-    return (id != other.id);
+    return (id_ != other.id_);
   }
 
  private:
-  PixelSet pixels;
-  size_t id;
-  int object_class;
-  vector<float> class_logprobs;
-  float sameness_logprob = 0.0;
-  unordered_map<size_t, AdjacencyRecord*> adjacency_list;
+  PixelSet pixels_;
+  size_t id_;
+  int object_class_;
+  vector<float> class_logprobs_;
+  float sameness_logprob_ = 0.0;
+  unordered_map<size_t, AdjacencyRecord*> adjacency_list_;
 };
 
 
@@ -182,52 +190,60 @@ class AdjacencyRecord {
 
   void UpdateMergePriority(ObjectSegmenter* segmenter);
 
-  size_t GetHashValue() { return cached_hash; }
+  size_t GetHashValue() const { return cached_hash_; }
 
-  inline float GetPriority() { return merge_priority; }
+  inline float GetPriority() const { return merge_priority_; }
+
   inline void SetPriority(float value) {
-    this->merge_priority = value;
+    this->merge_priority_ = value;
   }
 
-  inline float GetDifferentnessLogprob() { return differentness_logprob; }
+  inline float GetDifferentnessLogprob() const {
+    return differentness_logprob_;
+  }
+
   inline void AddDifferentnessLogprob(float other) {
-    this->differentness_logprob += other;
+    this->differentness_logprob_ += other;
   }
 
-  inline float GetSamenessLogprob() { return sameness_logprob; }
+  inline float GetSamenessLogprob() const { return sameness_logprob_; }
+
   inline void AddSamenessLogprob(float other) {
-    this->sameness_logprob += other;
+    this->sameness_logprob_ += other;
   }
 
-  inline float GetObjMergeLogprob() { return obj_merge_logprob; }
+  inline float GetObjMergeLogprob() const { return obj_merge_logprob_; }
+
   inline void AddObjMergeLogprob(float other) {
-    this->obj_merge_logprob += other;
+    this->obj_merge_logprob_ += other;
   }
 
-  inline int GetMergedClass() { return merged_class; }
+  inline int GetMergedClass() const { return merged_class_; }
 
-  inline Object* GetObj1() { return obj1; }
-  inline void SetObj1(Object* other) { this->obj1 = other; }
+  inline Object* GetObj1() const { return obj1_; }
 
-  inline Object* GetObj2() { return obj2; }
-  inline void SetObj2(Object* other) { this->obj2 = other; }
+  inline void SetObj1(Object* other) { this->obj1_ = other; }
 
-  inline float GetClassDeltaLogprob() { return class_delta_logprob; }
+  inline Object* GetObj2() const { return obj2_; }
+
+  inline void SetObj2(Object* other) { this->obj2_ = other; }
+
+  inline float GetClassDeltaLogprob() const { return class_delta_logprob_; }
  
   void SortAndUpdateHash();
  private:
-  Object* obj1;
-  Object* obj2;
-  size_t cached_hash;
+  Object* obj1_;
+  Object* obj2_;
+  size_t cached_hash_;
 
-  float differentness_logprob;
-  float sameness_logprob;
-  float obj_merge_logprob = numeric_limits<float>::min();
+  float differentness_logprob_;
+  float sameness_logprob_;
+  float obj_merge_logprob_ = numeric_limits<float>::min();
 
-  float class_delta_logprob;
-  int merged_class;
+  float class_delta_logprob_;
+  int merged_class_;
 
-  float merge_priority;
+  float merge_priority_;
 };
 
 
@@ -248,7 +264,7 @@ struct ObjectSegmenterOption {
 
   ObjectSegmenterOption():
     same_different_bias(0.0),
-    object_merge_factor(0.25),
+    object_merge_factor(1.0),
     merge_logprob_bias(0.0) {
   }
 
@@ -289,19 +305,23 @@ class ObjectSegmenter {
 
   void InitObjectsAndAdjacencyRecords();
 
-  inline int GetNumClasses() { return num_classes; }
+  inline int GetNumClasses() const { return num_classes_; }
 
-  inline float GetClassLogprob(const pair<int,int>& pixel, int class_index) {
-    return log(class_probs[class_index](pixel.first, pixel.second));
+  inline float GetClassLogprob(const pair<int,int>& pixel,
+                               int class_index) {
+    return log((class_probs_.at(class_index))(pixel.first, pixel.second));
   }
 
-  inline vector<pair<int, int> >* GetOffsets() { return &offsets; }
+  inline vector<pair<int, int> >* GetOffsets() { return &offsets_; }
 
-  inline float GetSamenessProb(pair<int,int> pixel, pair<int, int> offset) {
-    return sameness_probs[offset](pixel.first, pixel.second);
+  inline float GetSamenessProb(pair<int,int> pixel,
+                               pair<int, int> offset) const {
+    return (sameness_probs_.at(offset))(pixel.first, pixel.second);
   }
 
-  inline const ObjectSegmenterOption* GetSegmenterOption() { return &opts; }
+  inline const ObjectSegmenterOption* GetSegmenterOption() const {
+    return &opts_;
+  }
 
   void ShowStats();
 
@@ -320,27 +340,21 @@ class ObjectSegmenter {
   void ComputeTotalLogprobFromScratch();
 
  private:
-  unordered_map<int, Matrix<float> > class_probs;
+  unordered_map<int, Matrix<float> > class_probs_;
   unordered_map<pair<int,int>, Matrix<float>, IntPairHasher,
-    IntPairEqual> sameness_probs;
-  vector<pair<int, int> > offsets;
-  int class_dim, offset_dim, img_width, img_height, num_classes;
-  unordered_map<size_t, Object*> objects;
+    IntPairEqual> sameness_probs_;
+  vector<pair<int, int> > offsets_;
+  int class_dim_, offset_dim_, img_width_, img_height_, num_classes_;
+  unordered_map<size_t, Object*> objects_;
   unordered_map<pair<int, int>, Object*, IntPairHasher,
-    IntPairEqual> pixel2obj;
-  unordered_map<size_t, AdjacencyRecord*> adjacency_records;
+    IntPairEqual> pixel2obj_;
+  unordered_map<size_t, AdjacencyRecord*> adjacency_records_;
   priority_queue<pair<float, AdjacencyRecord*>, 
-    vector<pair<float, AdjacencyRecord*> >, PriorityCompare> segmenter_queue;
+    vector<pair<float, AdjacencyRecord*> >, PriorityCompare> segmenter_queue_;
 
-  // AdjacencyRecord is allocated on heap. After merge objects, some
-  // AdjacencyRecord will be only appear in priority queue with minimal
-  // merge_priority value. This vector is used to record all the
-  // AdjacencyRecords, and is used to release them
-  vector<AdjacencyRecord*> adjacency_space;
+  Matrix<int> output_;
+  Matrix<int> object_class_;
 
-  Matrix<int> output;
-  Matrix<int> object_class;
-
-  const ObjectSegmenterOption& opts;
-  int verbose;
+  const ObjectSegmenterOption& opts_;
+  int verbose_;
 };

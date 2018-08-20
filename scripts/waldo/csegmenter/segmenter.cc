@@ -1,23 +1,26 @@
 // segment.cc
 
-#include "segment.h"
+// CopyRight  2018  Daniel Povey
+//                  Hang Lyu
+// Apache 2.0
+#include "segmenter.h"
 
 Object::Object(PixelSet& pixels, size_t id, 
                ObjectSegmenter* segmenter):
-  pixels(pixels), id(id) {
+  pixels_(pixels), id_(id) {
   int num_classes = segmenter->GetNumClasses();
-  class_logprobs.reserve(num_classes);
+  class_logprobs_.reserve(num_classes);
   for (int i = 0; i < num_classes; i++) {
     float cur_prob = 0.0;
     for (PixelSet::iterator iter = pixels.begin();
          iter != pixels.end(); iter++) {
       cur_prob += segmenter->GetClassLogprob(*iter, i);
     }
-    class_logprobs.push_back(cur_prob);
+    class_logprobs_.push_back(cur_prob);
   }
-  object_class = distance(class_logprobs.begin(),
-                          max_element(class_logprobs.begin(),
-                                      class_logprobs.end()));
+  object_class_ = distance(class_logprobs_.begin(),
+                           max_element(class_logprobs_.begin(),
+                                       class_logprobs_.end()));
 }
 
 
@@ -25,18 +28,18 @@ AdjacencyRecord::AdjacencyRecord(Object* obj1, Object* obj2,
                                  ObjectSegmenter* segmenter,
                                  pair<int, int>* pixel,
                                  pair<int, int>* offset) :
-  obj1(obj1), obj2(obj2) {
+  obj1_(obj1), obj2_(obj2) {
 
   SortAndUpdateHash();
   // Without iterating the whole offsets, it will save a little time.
   if (pixel != NULL && offset != NULL) {
     float same_prob = segmenter->GetSamenessProb(*pixel, *offset);
-    differentness_logprob = log(1.0 - same_prob);
-    sameness_logprob = log(same_prob);
-    obj_merge_logprob = sameness_logprob - differentness_logprob;
+    differentness_logprob_ = log(1.0 - same_prob);
+    sameness_logprob_ = log(same_prob);
+    obj_merge_logprob_ = sameness_logprob_ - differentness_logprob_;
   } else {
     ComputeObjMergeLogprob(segmenter);
-    if (obj_merge_logprob == numeric_limits<float>::min()) {
+    if (obj_merge_logprob_ == numeric_limits<float>::min()) {
       cout << "Error: Bad adjacency record. The given objects are not adjacent."
            << endl;
       exit(1);
@@ -47,12 +50,12 @@ AdjacencyRecord::AdjacencyRecord(Object* obj1, Object* obj2,
 
 
 void AdjacencyRecord::SortAndUpdateHash() {
-  if (obj1->GetId() > obj2->GetId()) {
-    Object* tmp = obj1;
-    obj1 = obj2;
-    obj2 = tmp;
+  if (obj1_->GetId() > obj2_->GetId()) {
+    Object* tmp = obj1_;
+    obj1_ = obj2_;
+    obj2_ = tmp;
   }
-  cached_hash = AdjacencyRecordHasher()(this);
+  cached_hash_ = AdjacencyRecordHasher()(this);
 }
 
 
@@ -64,22 +67,22 @@ void AdjacencyRecord::ComputeObjMergeLogprob(ObjectSegmenter* segmenter) {
                                     offset_end =
                                     segmenter->GetOffsets()->end();
 
-  PixelSet::iterator obj1_iter = obj1->GetPixels()->begin(),
-                     obj1_end = obj1->GetPixels()->end(),
-                     obj2_iter = obj2->GetPixels()->begin(),
-                     obj2_end = obj2->GetPixels()->end();
+  PixelSet::iterator obj1_iter = obj1_->GetPixels()->begin(),
+                     obj1_end = obj1_->GetPixels()->end(),
+                     obj2_iter = obj2_->GetPixels()->begin(),
+                     obj2_end = obj2_->GetPixels()->end();
   for (; offset_iter != offset_end; offset_iter++) {
     for (; obj1_iter != obj1_end; obj1_iter++) {
       pair<int, int> p1(obj1_iter->first, obj1_iter->second);
       pair<int, int> p2(p1.first + offset_iter->first,
                         p1.second + offset_iter->second);
-      if (obj2->GetPixels()->find(p2) != obj2_end) {
+      if (obj2_->GetPixels()->find(p2) != obj2_end) {
         has_adjacency = true;
         float same_prob = segmenter->GetSamenessProb(p1, *offset_iter);
         float log_same_prob = log(same_prob);
         float log_different_prob = log(1.0 - same_prob);
-        sameness_logprob += log_same_prob;
-        differentness_logprob += log_different_prob;
+        sameness_logprob_ += log_same_prob;
+        differentness_logprob_ += log_different_prob;
         logprob += (log_same_prob - log_different_prob); 
       }
     }
@@ -87,56 +90,56 @@ void AdjacencyRecord::ComputeObjMergeLogprob(ObjectSegmenter* segmenter) {
       pair<int, int> p1(obj2_iter->first, obj2_iter->second);
       pair<int, int> p2(p1.first + offset_iter->first,
                         p1.second + offset_iter->second);
-      if (obj1->GetPixels()->find(p2) != obj1_end) {
+      if (obj1_->GetPixels()->find(p2) != obj1_end) {
         has_adjacency = true;
         float same_prob = segmenter->GetSamenessProb(p1, *offset_iter);
         float log_same_prob = log(same_prob);
         float log_different_prob = log(1.0 - same_prob);
-        sameness_logprob += log_same_prob;
-        differentness_logprob += log_different_prob;
+        sameness_logprob_ += log_same_prob;
+        differentness_logprob_ += log_different_prob;
         logprob += (log_same_prob - log_different_prob); 
       }
     }
   }
   if (has_adjacency) {
-    obj_merge_logprob = logprob;
+    obj_merge_logprob_ = logprob;
   }
 }
 
 
 void AdjacencyRecord::ComputeClassDeltaLogprob() {
-  if (obj1->GetObjectClass() == obj2->GetObjectClass()) {
-    class_delta_logprob = 0.0;
-    merged_class = obj1->GetObjectClass();
+  if (obj1_->GetObjectClass() == obj2_->GetObjectClass()) {
+    class_delta_logprob_ = 0.0;
+    merged_class_ = obj1_->GetObjectClass();
   } else {
-    size_t num_classes = obj1->GetClassLogprobs()->size();
-    if(num_classes != obj2->GetClassLogprobs()->size()) {
-      cout << "obj1 id is: obj" << obj1->GetId()
-           << " and obj2 id is: obj" << obj2->GetId() << endl;
-      cout << "the size of obj1 is " << obj1->GetClassLogprobs()->size()
+    size_t num_classes = obj1_->GetClassLogprobs()->size();
+    if(num_classes != obj2_->GetClassLogprobs()->size()) {
+      cout << "obj1 id is: obj" << obj1_->GetId()
+           << " and obj2 id is: obj" << obj2_->GetId() << endl;
+      cout << "the size of obj1 is " << obj1_->GetClassLogprobs()->size()
            << " and the size of obj2 is "  
-           << obj2->GetClassLogprobs()->size() << endl;
+           << obj2_->GetClassLogprobs()->size() << endl;
     }
     vector<float> joint_class_logprobs;
     for (size_t i = 0; i < num_classes; i++) {
-      joint_class_logprobs.push_back((*(obj1->GetClassLogprobs()))[i] +
-                                     (*(obj2->GetClassLogprobs()))[i]);
+      joint_class_logprobs.push_back((*(obj1_->GetClassLogprobs()))[i] +
+                                     (*(obj2_->GetClassLogprobs()))[i]);
     }
-    merged_class = distance(joint_class_logprobs.begin(),
-                            max_element(joint_class_logprobs.begin(),
-                                        joint_class_logprobs.end()));
-    class_delta_logprob = joint_class_logprobs[merged_class] -
-                          obj1->GetClassLogprob() - obj2->GetClassLogprob();
+    merged_class_ = distance(joint_class_logprobs.begin(),
+                             max_element(joint_class_logprobs.begin(),
+                                         joint_class_logprobs.end()));
+    class_delta_logprob_ = joint_class_logprobs[merged_class_] -
+                           obj1_->GetClassLogprob() - obj2_->GetClassLogprob();
   }
 }
 
 
 void AdjacencyRecord::UpdateMergePriority(ObjectSegmenter* segmenter) {
   ComputeClassDeltaLogprob();
-  size_t den = obj1->GetPixels()->size() * obj2->GetPixels()->size();
-  merge_priority =  (obj_merge_logprob *
+  size_t den = obj1_->GetPixels()->size() * obj2_->GetPixels()->size();
+  merge_priority_ = (obj_merge_logprob_ *
                      segmenter->GetSegmenterOption()->object_merge_factor +
-                     class_delta_logprob +
+                     class_delta_logprob_ +
                      segmenter->GetSegmenterOption()->merge_logprob_bias) /
                      den;
 }
@@ -149,37 +152,38 @@ ObjectSegmenter::ObjectSegmenter(float* nnet_class_pred, int class_dim,
                                  int* object_class,
                                  const ObjectSegmenterOption& opts,
                                  int verbose):
-  class_dim(class_dim), offset_dim(offset_dim), img_width(img_width),
-  img_height(img_height), num_classes(num_classes), opts(opts), verbose(verbose)
+  class_dim_(class_dim), offset_dim_(offset_dim), img_width_(img_width),
+  img_height_(img_height), num_classes_(num_classes), opts_(opts),
+  verbose_(verbose)
 {
-  this->output = Matrix<int>(output, img_height, img_width);
-  this->object_class = Matrix<int>(object_class, 1, img_height * img_width);
+  this->output_ = Matrix<int>(output, img_height, img_width);
+  this->object_class_ = Matrix<int>(object_class, 1, img_height * img_width);
   // Initialize offsets
   for (int i = 0; i < offset_dim; i++) {
-    offsets.push_back(make_pair(
-          *(offset_list + i * 2), *(offset_list + i*2 + 1)));
+    offsets_.push_back(make_pair(
+          *(offset_list + i * 2), *(offset_list + i * 2 + 1)));
   }
   // Initialize class_probs
-  class_probs.reserve(class_dim);
+  class_probs_.reserve(class_dim);
   for (int i = 0; i < class_dim; i++) {
-    class_probs[i] = Matrix<float>(nnet_class_pred + (img_width*img_height) * i,
-                                   img_height, img_width);
+    class_probs_[i] = Matrix<float>(nnet_class_pred +
+        (img_width*img_height) * i, img_height, img_width);
   }
   // Initialize sameness_probs
-  sameness_probs.reserve(offset_dim);
+  sameness_probs_.reserve(offset_dim);
   for (int i = 0; i < offset_dim; i++) {
-    sameness_probs[offsets[i]] = Matrix<float>(
-        nnet_sameness_probs + (img_width*img_height) * i,
+    sameness_probs_[offsets_[i]] = Matrix<float>(
+        nnet_sameness_probs + (img_width * img_height) * i,
         img_height, img_width);
   }
   if (opts.same_different_bias != 0) {
     for (int i = 0; i < offset_dim; i++) {
       for (int row = 0; row < img_height; row++) {
         for (int col = 0; col < img_width; col++) {
-          float* cur_sameness_probs = &(sameness_probs[offsets[i]](row, col));
+          float* cur_sameness_probs = &(sameness_probs_[offsets_[i]](row, col));
           float sameness_probs_biased_logit =
             log(*cur_sameness_probs) - log(1.0 - *cur_sameness_probs) +
-            opts.same_different_bias;
+            opts_.same_different_bias;
           *cur_sameness_probs = 1.0 / (1.0 + exp(-sameness_probs_biased_logit));
         }
       }
@@ -192,8 +196,8 @@ ObjectSegmenter::ObjectSegmenter(float* nnet_class_pred, int class_dim,
       PixelSet pixel;
       pixel.insert(make_pair(row, col));
       Object* obj = new Object(pixel, obj_id, this);
-      objects[obj_id] = obj;
-      pixel2obj[make_pair(row, col)] = obj;
+      objects_[obj_id] = obj;
+      pixel2obj_[make_pair(row, col)] = obj;
       obj_id++;
     }
   }
@@ -201,21 +205,20 @@ ObjectSegmenter::ObjectSegmenter(float* nnet_class_pred, int class_dim,
   for (int row = 0; row < img_height; row++) {
     for (int col = 0; col < img_width; col++) {
       pair<int, int> pixel = make_pair(row, col);
-      Object *obj1 = pixel2obj[pixel];
-      for (vector<pair<int,int> >::iterator iter = offsets.begin();
-           iter != offsets.end(); iter++) {
+      Object *obj1 = pixel2obj_[pixel];
+      for (vector<pair<int,int> >::iterator iter = offsets_.begin();
+           iter != offsets_.end(); iter++) {
         if (0 <= (row + iter->first) && (row + iter->first) < img_height &&
             0 <= (col + iter->second) && (col + iter->second) < img_width) {
-          Object *obj2 = pixel2obj[make_pair(row + iter->first,
-                                             col + iter->second)];
+          Object *obj2 = pixel2obj_[make_pair(row + iter->first,
+                                              col + iter->second)];
           AdjacencyRecord *arec = new AdjacencyRecord(obj1, obj2, this,
               &pixel, &(*iter));
-          adjacency_space.push_back(arec);
-          adjacency_records[arec->GetHashValue()] = arec;
+          adjacency_records_[arec->GetHashValue()] = arec;
           (*(obj1->GetAdjacencyList()))[arec->GetHashValue()] = arec;
           (*(obj2->GetAdjacencyList()))[arec->GetHashValue()] = arec;
           if (arec->GetPriority() >= 0) {
-            segmenter_queue.push(make_pair(arec->GetPriority(), arec));
+            segmenter_queue_.push(make_pair(arec->GetPriority(), arec));
           }
         }
       }
@@ -230,15 +233,15 @@ void ObjectSegmenter::ShowStats() {
        << ComputeTotalLogprob() << endl;
 //       << setprecision(3) << ComputeTotalLogprob() << endl;
 
-  cout << "Total number of objects: " << objects.size() << endl;
+  cout << "Total number of objects: " << objects_.size() << endl;
   cout << "Total number of adjacency records: "
-       << adjacency_records.size() << endl;
+       << adjacency_records_.size() << endl;
   cout << "Total number of records in the queue: "
-       << segmenter_queue.size() << endl;
+       << segmenter_queue_.size() << endl;
   vector<int> object_length;
   vector<int> adjacency_length;
-  for (unordered_map<size_t, Object*>::iterator iter = objects.begin();
-       iter != objects.end(); iter++) {
+  for (unordered_map<size_t, Object*>::iterator iter = objects_.begin();
+       iter != objects_.end(); iter++) {
     object_length.push_back(iter->second->GetPixels()->size());
     adjacency_length.push_back(iter->second->GetAdjacencyList()->size());
   }
@@ -246,7 +249,7 @@ void ObjectSegmenter::ShowStats() {
   reverse(object_length.begin(), object_length.end());
   sort(adjacency_length.begin(), adjacency_length.end());
   reverse(adjacency_length.begin(), adjacency_length.end());
-  int len = min(object_length.size(), (size_t)10);
+  int len = min(object_length.size(), size_t(10));
 
   cout << "Top 10 biggest objs (#pixels): ";
   for (int i = 0; i < len; i++) {
@@ -265,39 +268,39 @@ float ObjectSegmenter::ComputeTotalLogprob() {
   float tot_class_logprob = 0.0;
   float tot_differentness_logprob = 0.0;
   float tot_sameness_logprob = 0.0;
-  for (unordered_map<size_t, Object*>::iterator iter = objects.begin();
-       iter != objects.end(); iter++) {
+  for (unordered_map<size_t, Object*>::iterator iter = objects_.begin();
+       iter != objects_.end(); iter++) {
     tot_class_logprob += iter->second->GetClassLogprob();
     tot_sameness_logprob += iter->second->GetSamenessLogprob();
   }
   for (unordered_map<size_t, AdjacencyRecord*>::iterator iter =
-       adjacency_records.begin(); iter != adjacency_records.end(); iter++) {
+       adjacency_records_.begin(); iter != adjacency_records_.end(); iter++) {
     tot_differentness_logprob += iter->second->GetDifferentnessLogprob();
   }
   return tot_class_logprob + (tot_differentness_logprob +
-                              tot_sameness_logprob) * opts.object_merge_factor;
+                              tot_sameness_logprob) * opts_.object_merge_factor;
 }
 
 
 void ObjectSegmenter::Visualize() {
-  for (int i = 0; i < img_height; i++) {
-    for (int j = 0; j < img_width; j++) {
-      output(i,j) = 0;
+  for (int i = 0; i < img_height_; i++) {
+    for (int j = 0; j < img_width_; j++) {
+      output_(i,j) = 0;
     }
   }
   int k = 1;
-  for (unordered_map<size_t, Object*>::iterator iter = objects.begin();
-       iter != objects.end(); iter++) {
+  for (unordered_map<size_t, Object*>::iterator iter = objects_.begin();
+       iter != objects_.end(); iter++) {
     PixelSet::iterator pix_iter = iter->second->GetPixels()->begin(),
-                                  pix_end = iter->second->GetPixels()->end();
+                       pix_end = iter->second->GetPixels()->end();
     int tot_row = 0, tot_col = 0, count = 0;
     for (; pix_iter != pix_end; pix_iter++) {
-      output(pix_iter->first, pix_iter->second) = k;
+      output_(pix_iter->first, pix_iter->second) = k;
       tot_row += pix_iter->first;
       tot_col += pix_iter->second;
       count++;
     }
-    output(int(tot_row/count),int(tot_col/count)) = 0;
+    output_(int(tot_row / count),int(tot_col / count)) = 0;
     k++;
   }
 }
@@ -307,26 +310,26 @@ void ObjectSegmenter::ComputeTotalLogprobFromScratch() {
   float tot_class_logprob = 0.0;
   float tot_differentness_logprob = 0.0;
   float tot_sameness_logprob = 0.0;
-  for (unordered_map<size_t, Object*>::iterator it = objects.begin();
-       it != objects.end(); it++) {
+  for (unordered_map<size_t, Object*>::iterator it = objects_.begin();
+       it != objects_.end(); it++) {
     Object* obj = it->second;
     for (PixelSet::iterator pix_it = obj->GetPixels()->begin();
          pix_it != obj->GetPixels()->end(); pix_it++) {
       pair<int, int> p = *pix_it;
-      pixel2obj[p] = obj;
+      pixel2obj_[p] = obj;
       tot_class_logprob += GetClassLogprob(p, obj->GetObjectClass());
     }
   }
-  for (int row = 0; row < img_height; row++) {
-    for (int col = 0; col < img_width; col++) {
+  for (int row = 0; row < img_height_; row++) {
+    for (int col = 0; col < img_width_; col++) {
       pair<int, int> p1(row, col);
-      Object* obj1 = pixel2obj[p1];
-      for (vector<pair<int,int> >::iterator iter = offsets.begin();
-           iter != offsets.end(); iter++) {
-        if (0 <= (row + iter->first) && (row + iter->first) < img_height &&
-            0 <= (col + iter->second) && (col + iter->second) < img_width) {
-          Object *obj2 = pixel2obj[make_pair(row + iter->first,
-                                             col + iter->second)];
+      Object* obj1 = pixel2obj_[p1];
+      for (vector<pair<int,int> >::iterator iter = offsets_.begin();
+           iter != offsets_.end(); iter++) {
+        if (0 <= (row + iter->first) && (row + iter->first) < img_height_ &&
+            0 <= (col + iter->second) && (col + iter->second) < img_width_) {
+          Object *obj2 = pixel2obj_[make_pair(row + iter->first,
+                                              col + iter->second)];
           if (obj1->GetId() == obj2->GetId()) {
             tot_sameness_logprob += log(GetSamenessProb(p1, *iter));
           } else {
@@ -338,7 +341,7 @@ void ObjectSegmenter::ComputeTotalLogprobFromScratch() {
   }
   cout << "Final logprob from scratch: "
        << tot_class_logprob + (tot_differentness_logprob +
-                              tot_sameness_logprob) * opts.object_merge_factor;
+                              tot_sameness_logprob) * opts_.object_merge_factor;
 }
 
 
@@ -349,23 +352,23 @@ void ObjectSegmenter::ComputeTotalLogprobFromScratch() {
 */
 bool ObjectSegmenter::Debug() {
   // Use output matrix as a temporary storage space
-  for (int i = 0; i < img_height; i++) {
-    for (int j = 0; j < img_width; j++) {
-      output(i,j) = 0;
+  for (int i = 0; i < img_height_; i++) {
+    for (int j = 0; j < img_width_; j++) {
+      output_(i,j) = 0;
     }
   }
   // Check if the current set of objects exactly cover the whole image
-  for (unordered_map<size_t, Object*>::iterator iter = objects.begin();
-       iter != objects.end(); iter++) {
+  for (unordered_map<size_t, Object*>::iterator iter = objects_.begin();
+       iter != objects_.end(); iter++) {
     PixelSet::iterator pix_iter = iter->second->GetPixels()->begin(),
                        pix_end = iter->second->GetPixels()->end();
     for (; pix_iter != pix_end; pix_iter++) {
-      output(pix_iter->first, pix_iter->second) = 1;
+      output_(pix_iter->first, pix_iter->second) = 1;
     }
   }
-  for (int i = 0; i < img_width; i++) {
-    for (int j = 0; j < img_height; j++) {
-      if (output(i,j) != 1) {
+  for (int i = 0; i < img_width_; i++) {
+    for (int j = 0; j < img_height_; j++) {
+      if (output_(i, j) != 1) {
         cout << "Error: pixels are not all covered or they are double counted."
              << endl;
         return false;
@@ -376,22 +379,24 @@ bool ObjectSegmenter::Debug() {
   int tot_obj_adj_records = 0;
   unordered_map<size_t, AdjacencyRecord*>::iterator it;
 
-  for (unordered_map<size_t, Object*>::iterator iter = objects.begin();
-       iter != objects.end(); iter++) {
+  for (unordered_map<size_t, Object*>::iterator iter = objects_.begin();
+       iter != objects_.end(); iter++) {
     tot_obj_adj_records += iter->second->GetAdjacencyList()->size();
     unordered_map<size_t, AdjacencyRecord*>::iterator arec_iter =
              iter->second->GetAdjacencyList()->begin(), arec_end =
              iter->second->GetAdjacencyList()->end();
     for(; arec_iter != arec_end; arec_iter++) {
-      it = find(adjacency_records.begin(), adjacency_records.end(), *arec_iter);
-      if (it == adjacency_records.end()) { return false; }
+      it = find(adjacency_records_.begin(),
+                adjacency_records_.end(),
+                *arec_iter);
+      if (it == adjacency_records_.end()) { return false; }
 
       if (*(iter->second) != *(arec_iter->second->GetObj1()) &&
           *(iter->second) != *(arec_iter->second->GetObj2())) { return false; }
 
       // make shure that re-computing obj-merge-logprob does not change it.
       // this is too costly to run, so only do it randomly with a small chance.
-      if ((rand()%100) > 95) {
+      if ((rand() % 100) > 95) {
         float obj_merge_logprob = arec_iter->second->GetObjMergeLogprob();
         arec_iter->second->ComputeObjMergeLogprob(this);
         float obj_merge_logprob_new = arec_iter->second->GetObjMergeLogprob();
@@ -405,7 +410,7 @@ bool ObjectSegmenter::Debug() {
       }
     }
   }
-  if ((size_t)tot_obj_adj_records != (adjacency_records.size() * 2)) { 
+  if (size_t(tot_obj_adj_records) != (adjacency_records_.size() * 2)) { 
     return false;
   }
   return true;
@@ -413,28 +418,28 @@ bool ObjectSegmenter::Debug() {
 
 
 void ObjectSegmenter::OutputMask() {
-  for (int i = 0; i < img_height; i++) {
-    for (int j = 0; j < img_width; j++) {
-      output(i,j) = 0;
+  for (int i = 0; i < img_height_; i++) {
+    for (int j = 0; j < img_width_; j++) {
+      output_(i, j) = 0;
     }
   }
-  int pic_size = img_height * img_width;
+  int pic_size = img_height_ * img_width_;
   for (int i = 0; i < pic_size; i++) {
-    object_class(0, i) = -1;
+    object_class_(0, i) = -1;
   }
 
   int k = 1;
-  for (unordered_map<size_t, Object*>::iterator iter = objects.begin();
-       iter != objects.end(); iter++) {
+  for (unordered_map<size_t, Object*>::iterator iter = objects_.begin();
+       iter != objects_.end(); iter++) {
     // skip background object
     if (iter->second->GetObjectClass() == 0) {
       continue;
     }
-    object_class(0, k-1) = iter->second->GetObjectClass();
+    object_class_(0, k-1) = iter->second->GetObjectClass();
     PixelSet::iterator pix_iter = iter->second->GetPixels()->begin(),
                        pix_end = iter->second->GetPixels()->end();
     for (; pix_iter != pix_end; pix_iter++) {
-      output(pix_iter->first, pix_iter->second) = k;   
+      output_(pix_iter->first, pix_iter->second) = k;   
     }
     k++;
   }
@@ -463,8 +468,8 @@ This is the overview:
 void ObjectSegmenter::RunSegmentation() {
   cout << "Starting segmentation..." << endl;
   int n = 0;
-  while (!segmenter_queue.empty()) {
-    if (verbose >= 0) {
+  while (!segmenter_queue_.empty()) {
+    if (verbose_ >= 0) {
       if (n % 500000 == 0) {
         cout << "At iteration: " << n << endl;
         ShowStats();
@@ -472,9 +477,9 @@ void ObjectSegmenter::RunSegmentation() {
     }
     n += 1;
 
-    float merge_priority = segmenter_queue.top().first;
-    AdjacencyRecord* arec = segmenter_queue.top().second;
-    segmenter_queue.pop();
+    float merge_priority = segmenter_queue_.top().first;
+    AdjacencyRecord* arec = segmenter_queue_.top().second;
+    segmenter_queue_.pop();
     if (merge_priority != arec->GetPriority()) {
       continue;
     }
@@ -485,7 +490,7 @@ void ObjectSegmenter::RunSegmentation() {
     if (arec->GetPriority() >= merge_priority) {
       Merge(arec);
     } else if (arec->GetPriority() >= 0) {
-      segmenter_queue.push(make_pair(arec->GetPriority(), arec));
+      segmenter_queue_.push(make_pair(arec->GetPriority(), arec));
     }
   }
   cout << "Finished. Queue is empty." << endl;
@@ -565,7 +570,8 @@ void ObjectSegmenter::Merge(AdjacencyRecord* arec) {
                            obj2->GetSamenessLogprob());
 
   // remove this arec from some lists
-  adjacency_records.erase(arec->GetHashValue());
+  delete adjacency_records_[arec->GetHashValue()];
+  adjacency_records_.erase(arec->GetHashValue());
   obj1->GetAdjacencyList()->erase(arec->GetHashValue());
   obj2->GetAdjacencyList()->erase(arec->GetHashValue());
 
@@ -594,15 +600,12 @@ void ObjectSegmenter::Merge(AdjacencyRecord* arec) {
       cout << "Error: cyclic merging." << endl;
       exit(1);
     }
-    // The "old_hashvalue" is used to index map
-    size_t old_hashvalue = this_arec->GetHashValue();
-
-    this_arec->SortAndUpdateHash();
     
     // As obj2 is deleted, so remove this_arec from some lists
-    adjacency_records.erase(old_hashvalue);
-    obj3->GetAdjacencyList()->erase(old_hashvalue);
+    adjacency_records_.erase(this_arec->GetHashValue());
+    obj3->GetAdjacencyList()->erase(this_arec->GetHashValue());
    
+    this_arec->SortAndUpdateHash();
     // If previous has an AdjacencyRecord(obj1[without obj2], obj3),
     // update it (add this_arec value to it).
     if ( (obj1->GetAdjacencyList())->find(this_arec->GetHashValue()) !=
@@ -617,19 +620,19 @@ void ObjectSegmenter::Merge(AdjacencyRecord* arec) {
       this_arec->SetPriority(numeric_limits<float>::min());
       that_arec->UpdateMergePriority(this);
       if (that_arec->GetPriority() >= 0) {
-         segmenter_queue.push(make_pair(that_arec->GetPriority(), that_arec));
+         segmenter_queue_.push(make_pair(that_arec->GetPriority(), that_arec));
       }
     } else {
       (*(obj1->GetAdjacencyList()))[this_arec->GetHashValue()] = this_arec;
       (*(obj3->GetAdjacencyList()))[this_arec->GetHashValue()] = this_arec;
-      adjacency_records[this_arec->GetHashValue()] = this_arec;
+      adjacency_records_[this_arec->GetHashValue()] = this_arec;
       this_arec->UpdateMergePriority(this);
       if (this_arec->GetPriority() >= 0) {
-         segmenter_queue.push(make_pair(this_arec->GetPriority(), this_arec));
+         segmenter_queue_.push(make_pair(this_arec->GetPriority(), this_arec));
       }
     }
   }
-  if (verbose >= 1) {
+  if (verbose_ >= 1) {
     cout << "Deleting obj" << obj2->GetId()
          << " being merged to obj" << obj1->GetId()
          << " oml:" << arec->GetObjMergeLogprob()
@@ -637,20 +640,21 @@ void ObjectSegmenter::Merge(AdjacencyRecord* arec) {
          << " mp:" << arec->GetPriority() << endl;
   }
   // release obj2
-  objects.erase(obj2->GetId());
+  objects_.erase(obj2->GetId());
   delete obj2;
   arec->SetObj2(NULL);
 }
 
 
 ObjectSegmenter::~ObjectSegmenter() {
-  for (unordered_map<size_t, Object*>::iterator iter = objects.begin();
-       iter != objects.end(); iter++) {
+  for (unordered_map<size_t, Object*>::iterator iter = objects_.begin();
+       iter != objects_.end(); iter++) {
     delete iter->second;
   }
-  for (vector<AdjacencyRecord*>::iterator iter = adjacency_space.begin();
-       iter != adjacency_space.end(); iter++) {
-    delete *iter;
+  for (unordered_map<size_t ,AdjacencyRecord*>::iterator iter =
+       adjacency_records_.begin();
+       iter != adjacency_records_.end(); iter++) {
+    delete iter->second;
   }
 }
 

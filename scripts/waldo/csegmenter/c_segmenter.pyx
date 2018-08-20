@@ -1,7 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
+# Copyright 2018 Daniel Povey, Hang Lyu
+
+# Apache 2.0
 """
-c_segment.py
+c_segmenter.py
 
 the C funtion: c_run_segmentation post-process the waldo data
 """

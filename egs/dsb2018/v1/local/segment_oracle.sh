@@ -16,6 +16,6 @@ EOF
 segdir=$dir/segment
 
 local/segment_oracle.py \
-  --train-image-size 1024 \
+  --train-image-size 128 \
   --test-data /export/b07/yshao/waldo/egs/dsb2018/v1/data/train \
   --dir $segdir \
