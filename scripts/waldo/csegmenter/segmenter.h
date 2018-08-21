@@ -115,6 +115,10 @@ class Object {
     return class_logprobs_[object_class_];
   }
 
+  inline float GetNonBackgroundLogprob() {
+    return class_logprobs_[object_class_] - class_logprobs_[0];
+  }
+
   inline size_t GetId() const { return id_; }
 
   inline float GetSamenessLogprob() const { return sameness_logprob_; }
@@ -338,6 +342,8 @@ class ObjectSegmenter {
   void Merge(AdjacencyRecord* arec);
 
   void ComputeTotalLogprobFromScratch();
+
+  void Prune(float threshold = 200.0);
 
  private:
   unordered_map<int, Matrix<float> > class_probs_;
