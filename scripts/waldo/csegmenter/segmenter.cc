@@ -494,6 +494,7 @@ void ObjectSegmenter::RunSegmentation() {
     }
   }
   cout << "Finished. Queue is empty." << endl;
+  Prune(200.0);
   ShowStats();
   // ComputeTotalLogprobFromScratch();
   // Visualize();
@@ -643,6 +644,53 @@ void ObjectSegmenter::Merge(AdjacencyRecord* arec) {
   objects_.erase(obj2->GetId());
   delete obj2;
   arec->SetObj2(NULL);
+}
+
+
+void ObjectSegmenter::Prune(float threshold) {
+  size_t num_pixels = 0;
+  Object* background_obj = NULL;
+  vector<Object*> objects_to_be_merged;
+
+  // Find the biggest background object:
+  for (unordered_map<size_t, Object*>::iterator iter = objects_.begin();
+       iter != objects_.end(); iter++) {
+    if (iter->second->GetObjectClass() == 0 &&
+        iter->second->GetPixels()->size() > num_pixels) {
+      background_obj = iter->second;
+      num_pixels = iter->second->GetPixels()->size();
+    }
+  } 
+  
+  for (unordered_map<size_t, Object*>::iterator iter = objects_.begin();
+       iter != objects_.end(); iter++) {
+     // merge the nonbackground object whose score is less than threshold
+     float nonbackground_score = iter->second->GetNonBackgroundLogprob();
+     if (verbose_ >= 2) {
+       cout << "obj:" << iter->second->GetPixels()->size()
+            << "   -->   " << nonbackground_score << endl;
+     }
+     if (nonbackground_score < threshold && iter->second != background_obj) {
+        objects_to_be_merged.push_back(iter->second);
+     }
+  }
+
+  for (vector<Object*>::iterator iter = objects_to_be_merged.begin();
+       iter != objects_to_be_merged.end(); iter++) {
+    if (verbose_ >= 1) {
+      cout << "Merging obj with " << (*iter)->GetPixels()->size()
+           << " pixels to background..." << endl;
+    }
+    for (PixelSet::iterator iter_p = (*iter)->GetPixels()->begin();
+         iter_p != (*iter)->GetPixels()->end(); iter_p++) {
+      background_obj->GetPixels()->insert(*iter_p);
+    }
+    objects_.erase((*iter)->GetId());
+    delete *iter;
+  }
+  cout << "Pruned " << objects_to_be_merged.size()
+       << " objects (merged into background)" << endl;
+  cout << "Final objects: " << objects_.size() << endl;
 }
 
 
